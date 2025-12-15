@@ -1,0 +1,17 @@
+# Obsidian
+.obsidian/
+.trash/
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+~$*
+
+# Personal workspace files (optional - uncomment if you don't want to share)
+# .obsidian/workspace.json
+# .obsidian/workspace-mobile.json
