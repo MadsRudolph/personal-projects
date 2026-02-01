@@ -336,15 +336,15 @@ Add the DC blocking capacitor for the final output.
 - Sweep: 20 Hz to 100 kHz
 - Amplitude: 1 Vpp, Offset: 2.5V
 
-| Frequency | Expected | Measured | Notes |
-|-----------|----------|----------|-------|
-| 20 Hz | ~0 dB | -30 dB | See note below |
-| 100 Hz | 0 dB | -15 dB | Bass rolloff |
-| 200 Hz | 0 dB | -5 dB | Approaching passband |
-| 1 kHz | 0 dB | 0 dB | [x] Passband |
-| 10 kHz | 0 dB | 0 dB | [x] Passband |
-| 20 kHz | -3 dB | ~-3 dB | [x] LP cutoff |
-| 100 kHz | -20 dB | -25 dB | [x] LP rolloff |
+| Frequency | Expected | Measured | Notes                |
+| --------- | -------- | -------- | -------------------- |
+| 20 Hz     | ~0 dB    | -30 dB   | See note below       |
+| 100 Hz    | 0 dB     | -15 dB   | Bass rolloff         |
+| 200 Hz    | 0 dB     | -5 dB    | Approaching passband |
+| 1 kHz     | 0 dB     | 0 dB     | [x] Passband         |
+| 10 kHz    | 0 dB     | 0 dB     | [x] Passband         |
+| 20 kHz    | -3 dB    | ~-3 dB   | [x] LP cutoff        |
+| 100 kHz   | -20 dB   | -25 dB   | [x] LP rolloff       |
 
 **Full Response Sweep:**
 ![Stage 4 frequency response with output coupling capacitor](../../Resources/Pi%20Zero%20PWM%20Filter/images/stage4-output-cap-response.png)
@@ -361,6 +361,17 @@ Add the DC blocking capacitor for the final output.
 > - Most music content is above 100 Hz
 > - Active speakers have their own bass response
 > - Final PCB may behave differently than breadboard
+
+#### Left Channel Final Verification
+
+**Left Channel Frequency Response (100 Hz - 100 kHz):**
+![Left channel frequency response](../../Resources/Pi%20Zero%20PWM%20Filter/images/left-channel-response.png)
+*Left channel complete filter response - matches right channel characteristics.*
+
+> [!success] Left Channel Complete
+> Passband flat from ~200 Hz to ~15 kHz, low-pass rolloff above 20 kHz.
+
+---
 
 #### Test 5b: THD Measurement
 
