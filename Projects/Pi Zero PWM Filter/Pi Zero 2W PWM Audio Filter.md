@@ -14,7 +14,8 @@ aliases:
   - Raspotify Audio
   - PWM to Line-Level
 links:
-  - "[[Illuminate 7Mk2 - Speaker Build]]"
+  - "[[Illuminate 7Mk2/Illuminate 7Mk2 - Speaker Build]]"
+  - "[[Build Guide - 3rd Order PWM Filter]]"
 ---
 
 # Pi Zero 2W PWM Audio Filter for Spotify Connect
@@ -34,6 +35,7 @@ links:
 - [[#Bill of Materials|Component List]]
 - [[#Raspberry Pi Configuration|Pi Setup]]
 - [[#Raspotify Installation|Raspotify]]
+- [[Build Guide - 3rd Order PWM Filter|Build & Test Guide (3rd Order)]]
 
 ---
 

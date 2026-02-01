@@ -35,8 +35,8 @@ links:
 - [[Parts List - Illuminate 7Mk2|Parts & Shopping List]]
 - [[Build Log - Illuminate 7Mk2|Build Log]]
 - [[Amplifier - Fosi Audio V3|Amplifier Details]]
-- [Parts & Purchase Guide PDF](../Resources/Illuminate_7_Mk2_Parts_and_Purchase_Guide.pdf)
-- [Spec Sheet PDF](../Resources/Illuminate_7Mk2_Spec_Sheet.pdf)
+- [Parts & Purchase Guide PDF](../../Resources/Illuminate%207Mk2/Illuminate_7_Mk2_Parts_and_Purchase_Guide.pdf)
+- [Spec Sheet PDF](../../Resources/Illuminate%207Mk2/Illuminate_7Mk2_Spec_Sheet.pdf)
 
 ---
 

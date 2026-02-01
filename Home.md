@@ -19,13 +19,13 @@ updated: 2026-02-01
 ## 🎯 Active Projects
 
 ### 🔊 Audio Projects
-- [[Illuminate 7Mk2 - Speaker Build|Illuminate 7Mk2 Speaker Build]] - 3D-printed bookshelf speakers with Fosi Audio V3 amplifier
+- [[Illuminate 7Mk2/Illuminate 7Mk2 - Speaker Build|Illuminate 7Mk2 Speaker Build]] - 3D-printed bookshelf speakers with Fosi Audio V3 amplifier
   - **Status:** Planning
   - **Budget:** ~1750-2730 kr
   - **Timeline:** TBD
 
 ### ⚡ Electronics Projects
-- [[Pi Zero 2W PWM Audio Filter|Pi Zero 2W PWM Audio Filter]] - Filtered PWM output for Raspberry Pi Spotify Connect
+- [[Pi Zero PWM Filter/Pi Zero 2W PWM Audio Filter|Pi Zero 2W PWM Audio Filter]] - Filtered PWM output for Raspberry Pi Spotify Connect
   - **Status:** Ready to Build
   - **Platform:** Raspberry Pi Zero 2W + Raspotify
   - **Output:** Stereo RCA line-level
@@ -36,17 +36,21 @@ updated: 2026-02-01
 
 ```
 Projects/
-├── Projects/          # Active project documentation
-│   ├── Illuminate 7Mk2 - Speaker Build.md
-│   ├── Parts List - Illuminate 7Mk2.md
-│   ├── Build Log - Illuminate 7Mk2.md
-│   ├── Amplifier - Fosi Audio V3.md
-│   └── Pi Zero 2W PWM Audio Filter.md
-├── Resources/         # PDFs, images, datasheets
-│   ├── Illuminate_7_Mk2_Parts_and_Purchase_Guide.pdf
-│   └── Illuminate_7Mk2_Spec_Sheet.pdf
-├── Notes/             # Quick notes and references
-└── Home.md           # This file
+├── Projects/
+│   ├── Illuminate 7Mk2/           # Speaker build project
+│   │   ├── Illuminate 7Mk2 - Speaker Build.md
+│   │   ├── Parts List - Illuminate 7Mk2.md
+│   │   ├── Build Log - Illuminate 7Mk2.md
+│   │   └── Amplifier - Fosi Audio V3.md
+│   └── Pi Zero PWM Filter/        # PWM audio filter project
+│       ├── Pi Zero 2W PWM Audio Filter.md
+│       └── Build Guide - 3rd Order PWM Filter.md
+├── Resources/
+│   ├── Illuminate 7Mk2/           # Speaker resources
+│   │   └── *.pdf
+│   └── Pi Zero PWM Filter/        # PWM filter resources
+├── Notes/                         # Quick notes and references
+└── Home.md                        # This file
 ```
 
 ---
@@ -90,8 +94,8 @@ Projects/
 ## 🔗 Quick Links
 
 ### Current Projects
-- [[Illuminate 7Mk2 - Speaker Build|Speaker Build Project]]
-- [[Pi Zero 2W PWM Audio Filter|Pi Zero PWM Audio]]
+- [[Illuminate 7Mk2/Illuminate 7Mk2 - Speaker Build|Speaker Build Project]]
+- [[Pi Zero PWM Filter/Pi Zero 2W PWM Audio Filter|Pi Zero PWM Audio]]
 
 ### Resources
 - [PrintYourSpeakers.com](https://www.printyourspeakers.com)

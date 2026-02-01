@@ -4,7 +4,7 @@ A collection of hardware projects focusing on audio, electronics, and 3D printin
 
 ## 🎯 Active Projects
 
-### 🔊 [Illuminate 7Mk2 - 3D-Printed Speaker Build](Projects/Illuminate%207Mk2%20-%20Speaker%20Build.md)
+### 🔊 [Illuminate 7Mk2 - 3D-Printed Speaker Build](Projects/Illuminate%207Mk2/Illuminate%207Mk2%20-%20Speaker%20Build.md)
 
 Building a pair of audiophile-grade 3D-printed bookshelf speakers from scratch.
 
@@ -19,20 +19,33 @@ Building a pair of audiophile-grade 3D-printed bookshelf speakers from scratch.
 
 **Budget:** ~1750-2730 DKK (~$250-390 USD)
 
-**Why This Build:**
-- Support-free 3D printing design (Mk2 improvement)
-- Audiophile performance at DIY prices
-- Learn about electroacoustics, crossover design, and acoustic damping
-- Fully customizable appearance (filament color choice)
-
 **Documentation:**
-- [📋 Parts List](Projects/Parts%20List%20-%20Illuminate%207Mk2.md) - Complete BOM with suppliers and prices
-- [📖 Build Log](Projects/Build%20Log%20-%20Illuminate%207Mk2.md) - Detailed build progress tracker
-- [⚡ Amplifier Details](Projects/Amplifier%20-%20Fosi%20Audio%20V3.md) - Fosi Audio V3 specifications and setup
+- [📋 Parts List](Projects/Illuminate%207Mk2/Parts%20List%20-%20Illuminate%207Mk2.md) - Complete BOM with suppliers and prices
+- [📖 Build Log](Projects/Illuminate%207Mk2/Build%20Log%20-%20Illuminate%207Mk2.md) - Detailed build progress tracker
+- [⚡ Amplifier Details](Projects/Illuminate%207Mk2/Amplifier%20-%20Fosi%20Audio%20V3.md) - Fosi Audio V3 specifications and setup
 
 **Resources:**
-- [Parts & Purchase Guide PDF](Resources/Illuminate_7_Mk2_Parts_and_Purchase_Guide.pdf)
-- [Spec Sheet PDF](Resources/Illuminate_7Mk2_Spec_Sheet.pdf)
+- [Parts & Purchase Guide PDF](Resources/Illuminate%207Mk2/Illuminate_7_Mk2_Parts_and_Purchase_Guide.pdf)
+- [Spec Sheet PDF](Resources/Illuminate%207Mk2/Illuminate_7Mk2_Spec_Sheet.pdf)
+
+---
+
+### ⚡ [Pi Zero 2W PWM Audio Filter](Projects/Pi%20Zero%20PWM%20Filter/Pi%20Zero%202W%20PWM%20Audio%20Filter.md)
+
+Filtered PWM audio output for Raspberry Pi Zero 2W running Raspotify (Spotify Connect).
+
+**Status:** 🟢 Ready to Build
+
+**Key Specs:**
+- **Platform:** Raspberry Pi Zero 2W
+- **Software:** Raspotify (Spotify Connect)
+- **Filter:** 3rd order Sallen-Key (fc ~19kHz)
+- **Output:** Stereo RCA line-level
+- **PWM Attenuation:** -10dB @ 31.25kHz
+
+**Documentation:**
+- [📋 Main Project](Projects/Pi%20Zero%20PWM%20Filter/Pi%20Zero%202W%20PWM%20Audio%20Filter.md) - Filter designs, BOM, Pi configuration
+- [🔧 Build Guide](Projects/Pi%20Zero%20PWM%20Filter/Build%20Guide%20-%203rd%20Order%20PWM%20Filter.md) - Step-by-step build with AD3 testing
 
 ---
 
@@ -40,17 +53,21 @@ Building a pair of audiophile-grade 3D-printed bookshelf speakers from scratch.
 
 ```
 Projects/
-├── Projects/          # Project documentation
-│   ├── Illuminate 7Mk2 - Speaker Build.md
-│   ├── Parts List - Illuminate 7Mk2.md
-│   ├── Build Log - Illuminate 7Mk2.md
-│   └── Amplifier - Fosi Audio V3.md
-├── Resources/         # PDFs, datasheets, images
-│   ├── Illuminate_7_Mk2_Parts_and_Purchase_Guide.pdf
-│   ├── Illuminate_7_Mk2_Assembly_Guide.pdf
-│   └── Illuminate_7Mk2_Spec_Sheet.pdf
-├── Notes/             # Quick reference notes
-└── Home.md            # Vault index
+├── Projects/
+│   ├── Illuminate 7Mk2/              # Speaker build project
+│   │   ├── Illuminate 7Mk2 - Speaker Build.md
+│   │   ├── Parts List - Illuminate 7Mk2.md
+│   │   ├── Build Log - Illuminate 7Mk2.md
+│   │   └── Amplifier - Fosi Audio V3.md
+│   └── Pi Zero PWM Filter/           # PWM audio filter project
+│       ├── Pi Zero 2W PWM Audio Filter.md
+│       └── Build Guide - 3rd Order PWM Filter.md
+├── Resources/
+│   ├── Illuminate 7Mk2/              # Speaker resources
+│   │   └── *.pdf
+│   └── Pi Zero PWM Filter/           # PWM filter resources
+├── Notes/                            # Quick reference notes
+└── Home.md                           # Vault index
 ```
 
 ---
@@ -79,7 +96,7 @@ These projects combine my academic knowledge with hands-on building experience.
 
 ## 🏷️ Topics
 
-`audio` `speakers` `diy` `3d-printing` `electroacoustics` `electronics` `amplifiers` `class-d` `power-electronics` `obsidian`
+`audio` `speakers` `diy` `3d-printing` `electroacoustics` `electronics` `amplifiers` `class-d` `power-electronics` `raspberry-pi` `spotify` `obsidian`
 
 ---
 
@@ -125,4 +142,4 @@ Alternatively, all files are standard markdown and can be viewed directly on Git
 
 ---
 
-**Last Updated:** 2025-12-15
+**Last Updated:** 2026-02-01
