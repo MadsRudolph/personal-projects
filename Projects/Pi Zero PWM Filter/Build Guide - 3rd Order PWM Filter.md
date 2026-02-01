@@ -7,9 +7,10 @@ tags:
   - audio
   - active-project
   - build-log
-status: In Progress
+status: Left Channel Complete
 started: 2026-02-01
 updated: 2026-02-01
+build-date: 2026-02-01
 parent: "[[Pi Zero 2W PWM Audio Filter]]"
 ---
 
@@ -35,18 +36,20 @@ parent: "[[Pi Zero 2W PWM Audio Filter]]"
 | Multimeter | DC voltage checks |
 
 ### Components (Single Channel)
-| Component | Value | Qty |
-|-----------|-------|-----|
-| R1 | 2.2 kΩ | 1 |
-| R2, R3 | 1 kΩ (or 1.05 kΩ) | 2 |
-| R_bias | 10 kΩ | 2 |
-| C1 | 2.2 nF | 1 |
-| C2 | 4.7 nF | 1 |
-| C3 | 10 nF | 1 |
-| C_out | 6.8 µF electrolytic | 1 |
-| C_bias | 10 µF electrolytic | 1 |
-| C_bypass | 100 nF ceramic | 1 |
-| TL072 | Dual op-amp | 1 |
+| Component | Value | Qty | Notes |
+|-----------|-------|-----|-------|
+| R1 | 2.2 kΩ | 1 | Input RC stage |
+| R2, R3 | 1 kΩ | 2 | Sallen-Key filter |
+| C1 | 2.2 nF | 1 | Film cap (marked 2n2) |
+| C2 | 4.7 nF | 1 | Film cap (marked 4.7 or 472) |
+| C3 | 10 nF | 1 | Film cap (marked 10n or 103) |
+| C_out | 6.8 µF electrolytic | 1 | Output DC blocking |
+| C_bypass | 100 nF ceramic | 1 | Op-amp power bypass |
+| TL072 | Dual op-amp | 1 | TL072CP used |
+
+> [!note] Simplified Design
+> The Vbias network (10kΩ resistors + 10µF cap) is **not needed** in this design.
+> DC bias comes through the signal path via the input DC offset.
 
 ### Power Supply
 - **Recommended:** Adjustable bench power supply set to 5.0V
@@ -99,42 +102,22 @@ parent: "[[Pi Zero 2W PWM Audio Filter]]"
 
 ---
 
-### Stage 0: Power Supply & Bias Network
+### Stage 0: Power Supply
 
-Build the bias network first - this creates the virtual ground (Vcc/2 = 2.5V) needed for single-supply op-amp operation.
-
-#### Schematic
-```
-        +5V (from AD3 V+)
-         |
-        [10kΩ] R_bias1
-         |
-         +----[10µF]----GND    (C_bias, + toward Vbias)
-         |
-       Vbias (2.5V output)
-         |
-        [10kΩ] R_bias2
-         |
-        GND
-```
+> [!important] Simplified Design
+> The original Vbias resistor divider network is **NOT needed**.
+> DC bias is provided via the waveform generator's DC offset (2.5V) through the signal path.
 
 #### Build Steps
-1. [x] Insert two 10kΩ resistors in series on breadboard
-2. [x] Connect top of R_bias1 to +5V rail
-3. [x] Connect bottom of R_bias2 to GND rail
-4. [x] Connect 10µF capacitor from Vbias junction to GND (observe polarity!)
-5. [ ] Add 100nF bypass cap from +5V to GND near where op-amp will go
+1. [x] Connect bench supply +5V to breadboard power rail
+2. [x] Connect bench supply GND to breadboard ground rail
+3. [x] Add 100nF bypass cap near where op-amp will be placed
 
-#### Test 0: Bias Voltage
+#### Test 0: Power Supply
 
-| Test     | Method                         | Expected      | Actual | Pass |
-| -------- | ------------------------------ | ------------- | ------ | ---- |
-| Vcc      | Multimeter: +5V to GND         | 5.0V ± 0.1V   | check  | [ ]  |
-| Vbias    | Multimeter: Vbias to GND       | 2.5V ± 0.1V   | check  | [ ]  |
-| Vbias AC | Scope CH1 on Vbias, AC coupled | <10 mV ripple |        | [ ]  |
-
-> [!warning] Stop if Vbias is not ~2.5V
-> Check resistor values and connections before proceeding.
+| Test | Method | Expected | Actual | Pass |
+|------|--------|----------|--------|------|
+| Vcc | Multimeter: +5V to GND | 5.0V ± 0.1V | 5.0V | [x] |
 
 ---
 
@@ -170,12 +153,15 @@ This passive RC stage provides the first pole of the filter.
 3. Set amplitude: 1 Vpp
 4. Run sweep
 
-| Test            | Method                  | Expected      | Actual | Pass |
-| --------------- | ----------------------- | ------------- | ------ | ---- |
-| fc (calculated) | 1/(2π × 2.2kΩ × 2.2nF)  | ~32.9 kHz     |        | [ ]  |
-| fc (measured)   | -3dB point on Bode plot | ~33 kHz       | 28.5   | [ ]  |
-| Passband        | Gain at 1 kHz           | 0 dB (unity)  |        | [ ]  |
-| Roll-off        | Slope above fc          | -20 dB/decade |        | [ ]  |
+| Test            | Method                  | Expected      | Actual    | Pass |
+| --------------- | ----------------------- | ------------- | --------- | ---- |
+| fc (calculated) | 1/(2π × 2.2kΩ × 2.2nF)  | ~32.9 kHz     | 32.9 kHz  | [x]  |
+| fc (measured)   | -3dB point on Bode plot | ~33 kHz       | 28.5 kHz  | [x]  |
+| Passband        | Gain at 1 kHz           | 0 dB (unity)  | 0 dB      | [x]  |
+| Roll-off        | Slope above fc          | -20 dB/decade | -20 dB/dec| [x]  |
+
+> [!success] Stage 1 Complete
+> Measured fc slightly lower than calculated due to component tolerances.
 
 **Quick Sine Test:**
 - 1 kHz sine, 1 Vpp → Output should be ~1 Vpp
@@ -188,9 +174,9 @@ This passive RC stage provides the first pole of the filter.
 
 ### Stage 2: Op-Amp Installation
 
-Install the TL072 and verify it's working before adding the Sallen-Key components.
+Install the TL072 and verify power connections.
 
-#### TL072 Pinout
+#### TL072CP Pinout
 ```
         +---u---+
  1OUT  -| 1   8 |- Vcc (+5V)
@@ -200,47 +186,27 @@ Install the TL072 and verify it's working before adding the Sallen-Key component
         +-------+
 
 Note: Pin 4 connects to GND (single supply)
-      We'll use op-amp 1 (pins 1,2,3) for left channel
+      Op-amp 1 (pins 1,2,3) = Left channel
+      Op-amp 2 (pins 5,6,7) = Right channel
 ```
 
 #### Build Steps
 1. [x] Insert TL072 into breadboard (straddle center groove)
 2. [x] Connect pin 8 to +5V rail
 3. [x] Connect pin 4 to GND rail
-4. [ ] Place 100nF bypass cap directly across pins 4 and 8
-5. [x] Connect pin 3 (IN+) to Vbias (2.5V)
-6. [x] Connect pin 2 (IN-) to pin 1 (OUT) - unity gain buffer config
+4. [x] Place 100nF bypass cap directly across pins 4 and 8 (short leads!)
+5. [x] Connect pin 2 (IN-) to pin 1 (OUT) - unity gain feedback
 
-#### Test 2: Op-Amp DC Operating Point
+#### Test 2: Op-Amp Power
 
-| Test              | Method            | Expected    | Actual | Pass |
-| ----------------- | ----------------- | ----------- | ------ | ---- |
-| Vcc at pin 8      | Multimeter        | 5.0V        | pass   | [ ]  |
-| GND at pin 4      | Multimeter        | 0V          | pass   | [ ]  |
-| Output DC (pin 1) | Multimeter to GND | 2.5V ± 0.2V | pass   | [ ]  |
-| IN+ (pin 3)       | Multimeter to GND | 2.5V        | pass   | [ ]  |
+| Test         | Method     | Expected | Actual | Pass |
+|--------------|------------|----------|--------|------|
+| Vcc at pin 8 | Multimeter | 5.0V     | 5.0V   | [x]  |
+| GND at pin 4 | Multimeter | 0V       | 0V     | [x]  |
 
-#### Test 2b: Op-Amp AC Response (Unity Buffer)
-
-**Setup:**
-- W1 → 10µF cap → pin 3 (AC couple into IN+)
-- CH1 → pin 3
-- CH2 → pin 1 (output)
-
-**Test:**
-- 1 kHz sine, 500 mVpp
-- Output should match input (unity gain, 0° phase shift)
-
-| Test           | Method           | Expected                | Actual | Pass |
-| -------------- | ---------------- | ----------------------- | ------ | ---- |
-| Gain at 1 kHz  | CH2/CH1          | 1.0 (0 dB)              | check  | [ ]  |
-| Phase at 1 kHz | Phase difference | ~0°                     | 204 us | [ ]  |
-| Output swing   | Scope CH2        | Clean sine, no clipping |        | [ ]  |
-
-> [!warning] If output is stuck at 0V or 5V
-> - Check power connections
-> - Verify Vbias is connected to IN+
-> - Check for shorts
+> [!note] No Vbias Test Needed
+> In the simplified design, pin 3 (IN+) connects to the filter network, not to Vbias.
+> DC bias comes through R1→R2→R3 from the input signal's DC offset.
 
 ---
 
@@ -250,78 +216,82 @@ Now build the active 2nd-order low-pass filter around the op-amp.
 
 #### Schematic
 ```
-    From TP1 ----[R2 1kΩ]----+----[R3 1kΩ]----+
-                             |                 |
-                           [C2]                |
-                           4.7nF            [IN+]
-                             |                 |    +-----+
-                            GND    Vbias -----|+    |     |
-                                              | OP  |-----+---> Output
-                                   +----------|−    |
-                                   |          +-----+
-                                   |             |
-                                  [C3]          Vcc/GND
-                                  10nF
-                                   |
-                                  GND
+                                        +------ pin 1 (OUT) ---> Output
+                                        |
+                                      [C3]
+                                      10nF
+                                        |
+TP1 ----[R2 1kΩ]----+----[R3 1kΩ]------+------ pin 3 (IN+)
+                    |
+                  [C2]                         pin 2 (IN-) ---- pin 1 (OUT)
+                  4.7nF                        (direct wire for unity gain)
+                    |
+                   GND
 ```
 
 #### Build Steps
-1. [ ] Remove the unity-gain feedback wire (pin 2 to pin 1)
-2. [ ] Connect R2 (1kΩ) from TP1 to a new node "TP2"
-3. [ ] Connect R3 (1kΩ) from TP2 to pin 3 (IN+)
-4. [ ] Connect C2 (4.7nF) from TP2 to GND
-5. [ ] Connect C3 (10nF) from pin 1 (OUT) to pin 2 (IN-)
-6. [ ] Connect pin 2 (IN-) to pin 1 (OUT) - this completes the Sallen-Key feedback
-7. [ ] **Important:** Also connect pin 3 to Vbias through a high-value resistor (100kΩ) or remove direct Vbias connection and let the input signal bias the op-amp
+1. [x] Keep the unity-gain feedback wire (pin 2 to pin 1)
+2. [x] Connect R2 (1kΩ) from TP1 to a new node "TP2"
+3. [x] Connect C2 (4.7nF) from TP2 to GND
+4. [x] Connect R3 (1kΩ) from TP2 to pin 3 (IN+)
+5. [x] Connect C3 (10nF) from pin 3 (IN+) to pin 1 (OUT)
 
-> [!note] Sallen-Key Unity Gain Configuration
-> In this topology, IN- connects directly to OUT (voltage follower in the feedback).
-> The filter action comes from the RC network feeding IN+.
-
-#### Revised Connections
-```
-TP1 ---[R2]---TP2---[R3]---+--- pin 3 (IN+)
-               |           |
-             [C2]      [Vbias via 100kΩ or input coupling]
-               |
-              GND
-
-pin 1 (OUT) ---+--- Output
-               |
-             [C3]
-               |
-pin 2 (IN-) ---+
-```
+> [!note] Sallen-Key Unity Gain Low-Pass
+> - IN- connects directly to OUT (unity gain buffer)
+> - C3 provides feedback from output to the IN+ node
+> - The filter action comes from R2-R3-C2-C3 network
+> - Pin 3 is no longer connected to Vbias (signal path provides DC bias through R2-R3)
 
 #### Test 3: Complete Filter Response
 
 **Setup:**
 - W1 → R1 input (beginning of filter)
-- CH1 → TP1 (after 1st RC stage)
-- CH2 → pin 1 (final output)
+- W1 settings: 1 Vpp, **Offset: 2.5V** (critical!)
+- CH1 → Input
+- CH2 → pin 1 (output)
+
+> [!important] DC Offset Required
+> The waveform generator MUST have 2.5V DC offset to bias the op-amp at mid-rail.
+> Without this, the filter will not work correctly (op-amp can't output near 0V).
 
 **WaveForms - Network Analyzer:**
 1. Sweep: 100 Hz to 100 kHz
 2. Amplitude: 1 Vpp
-3. Compare response to Stage 1
+3. Offset: 2.5V
 
 | Test | Method | Expected | Actual | Pass |
 |------|--------|----------|--------|------|
-| fc (combined) | -3dB point | ~19 kHz | | [ ] |
-| Roll-off | Slope above fc | -60 dB/decade (3rd order) | | [ ] |
-| Passband gain | Gain at 1 kHz | 0 dB ± 1 dB | | [ ] |
-| @ 31.25 kHz | Attenuation at PWM freq | ≥ -10 dB | | [ ] |
+| fc (combined) | -3dB point | ~19 kHz | ~15-20 kHz | [x] |
+| Roll-off | Slope above fc | -60 dB/decade | ~60 dB/dec | [x] |
+| Passband gain | Gain at 1 kHz | 0 dB ± 1 dB | 0 dB | [x] |
+| @ 31.25 kHz | Attenuation at PWM freq | ≥ -10 dB | -40.6 dB | [x] |
+
+> [!success] Stage 3 Complete
+> Filter response verified with Network Analyzer sweep.
+
+**Measured Filter Response:**
+![Filter frequency response - Network Analyzer](../../Resources/Pi%20Zero%20PWM%20Filter/images/filter-response-working.png)
+*Network Analyzer sweep showing flat passband and rolloff starting around 15-20 kHz*
 
 **Time Domain Test - PWM Simulation:**
-- W1: Square wave, 31.25 kHz, 3.3 Vpp, 50% duty
+- W1: Square wave, 31.25 kHz, 3.3 Vpp, Offset 1.65V, 50% duty
 - CH1: Input
-- CH2: Output (should be heavily filtered, approaching triangle/sine)
+- CH2: Output
 
 | Test | Method | Expected | Actual | Pass |
 |------|--------|----------|--------|------|
-| PWM filtering | Visual on scope | Rounded waveform | | [ ] |
-| Output amplitude | Measure Vpp | Reduced from input | | [ ] |
+| PWM filtering | Visual on scope | Rounded waveform | Shark-fin shape | [x] |
+| Input amplitude | Measure Vpp | 3.3 Vpp | 3.28 Vpp | [x] |
+| Output amplitude | Measure Vpp | Reduced | 29.6 mVpp | [x] |
+| Attenuation | 20×log10(out/in) | ≥ -10 dB | **-40.6 dB** | [x] |
+
+> [!success] PWM Filtering Verified
+> The 31.25 kHz PWM carrier is attenuated by over 40 dB - far exceeding the -10 dB target.
+> Square wave input is converted to smooth rounded waveform at output.
+
+**PWM Filtering - Time Domain:**
+![PWM filtering test - oscilloscope](../../Resources/Pi%20Zero%20PWM%20Filter/images/pwm-filtering-test.png)
+*Yellow: 31.25 kHz square wave input (3.28 Vpp). Cyan: Filtered output (29.6 mVpp) showing characteristic "shark-fin" shape.*
 
 ---
 
@@ -429,20 +399,29 @@ Test with actual PWM-like signals to verify filtering performance.
 
 ## Build Second Channel
 
-Once Left channel passes all tests, duplicate for Right channel:
+Once Left channel passes all tests, duplicate for Right channel using the second op-amp in the TL072.
 
-1. [ ] Build identical bias network (or share with Left)
-2. [ ] Build RC input stage (R1, C1)
-3. [ ] Use second op-amp in TL072 (pins 5,6,7)
-4. [ ] Build Sallen-Key stage
-5. [ ] Add output coupling cap
-6. [ ] Run abbreviated test suite
+#### Right Channel Pinout (Op-Amp 2)
+```
+Pin 5 = 2IN+  (connect to R3 and C3)
+Pin 6 = 2IN-  (connect to pin 7)
+Pin 7 = 2OUT  (filter output)
+```
+
+#### Build Steps
+1. [ ] Build RC input stage (R1, C1) for right channel
+2. [ ] Connect R2 from TP1 to TP2
+3. [ ] Connect C2 from TP2 to GND
+4. [ ] Connect R3 from TP2 to pin 5 (2IN+)
+5. [ ] Connect C3 from pin 5 to pin 7 (2OUT)
+6. [ ] Connect pin 6 (2IN-) to pin 7 (2OUT)
+7. [ ] Add output coupling cap from pin 7
 
 | Right Channel Test | Expected | Actual | Pass |
 |--------------------|----------|--------|------|
-| Vbias | 2.5V | | [ ] |
 | fc | ~19 kHz | | [ ] |
 | Passband gain | 0 dB | | [ ] |
+| PWM attenuation | ≥ -10 dB | | [ ] |
 | Channel match | L/R within 1 dB | | [ ] |
 
 ---
@@ -469,9 +448,26 @@ Once Left channel passes all tests, duplicate for Right channel:
 
 ## Troubleshooting
 
+### High-Pass Response Instead of Low-Pass
+- [ ] **Most likely:** Waveform generator has no DC offset - set to 2.5V
+- [ ] Op-amp IN+ connected to a Vbias network with large bypass cap (remove Vbias connection)
+- [ ] C3 connected to GND instead of to output
+
+**Example - No DC Offset (shows high-pass response):**
+![Troubleshooting - high-pass response without DC offset](../../Resources/Pi%20Zero%20PWM%20Filter/images/troubleshoot-highpass-no-offset.png)
+*Signal is attenuated at low frequencies - op-amp cannot output near 0V without proper bias.*
+
+### Cutoff Frequency Too Low (~300-400 Hz)
+- [ ] Pin 3 (IN+) still connected to Vbias with 10µF bypass cap
+- [ ] Wrong capacitor values (µF instead of nF)
+- [ ] Extra capacitor in signal path
+
+**Example - Vbias bypass cap in signal path:**
+![Troubleshooting - cutoff too low due to Vbias](../../Resources/Pi%20Zero%20PWM%20Filter/images/troubleshoot-lowcutoff-vbias.png)
+*10µF Vbias bypass cap shunts signal to ground, causing ~350 Hz cutoff instead of 19 kHz.*
+
 ### No Output
 - [ ] Check power supply connections
-- [ ] Verify Vbias is 2.5V
 - [ ] Check op-amp orientation (notch/dot = pin 1)
 - [ ] Look for solder bridges or broken connections
 
@@ -499,15 +495,32 @@ Once Left channel passes all tests, duplicate for Right channel:
 
 ## Notes & Observations
 
-*Record your build notes here:*
+### Build Session: 2026-02-01
 
-```
-Date:
-Temperature:
-Observations:
+**Key Lessons Learned:**
 
+1. **Vbias Network Not Needed:** The original design included a resistor divider for Vbias. This is unnecessary - DC bias comes through the signal path when the input has a DC offset.
 
-```
+2. **DC Offset is Critical:** When testing with the AD3, the waveform generator MUST have 2.5V DC offset. Without this, the op-amp operates near the negative rail and produces incorrect results (high-pass response instead of low-pass).
+
+3. **Bypass Cap Essential:** The 100nF bypass cap across the op-amp power pins is critical. Without it, strange phase shifts and instability can occur.
+
+4. **Sallen-Key Topology:** The correct unity-gain Sallen-Key low-pass has C3 connected from IN+ to OUT (not to GND). This provides the feedback that creates the 2nd order response.
+
+5. **Component Markings:**
+   - 2n2 = 2.2 nF
+   - 4.7K400 = 4.7 nF, 10%, 400V
+   - 10nK63 = 10 nF, 10%, 63V
+
+**Test Results Summary:**
+- Stage 1 fc: 28.5 kHz (expected 33 kHz) - component tolerance
+- Combined fc: ~15-20 kHz (expected 19 kHz) - acceptable
+- PWM attenuation: **-40.6 dB** at 31.25 kHz (target was -10 dB) - excellent!
+
+**Equipment Used:**
+- Analog Discovery 3 with WaveForms
+- Adjustable bench power supply (5.0V)
+- Breadboard prototype
 
 ---
 
