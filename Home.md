@@ -5,7 +5,7 @@ tags:
   - Index
   - Home
   - Projects
-updated: 2026-02-01
+updated: 2026-02-17
 ---
 
 # Personal Projects
@@ -30,6 +30,11 @@ updated: 2026-02-01
   - **Platform:** Raspberry Pi Zero 2W + Raspotify
   - **Output:** Stereo RCA line-level
 
+- [[ESP32 IR Blaster/ESP32 IR Blaster - Smart Home|ESP32 IR Blaster]] - WiFi IR blaster/receiver for Home Assistant via ESPHome
+  - **Status:** Planning
+  - **Platform:** ESP32 + ESPHome
+  - **Integration:** Home Assistant
+
 ---
 
 ## 📂 Vault Structure
@@ -42,9 +47,14 @@ Projects/
 │   │   ├── Parts List - Illuminate 7Mk2.md
 │   │   ├── Build Log - Illuminate 7Mk2.md
 │   │   └── Amplifier - Fosi Audio V3.md
-│   └── Pi Zero PWM Filter/        # PWM audio filter project
-│       ├── Pi Zero 2W PWM Audio Filter.md
-│       └── Build Guide - 3rd Order PWM Filter.md
+│   ├── Pi Zero PWM Filter/        # PWM audio filter project
+│   │   ├── Pi Zero 2W PWM Audio Filter.md
+│   │   └── Build Guide - 3rd Order PWM Filter.md
+│   └── ESP32 IR Blaster/          # WiFi IR blaster project
+│       ├── ESP32 IR Blaster - Smart Home.md
+│       ├── Setup Guide - ESP32 IR Blaster.md
+│       ├── Learning Remote Codes - ESP32 IR Blaster.md
+│       └── ir-blaster.yaml
 ├── Resources/
 │   ├── Illuminate 7Mk2/           # Speaker resources
 │   │   └── *.pdf
@@ -68,6 +78,9 @@ Projects/
 - `#electronics` - Electronics projects
 - `#raspberry-pi` - Raspberry Pi projects
 - `#active-project` - Currently active projects
+- `#esp32` - ESP32 microcontroller projects
+- `#home-assistant` - Home Assistant integrations
+- `#smart-home` - Smart home / IoT projects
 
 ---
 
@@ -80,7 +93,7 @@ Projects/
 - [ ] Room acoustic treatment
 
 ### Electronics
-- [ ] ESP32-based projects
+- [x] ESP32-based projects
 - [ ] PCB design practice
 - [ ] Power supply builds
 
@@ -96,6 +109,7 @@ Projects/
 ### Current Projects
 - [[Illuminate 7Mk2/Illuminate 7Mk2 - Speaker Build|Speaker Build Project]]
 - [[Pi Zero PWM Filter/Pi Zero 2W PWM Audio Filter|Pi Zero PWM Audio]]
+- [[ESP32 IR Blaster/ESP32 IR Blaster - Smart Home|ESP32 IR Blaster]]
 
 ### Resources
 - [PrintYourSpeakers.com](https://www.printyourspeakers.com)
@@ -106,4 +120,4 @@ Projects/
 
 ## 📝 Notes
 
-Last updated: 2026-02-01
+Last updated: 2026-02-17
