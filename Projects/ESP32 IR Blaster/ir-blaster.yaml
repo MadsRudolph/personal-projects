@@ -4,6 +4,8 @@ esphome:
 
 esp32:
   board: esp32dev
+  framework:
+    type: arduino
 
 wifi:
   ssid: !secret wifi_ssid
@@ -27,10 +29,11 @@ ota:
 remote_transmitter:
   pin: GPIO4
   carrier_duty_percent: 50%
+  non_blocking: true
 
 remote_receiver:
   pin:
-    number: GPIO5
+    number: GPIO14
     inverted: true
     mode:
       input: true

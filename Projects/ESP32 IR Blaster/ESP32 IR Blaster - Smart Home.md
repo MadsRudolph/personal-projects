@@ -57,7 +57,7 @@ links:
 | Function | GPIO | Description |
 |----------|------|-------------|
 | **IR Transmit** | GPIO4 | Remote transmitter output (via 2N2222) |
-| **IR Receive** | GPIO5 | VS1838 demodulated signal input |
+| **IR Receive** | GPIO14 | VS1838 demodulated signal input |
 
 ---
 
@@ -144,7 +144,7 @@ The VS1838 is a complete IR receiver module with built-in bandpass filter, demod
 >                         |   |   |
 >                         |  3.3V GND
 >                         |
->                    ESP32 GPIO5
+>                    ESP32 GPIO14
 >                   (input, pullup)
 > ```
 
@@ -192,7 +192,7 @@ The full ESPHome YAML config for the IR blaster. Also available as a standalone 
 >
 > remote_receiver:
 >   pin:
->     number: GPIO5
+>     number: GPIO14
 >     inverted: true
 >     mode:
 >       input: true

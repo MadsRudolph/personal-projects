@@ -12,6 +12,9 @@ desktop.ini
 *.temp
 ~$*
 
+# ESPHome secrets (contains WiFi passwords, API keys)
+secrets.yaml
+
 # Personal workspace files (optional - uncomment if you don't want to share)
 # .obsidian/workspace.json
 # .obsidian/workspace-mobile.json
