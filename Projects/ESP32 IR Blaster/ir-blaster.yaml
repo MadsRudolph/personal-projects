@@ -8,13 +8,17 @@ esp32:
     type: arduino
 
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
+  # TODO: Change back to !secret wifi_ssid / wifi_password for home network
+  ssid: "Wutan"
+  password: "1122334455"
   ap:
     ssid: "IR-Blaster Fallback"
-    password: !secret fallback_password
+    password: "ir-blaster-fallback"
 
 captive_portal:
+
+web_server:
+  port: 80
 
 logger:
 
@@ -28,8 +32,8 @@ ota:
 
 remote_transmitter:
   pin: GPIO4
-  carrier_duty_percent: 50%
-  non_blocking: true
+  carrier_duty_percent: 33%
+  non_blocking: false
 
 remote_receiver:
   pin:
@@ -42,17 +46,116 @@ remote_receiver:
   tolerance: 25%
   idle: 25ms
 
-# Example buttons — replace with learned codes from your remotes
+status_led:
+  pin: GPIO2
+
+# Camera remote — NEC protocol, address 0xDB34
 button:
+  # Preset positions
   - platform: template
-    name: "TV Power"
+    name: "Camera Preset 1"
     on_press:
       - remote_transmitter.transmit_nec:
-          address: 0x4040
-          command: 0x12BF
+          address: 0xDB34
+          command: 0xFE01
   - platform: template
-    name: "TV Volume Up"
+    name: "Camera Preset 2"
     on_press:
       - remote_transmitter.transmit_nec:
-          address: 0x4040
-          command: 0x1AB5
+          address: 0xDB34
+          command: 0xFD02
+  - platform: template
+    name: "Camera Preset 3"
+    on_press:
+      - remote_transmitter.transmit_nec:
+          address: 0xDB34
+          command: 0xFC03
+  - platform: template
+    name: "Camera Preset 4"
+    on_press:
+      - remote_transmitter.transmit_nec:
+          address: 0xDB34
+          command: 0xFB04
+  - platform: template
+    name: "Camera Preset 5"
+    on_press:
+      - remote_transmitter.transmit_nec:
+          address: 0xDB34
+          command: 0xFA05
+  - platform: template
+    name: "Camera Preset 6"
+    on_press:
+      - remote_transmitter.transmit_nec:
+          address: 0xDB34
+          command: 0xF906
+  # Pan controls — send initial NEC frame, then proper NEC repeat codes
+  # NEC repeat code = 9ms burst + 2.25ms space + 562us stop (signals "button held")
+  - platform: template
+    name: "Camera Pan Up"
+    on_press:
+      - remote_transmitter.transmit_nec:
+          address: 0xDB34
+          command: 0xEE11
+      - delay: 40ms
+      - repeat:
+          count: 15
+          then:
+            - remote_transmitter.transmit_raw:
+                carrier_frequency: 38000
+                code: [9000, -2250, 562]
+            - delay: 98ms
+  - platform: template
+    name: "Camera Pan Down"
+    on_press:
+      - remote_transmitter.transmit_nec:
+          address: 0xDB34
+          command: 0xEB14
+      - delay: 40ms
+      - repeat:
+          count: 15
+          then:
+            - remote_transmitter.transmit_raw:
+                carrier_frequency: 38000
+                code: [9000, -2250, 562]
+            - delay: 98ms
+  - platform: template
+    name: "Camera Pan Right"
+    on_press:
+      - remote_transmitter.transmit_nec:
+          address: 0xDB34
+          command: 0xED12
+      - delay: 40ms
+      - repeat:
+          count: 15
+          then:
+            - remote_transmitter.transmit_raw:
+                carrier_frequency: 38000
+                code: [9000, -2250, 562]
+            - delay: 98ms
+  - platform: template
+    name: "Camera Pan Left"
+    on_press:
+      - remote_transmitter.transmit_nec:
+          address: 0xDB34
+          command: 0xEC13
+      - delay: 40ms
+      - repeat:
+          count: 15
+          then:
+            - remote_transmitter.transmit_raw:
+                carrier_frequency: 38000
+                code: [9000, -2250, 562]
+            - delay: 98ms
+  # Auto tracking
+  - platform: template
+    name: "Camera Auto Track On"
+    on_press:
+      - remote_transmitter.transmit_nec:
+          address: 0xDB34
+          command: 0xE51A
+  - platform: template
+    name: "Camera Auto Track Off"
+    on_press:
+      - remote_transmitter.transmit_nec:
+          address: 0xDB34
+          command: 0xE31C

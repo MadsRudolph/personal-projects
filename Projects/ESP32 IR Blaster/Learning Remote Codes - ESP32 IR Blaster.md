@@ -7,7 +7,7 @@ tags:
   - home-assistant
   - smart-home
 parent: "[[ESP32 IR Blaster - Smart Home]]"
-updated: 2026-02-17
+updated: 2026-02-18
 ---
 
 # Learning Remote Codes - ESP32 IR Blaster
@@ -160,6 +160,40 @@ Use this template to document learned codes for each remote:
 | Vol-   | NEC      | 0x4040  | 0x1EB1  |
 | Mute   | NEC      | 0x4040  | 0x10EF  |
 ```
+
+---
+
+## ⚠️ Hold-to-Activate Buttons (NEC Repeat Codes)
+
+Some buttons (e.g., pan, scroll, volume hold) only work when you **hold** the remote button. These devices expect **NEC repeat codes**, not the full command re-sent.
+
+A standard NEC remote sends:
+1. Full NEC frame once (~69 ms)
+2. A short repeat code every ~110 ms while held: **9 ms burst + 2.25 ms space + 562 µs stop**
+
+ESPHome's `command_repeats` re-sends the full frame, which does NOT satisfy this requirement. Instead, use `transmit_raw` for the repeat codes:
+
+```yaml
+- platform: template
+  name: "Pan Right"
+  on_press:
+    # Step 1: Send the full NEC command once
+    - remote_transmitter.transmit_nec:
+        address: 0xDB34
+        command: 0xED12
+    # Step 2: Wait for the frame to finish (~40ms gap to reach 110ms total)
+    - delay: 40ms
+    # Step 3: Send NEC repeat codes (simulates holding the button)
+    - repeat:
+        count: 15    # ~1.7 seconds of "holding"
+        then:
+          - remote_transmitter.transmit_raw:
+              carrier_frequency: 38000
+              code: [9000, -2250, 562]
+          - delay: 98ms
+```
+
+> [!important] Set `non_blocking: false` on the `remote_transmitter` component for correct sequential timing.
 
 ---
 
