@@ -1,0 +1,3 @@
+[submodule "ir-remote-wizard"]
+	path = ir-remote-wizard
+	url = https://github.com/MadsRudolph/ir-remote-wizard.git
