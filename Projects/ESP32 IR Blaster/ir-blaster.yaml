@@ -8,9 +8,8 @@ esp32:
     type: arduino
 
 wifi:
-  # TODO: Change back to !secret wifi_ssid / wifi_password for home network
-  ssid: "Wutan"
-  password: "1122334455"
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
   ap:
     ssid: "IR-Blaster Fallback"
     password: "ir-blaster-fallback"
@@ -25,6 +24,57 @@ logger:
 api:
   encryption:
     key: !secret api_key
+  services:
+    - service: send_ir_nec
+      variables:
+        address: int
+        command: int
+      then:
+        - remote_transmitter.transmit_nec:
+            address: !lambda 'return address;'
+            command: !lambda 'return command;'
+
+    - service: send_ir_samsung
+      variables:
+        data: int
+      then:
+        - remote_transmitter.transmit_samsung:
+            data: !lambda 'return data;'
+
+    - service: send_ir_sony
+      variables:
+        data: int
+        nbits: int
+      then:
+        - remote_transmitter.transmit_sony:
+            data: !lambda 'return data;'
+            nbits: !lambda 'return nbits;'
+
+    - service: send_ir_rc5
+      variables:
+        address: int
+        command: int
+      then:
+        - remote_transmitter.transmit_rc5:
+            address: !lambda 'return address;'
+            command: !lambda 'return command;'
+
+    - service: send_ir_rc6
+      variables:
+        address: int
+        command: int
+      then:
+        - remote_transmitter.transmit_rc6:
+            address: !lambda 'return address;'
+            command: !lambda 'return command;'
+
+    - service: send_ir_raw
+      variables:
+        code: int[]
+      then:
+        - remote_transmitter.transmit_raw:
+            carrier_frequency: 38000
+            code: !lambda 'return code;'
 
 ota:
   - platform: esphome
