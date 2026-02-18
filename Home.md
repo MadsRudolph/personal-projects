@@ -5,7 +5,7 @@ tags:
   - Index
   - Home
   - Projects
-updated: 2026-02-17
+updated: 2026-02-18
 ---
 
 # Personal Projects
@@ -31,7 +31,7 @@ updated: 2026-02-17
   - **Output:** Stereo RCA line-level
 
 - [[ESP32 IR Blaster/ESP32 IR Blaster - Smart Home|ESP32 IR Blaster]] - WiFi IR blaster/receiver for Home Assistant via ESPHome
-  - **Status:** Planning
+  - **Status:** Proof of Concept Complete
   - **Platform:** ESP32 + ESPHome
   - **Integration:** Home Assistant
 
@@ -120,4 +120,4 @@ Projects/
 
 ## 📝 Notes
 
-Last updated: 2026-02-17
+Last updated: 2026-02-18
