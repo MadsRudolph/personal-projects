@@ -76,6 +76,13 @@ api:
             carrier_frequency: 38000
             code: !lambda 'return code;'
 
+    - service: send_ir_pronto
+      variables:
+        data: string
+      then:
+        - remote_transmitter.transmit_pronto:
+            data: !lambda 'return data;'
+
 ota:
   - platform: esphome
     password: !secret ota_password
@@ -99,8 +106,15 @@ remote_receiver:
 status_led:
   pin: GPIO2
 
-# Camera remote — NEC protocol, address 0xDB34
+# Samsung TV power — captured raw Pronto from remote
 button:
+  - platform: template
+    name: "Samsung TV Power"
+    on_press:
+      - remote_transmitter.transmit_pronto:
+          data: "0000 006D 000D 0000 002E 002F 000F 0017 000F 0024 000F 005D 000F 0024 000F 0017 000F 003B 000F 0046 0010 005C 0010 0016 0010 005C 0010 002E 0010 03C2"
+
+# Camera remote — NEC protocol, address 0xDB34
   # Preset positions
   - platform: template
     name: "Camera Preset 1"
