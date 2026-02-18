@@ -17,6 +17,7 @@ aliases:
 links:
   - "[[Setup Guide - ESP32 IR Blaster]]"
   - "[[Learning Remote Codes - ESP32 IR Blaster]]"
+  - "[[IR Remote Wizard - Auto-Discovery Add-on]]"
 ---
 
 # ESP32 IR Blaster - WiFi Smart Home IR Controller
@@ -36,6 +37,7 @@ links:
 - [[#ESPHome Configuration|ESPHome YAML]]
 - [[Setup Guide - ESP32 IR Blaster|Setup & Flashing Guide]]
 - [[Learning Remote Codes - ESP32 IR Blaster|Learning Remote Codes]]
+- [[IR Remote Wizard - Auto-Discovery Add-on|IR Remote Wizard (Auto-Discovery)]]
 - [[#Future Ideas & Improvements|Future Ideas]]
 
 ---
@@ -232,6 +234,7 @@ The full ESPHome YAML config for the IR blaster. Also available as a standalone 
 - [ ] **Home network deploy** — Move to home WiFi, connect to Home Assistant
 - [ ] **Home Assistant integration** — Add to HA dashboards and automations
 - [ ] **Learn home device codes** — Capture codes from TV, AC, and other remotes
+- [x] **IR Remote Wizard add-on** — Auto-discovery HA add-on using Flipper-IRDB (see [[IR Remote Wizard - Auto-Discovery Add-on]])
 - [ ] **Final build** — Solder on protoboard
 - [ ] **Enclosure** — 3D print or project box
 
@@ -245,6 +248,7 @@ The full ESPHome YAML config for the IR blaster. Also available as a standalone 
 | 2026-02-18 | IR receiver working | Captured all camera remote codes (NEC protocol, address 0xDB34) |
 | 2026-02-18 | IR transmitter working | Debugged LED polarity and transistor orientation issues |
 | 2026-02-18 | Proof of concept done | Preset commands work. Pan commands work using NEC repeat codes |
+| 2026-02-18 | IR Remote Wizard | HA add-on for auto-discovering IR codes from Flipper-IRDB. [GitHub repo](https://github.com/MadsRudolph/ir-remote-wizard) |
 
 ### Flashing Notes
 
@@ -375,6 +379,7 @@ When moving from the school proof-of-concept to the home setup:
 ## 🚀 Future Ideas & Improvements
 
 - [x] **Status LED** — Using onboard GPIO2 LED
+- [x] **IR Remote Wizard** — HA add-on for auto-discovering IR codes from the Flipper-IRDB (see [[IR Remote Wizard - Auto-Discovery Add-on]])
 - [ ] **Climate entity** — Full AC control with temperature/mode in Home Assistant
 - [ ] **Voice assistant integration** — Control via Google/Alexa through Home Assistant
 - [ ] **Multi-directional LEDs** — Multiple SFH4546 pointing in different directions for wider coverage

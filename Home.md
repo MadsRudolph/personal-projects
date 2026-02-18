@@ -54,6 +54,7 @@ Projects/
 │       ├── ESP32 IR Blaster - Smart Home.md
 │       ├── Setup Guide - ESP32 IR Blaster.md
 │       ├── Learning Remote Codes - ESP32 IR Blaster.md
+│       ├── IR Remote Wizard - Auto-Discovery Add-on.md
 │       └── ir-blaster.yaml
 ├── Resources/
 │   ├── Illuminate 7Mk2/           # Speaker resources
