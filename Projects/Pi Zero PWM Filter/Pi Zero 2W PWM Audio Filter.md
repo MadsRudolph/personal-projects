@@ -393,7 +393,7 @@ journalctl -u raspotify -f
 ### Bypass Capacitors
 - Place 100nF ceramic **directly** at op-amp power pins
 - Short leads, minimal trace length
-- Consider 10µF electrolytic in parallel for low-frequency bypass
+- **Do NOT add bulk electrolytic caps on the Pi's 5V rail** — tested a 10µF 50V cap and it caused audio distortion (likely due to inrush current / interaction with Pi's internal regulation). The 100nF ceramic on the TL072 is sufficient.
 
 ### Layout
 - Keep input and output traces separated

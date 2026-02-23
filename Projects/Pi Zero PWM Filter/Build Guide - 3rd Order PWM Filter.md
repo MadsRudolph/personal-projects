@@ -491,7 +491,8 @@ Pin 7 = 2OUT  (filter output)
 
 - **Direct to active speakers:** Clean audio, minimal noise even at high speaker volume
 - **Through Schiit Saga preamp:** Noticeable noise floor at high gain — the preamp amplifies PWM artifacts and proto board noise
-- **Recommendations for preamp use:** Additional bypass caps on power rail, consider upgrading to 5th order filter, proper PCB layout would significantly reduce noise
+- **10µF bulk cap on 5V rail:** Reduced noise but caused audio distortion — removed. Do not add bulk electrolytics on Pi's 5V rail.
+- **Recommendations for preamp use:** Upgrade to 5th order filter (TL074), use shielded cables, proper PCB layout with ground plane
 
 #### Software Configuration Notes
 
@@ -609,9 +610,26 @@ The original design specified `dtoverlay=pwm-2chan,pin=18,func=2,pin2=19,func2=2
 1. Active speakers (direct RCA connection) — clean audio at PCM 75-80%
 2. Schiit Saga preamp → passive speakers — working but with audible noise floor at high gain
 
+**Noise Reduction Attempt: 10µF Bulk Cap (2026-02-23)**
+
+Attempted adding a 10µF 50V electrolytic cap across the 5V and GND connection from the Pi to provide bulk power supply decoupling.
+
+| Change | Result |
+|--------|--------|
+| Added 10µF 50V across 5V/GND | Noise reduced but audio became distorted |
+| Set PCM to 70% | Distortion persisted |
+| Removed 10µF cap | Distortion gone, back to normal |
+
+**Conclusion:** The bulk electrolytic cap on the Pi's 5V rail caused distortion — likely due to inrush current or interaction with the Pi's internal voltage regulation. The Pi's 5V pin is directly connected to the USB-C input through a polyfuse, and adding a large cap can cause issues with the supply's transient response. **Do not add bulk electrolytics directly on the Pi 5V rail.** The existing 100nF ceramic bypass directly on the TL072 is sufficient for the 3rd order design.
+
+**Recommended Improvements:**
+- Upgrade to 5th order filter (TL074) for better PWM rejection through preamp
+- Use shielded cables between filter output and preamp
+- Proper PCB layout with ground plane would significantly reduce noise
+- A small (100pF-1nF) film cap at the output terminals may help with residual HF noise without causing distortion
+
 **Next Steps:**
-- Add more bypass capacitors to reduce noise
-- Consider 5th order filter for better PWM rejection (needed for preamp use)
+- Build 5th order filter for preamp-grade output
 - Design proper PCB layout with ground plane
 
 ---
