@@ -7,9 +7,9 @@ tags:
   - audio
   - active-project
   - build-log
-status: Stereo Filter Complete
+status: Working Prototype
 started: 2026-02-01
-updated: 2026-02-01
+updated: 2026-02-23
 build-date: 2026-02-01
 parent: "[[Pi Zero 2W PWM Audio Filter]]"
 ---
@@ -455,21 +455,62 @@ Pin 7 = 2OUT  (filter output)
 
 ## Final Integration Test
 
-### Test with Raspberry Pi
+### Test with Raspberry Pi (2026-02-23)
 
-1. [ ] Configure Pi `/boot/config.txt` with PWM overlay
-2. [ ] Install Raspotify
-3. [ ] Connect GPIO18 → Left filter input
-4. [ ] Connect GPIO19 → Right filter input
-5. [ ] Connect filter outputs → RCA jacks → Active speakers
+1. [x] Configure Pi `/boot/firmware/config.txt` with `audremap` overlay
+2. [x] Install Raspotify via install script
+3. [x] Connect GPIO18 (pin 12) → Left filter input (R1)
+4. [x] Connect GPIO19 (pin 35) → Right filter input (R1)
+5. [x] Connect 5V (pin 2) → TL072 Vcc (pin 8)
+6. [x] Connect GND (pin 6) → Star ground point
+7. [x] Connect filter outputs → Screw terminal blocks → Active speakers
 
-| Test | Method | Expected | Pass |
-|------|--------|----------|------|
-| Spotify Connect visible | Check Spotify app | "Pi Zero Audio" appears | [ ] |
-| Audio playback | Play music | Clean audio from speakers | [ ] |
-| No PWM whine | Listen carefully | No high-frequency noise | [ ] |
-| Stereo separation | Play stereo test track | Correct L/R | [ ] |
-| Volume control | Adjust in Spotify | Smooth volume change | [ ] |
+| Test | Method | Expected | Actual | Pass |
+|------|--------|----------|--------|------|
+| Spotify Connect visible | Check Spotify app | "Pi Zero Audio" appears | Visible and connectable | [x] |
+| Audio playback | Play music | Clean audio from speakers | Working, clean at 75% PCM | [x] |
+| No PWM whine | Listen carefully | No high-frequency noise | Minimal on direct connection | [x] |
+| Stereo separation | Play stereo test track | Correct L/R | Working | [x] |
+| Volume control | Adjust in Spotify | Smooth volume change | Working | [x] |
+| Preamp passthrough | Connect to Schiit Saga | Clean audio | Audible noise floor at high gain | [x] |
+
+#### Volume Calibration
+
+| ALSA PCM Level | Result |
+|----------------|--------|
+| 96% (0 dB) | Distorted / clipping |
+| 85% (-12 dB) | Slight crunchiness on high end |
+| 80% (-17 dB) | Clean on direct speaker connection |
+| 75% (-22.6 dB) | Optimal — clean on both speakers and preamp |
+| 70% (-28 dB) | Too quiet |
+| 50% (-49 dB) | Way too quiet, noise floor audible |
+
+**Set volume with:** `amixer sset PCM 75%`
+
+#### Noise Observations
+
+- **Direct to active speakers:** Clean audio, minimal noise even at high speaker volume
+- **Through Schiit Saga preamp:** Noticeable noise floor at high gain — the preamp amplifies PWM artifacts and proto board noise
+- **Recommendations for preamp use:** Additional bypass caps on power rail, consider upgrading to 5th order filter, proper PCB layout would significantly reduce noise
+
+#### Software Configuration Notes
+
+> [!important] Use `audremap` NOT `pwm-2chan`
+> The `pwm-2chan` overlay only enables raw PWM hardware — it does NOT create an ALSA audio device.
+> Raspotify needs an ALSA device, so `audremap,pins_18_19` must be used instead.
+> This remaps the `bcm2835 Headphones` ALSA device output to GPIO 18/19.
+>
+> ```ini
+> # /boot/firmware/config.txt
+> dtparam=audio=on
+> dtoverlay=audremap,pins_18_19
+> hdmi_ignore_edid_audio=1
+> gpu_mem=16
+> ```
+
+> [!note] Pi OS Version
+> Tested on Raspberry Pi OS Lite (64-bit, Debian Trixie) on Pi Zero 2W.
+> Flashed using Raspberry Pi Imager v2 — note that older imager versions may fail to write WiFi credentials to `network-config`.
 
 ---
 
@@ -548,6 +589,30 @@ Pin 7 = 2OUT  (filter output)
 - Analog Discovery 3 with WaveForms
 - Adjustable bench power supply (5.0V)
 - Breadboard prototype
+
+### Proto Board Build Session: 2026-02-23
+
+![Proto board build](../../Resources/Pi%20Zero%20PWM%20Filter/images/proto-board-build.jpg)
+*Completed proto board: Pi Zero 2W with stereo 3rd order filter, TL072, screw terminal outputs.*
+
+**Build Details:**
+- Soldered 3rd order stereo filter onto proto board
+- Power supplied directly from Pi Zero 2W 5V pin (pin 2) — draws ~20 mA, well within Pi's USB-C supply capacity
+- Output via 2-pin screw terminal blocks (one per channel) — signal + ground per terminal
+- All grounds connected to single star ground point (Pi GND, TL072 GND, cap grounds, output terminal grounds)
+- RCA cables with stripped ends screwed into terminal blocks for speaker connection
+
+**Key Finding — `audremap` vs `pwm-2chan`:**
+The original design specified `dtoverlay=pwm-2chan,pin=18,func=2,pin2=19,func2=2` which only enables raw PWM channels without creating an ALSA audio device. This caused Raspotify to fail with `ALSA function 'snd_pcm_open' failed`. The fix was to use `dtoverlay=audremap,pins_18_19` with `dtparam=audio=on`, which remaps the bcm2835 audio driver to GPIO 18/19.
+
+**Tested With:**
+1. Active speakers (direct RCA connection) — clean audio at PCM 75-80%
+2. Schiit Saga preamp → passive speakers — working but with audible noise floor at high gain
+
+**Next Steps:**
+- Add more bypass capacitors to reduce noise
+- Consider 5th order filter for better PWM rejection (needed for preamp use)
+- Design proper PCB layout with ground plane
 
 ---
 

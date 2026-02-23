@@ -6,9 +6,9 @@ tags:
   - raspberry-pi
   - audio
   - active-project
-status: Ready to Build
+status: Working Prototype
 started: 2026-02-01
-updated: 2026-02-01
+updated: 2026-02-23
 aliases:
   - Pi PWM Filter
   - Raspotify Audio
@@ -19,6 +19,8 @@ links:
 ---
 
 # Pi Zero 2W PWM Audio Filter for Spotify Connect
+
+![Proto board build - Pi Zero 2W with 3rd order PWM filter](../../Resources/Pi%20Zero%20PWM%20Filter/images/proto-board-build.jpg)
 
 > [!summary] **Project Goal**
 > Build a filtered PWM audio output circuit for Raspberry Pi Zero 2W running Raspotify, converting PWM to stereo line-level output for active speakers via RCA.
@@ -46,8 +48,9 @@ links:
 | **Platform** | Raspberry Pi Zero 2W |
 | **Software** | Raspotify (Spotify Connect) |
 | **PWM Frequency** | 31.25 kHz |
-| **Output** | Stereo RCA line-level |
+| **Output** | Stereo line-level via screw terminal blocks |
 | **Target** | Active speakers / amplifier input |
+| **Optimal Volume** | ALSA PCM at 75% (-22.6 dB) |
 
 ### GPIO Pinout
 
@@ -256,10 +259,11 @@ Higher complexity design with superior PWM rejection. Uses cascaded Sallen-Key s
 |-----|-----------|-------------|
 | 1 | Raspberry Pi Zero 2W | Main board |
 | 1 | MicroSD Card | 8GB+ for Raspbian Lite |
-| 2 | RCA Jack | Panel mount female |
+| 2 | Screw terminal block | 2-pin, for audio output |
 | 1 | Protoboard | For filter circuit |
 | - | Hookup wire | 22-24 AWG |
 | 1 | USB-C power supply | 5V 2.5A for Pi |
+| 2 | RCA cable | Cut and stripped for screw terminals to speakers |
 
 ---
 
@@ -298,11 +302,11 @@ Higher complexity design with superior PWM rejection. Uses cascaded Sallen-Key s
 
 > [!note]- config.txt additions
 > ```ini
-> # Enable PWM audio output
-> dtoverlay=pwm-2chan,pin=18,func=2,pin2=19,func2=2
+> # Enable onboard audio driver (required for PWM output)
+> dtparam=audio=on
 >
-> # Disable onboard audio (optional, saves resources)
-> # dtparam=audio=off
+> # Remap audio PWM to GPIO 18 (left) and GPIO 19 (right)
+> dtoverlay=audremap,pins_18_19
 >
 > # Disable HDMI audio
 > hdmi_ignore_edid_audio=1
@@ -310,6 +314,8 @@ Higher complexity design with superior PWM rejection. Uses cascaded Sallen-Key s
 > # GPU memory (minimal for headless)
 > gpu_mem=16
 > ```
+>
+> **Important:** The `audremap` overlay is used instead of `pwm-2chan`. The `pwm-2chan` overlay only enables raw PWM hardware and does NOT create an ALSA audio device. The `audremap` overlay remaps the bcm2835 audio output to GPIO 18/19, providing a proper ALSA device (`bcm2835 Headphones`) that Raspotify can use.
 
 ### cmdline.txt
 
@@ -335,27 +341,24 @@ Ensure `console=serial0,115200` is removed if using GPIO for audio only.
 
 > [!note]- Raspotify Config
 > ```bash
-> # Device name shown in Spotify
+> # Raspotify Configuration for PWM Audio
 > LIBRESPOT_NAME="Pi Zero Audio"
->
-> # Audio backend (ALSA)
-> LIBRESPOT_BACKEND="alsa"
->
-> # Output device (default PWM)
-> LIBRESPOT_DEVICE="default"
->
-> # Bitrate (96, 160, or 320)
-> LIBRESPOT_BITRATE="320"
->
-> # Initial volume (0-100)
-> LIBRESPOT_INITIAL_VOLUME="80"
->
-> # Enable volume normalization
-> LIBRESPOT_VOLUME_NORMALISATION="--enable-volume-normalisation"
->
-> # Disable audio cache to save SD card writes
-> LIBRESPOT_CACHE=""
+> LIBRESPOT_BACKEND=alsa
+> LIBRESPOT_BITRATE=320
+> LIBRESPOT_DEVICE_TYPE=speaker
+> LIBRESPOT_FORMAT=S16
+> LIBRESPOT_DISABLE_AUDIO_CACHE=
+> LIBRESPOT_DISABLE_CREDENTIAL_CACHE=
+> LIBRESPOT_ENABLE_VOLUME_NORMALISATION=
+> LIBRESPOT_QUIET=
+> TMPDIR=/tmp
 > ```
+>
+> **Volume setting:** After installation, set ALSA PCM volume to 75% to avoid distortion:
+> ```bash
+> amixer sset PCM 75%
+> ```
+> At 96% (default) the output clips/distorts. At 50% the signal is too quiet. 75% (-22.6 dB) is the sweet spot for both direct speaker connection and preamp use.
 
 ### Service Management
 
@@ -470,11 +473,13 @@ The 47nF + 10Ω in series across the output provides high-frequency stability an
 
 - [x] **Research** - Filter design and component selection
 - [x] **Components** - Acquire all parts
-- [ ] **Breadboard prototype** - Test filter response
-- [ ] **Software setup** - Configure Pi and Raspotify
-- [ ] **Final build** - Solder on protoboard
+- [x] **Breadboard prototype** - Test filter response with Analog Discovery 3
+- [x] **Software setup** - Configure Pi and Raspotify
+- [x] **Proto board build** - Soldered 3rd order filter on proto board
+- [x] **Integration** - Working with active speakers and Schiit Saga preamp
+- [ ] **Noise reduction** - Additional bypass caps, potentially upgrade to 5th order
 - [ ] **Enclosure** - 3D print or project box
-- [ ] **Integration** - Connect to active speakers
+- [ ] **PCB design** - Proper PCB layout for cleaner signal
 
 ---
 
