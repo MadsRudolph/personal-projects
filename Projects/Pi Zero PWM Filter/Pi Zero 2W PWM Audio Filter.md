@@ -38,6 +38,7 @@ links:
 - [[#Raspberry Pi Configuration|Pi Setup]]
 - [[#Raspotify Installation|Raspotify]]
 - [[Build Guide - 3rd Order PWM Filter|Build & Test Guide (3rd Order)]]
+- [[Build Guide - 5th Order PWM Filter|Build & Test Guide (5th Order)]]
 
 ---
 
@@ -48,7 +49,7 @@ links:
 | **Platform** | Raspberry Pi Zero 2W |
 | **Software** | Raspotify (Spotify Connect) |
 | **PWM Frequency** | 31.25 kHz |
-| **Output** | Stereo line-level via screw terminal blocks |
+| **Output** | Stereo line-level via RCA jack or screw terminal blocks |
 | **Target** | Active speakers / amplifier input |
 | **Optimal Volume** | ALSA PCM at 75% (-22.6 dB) |
 
@@ -88,48 +89,38 @@ A simpler design using a passive RC stage followed by an active 2nd-order Sallen
 | C3 | 10 nF | Sallen-Key capacitor |
 | C_out | 6.8 µF | DC blocking output cap |
 
-#### Bias Network (per channel)
-
-| Component | Value | Purpose |
-|-----------|-------|---------|
-| R_bias1, R_bias2 | 10 kΩ | Voltage divider (Vcc/2) |
-| C_bypass | 10 µF | Bias point stabilization |
-| C_power | 100 nF | Power supply decoupling |
-
 > [!note]- 3rd Order Schematic (Left Channel)
 > ```
->                            +5V
->                             |
->                          [10kΩ]
->                             |
->      PWM Input             Vbias----[10µF]---GND
->      (GPIO18)               |
->         |                [10kΩ]
->         |                   |
->        [R1]                GND
->        2.2k
->         |
->         +---[C1]---GND
+>      PWM Input              +5V
+>      (GPIO18)                |
+>         |              +-----+-----+
+>        [R1]            |           |
+>        2.2k            |         [100nF]
+>         |              |           |
+>         +---[C1]---GND |          GND
 >         |   2.2nF
 >         |
->        [R2]              +5V
->        1.05k              |
->         |            +----+----+
->         +-----+------|+   |    |
->         |     |      |  TL072  |[100nF]
->        [C2]  [R3]    |-   |    |
->        4.7nF 1.05k   |  +-+----+
->         |     |      |  |     GND
->        GND    +------+--+
->               |
->              [C3]
->              10nF
+>        [R2]
+>        1.05k
+>         |
+>         +-----+------+
+>         |     |      |
+>        [C2]  [R3]    |
+>        4.7nF 1.05k   |
+>         |     |      +------[+]
+>        GND    +------+      TL072
+>               |      +------[-]
+>              [C3]    |        |
+>              10nF    +--------+
 >               |
 >              GND
 >
 >         Output---[C_out]---RCA Left
 >                  6.8µF
 > ```
+>
+> **Note:** Vbias network not needed — DC bias comes through the signal path.
+> See [[Build Guide - 3rd Order PWM Filter]] for full wiring details.
 
 ---
 
@@ -170,15 +161,13 @@ Higher complexity design with superior PWM rejection. Uses cascaded Sallen-Key s
 
 > [!note]- 5th Order Schematic (Left Channel)
 > ```
->                                  +5V
->                                   |
->      PWM Input                 [10kΩ]
->      (GPIO18)                    |
->         |                      Vbias----[10µF]---GND
->         |                        |
->        [R_in]                 [10kΩ]
->        2.2kΩ                     |
->         |                       GND
+>      PWM Input              +5V
+>      (GPIO18)                |
+>         |              +-----+-----+
+>         |              |           |
+>        [R_in]          |         [100nF]
+>        2.2kΩ           |           |
+>         |              |          GND
 >         +---[C_in]---GND
 >         |   1.5nF
 >         |
@@ -187,15 +176,15 @@ Higher complexity design with superior PWM rejection. Uses cascaded Sallen-Key s
 >        887Ω
 >         |
 >         +-----+------+
->         |     |      |          +5V
->        [C2]  [R]     |           |
->        8.2nF 887Ω    |      +----+----+
->         |     |      +------|+   |    |
->        GND    +------+      |  TL074  |[100nF]
->               |      +------|-   |    |
->              [C3]    |      |  +-+----+
->              10nF    |      |  |     GND
->               |      +------+--+
+>         |     |      |
+>        [C2]  [R]     |
+>        8.2nF 887Ω    |
+>         |     |      +------[+]
+>        GND    +------+      TL074 (op-amp 1)
+>               |      +------[-]
+>              [C3]    |        |
+>              10nF    +--------+
+>               |
 >              GND
 >         |
 >    STAGE 3 (Q=1.29)
@@ -207,7 +196,7 @@ Higher complexity design with superior PWM rejection. Uses cascaded Sallen-Key s
 >        [C2]  [R]     |
 >        1.5nF 2.05kΩ  |
 >         |     |      +------[+]
->        GND    +------+      TL074
+>        GND    +------+      TL074 (op-amp 2)
 >               |      +------[-]
 >              [C3]    |        |
 >              10nF    +--------+
@@ -217,6 +206,52 @@ Higher complexity design with superior PWM rejection. Uses cascaded Sallen-Key s
 >         Output---[C_out]---RCA Left
 >                  6.8µF
 > ```
+>
+> **Note:** Vbias network not needed — DC bias comes through the signal path.
+> See [[Build Guide - 5th Order PWM Filter]] for full wiring details.
+
+---
+
+### Simulation Analysis
+
+Analytical frequency response comparison using the standard Sallen-Key transfer function from TI SLOA024B.
+
+> [!note]- Simulation Script
+> Source: `sim/filter_comparison.py` — uses analytical transfer functions (not SPICE), since unity-gain Sallen-Key topology collapses to 1st order with ideal VCVS models in SPICE.
+
+#### Bode Plot Comparison
+
+![Filter comparison Bode plot](../../Resources/Pi%20Zero%20PWM%20Filter/images/filter_comparison_bode.png)
+
+#### Stage Parameters
+
+| Stage | Parameter | 3rd Order | 5th Order |
+|-------|-----------|-----------|-----------|
+| Input RC | fc | 32.9 kHz | 48.2 kHz |
+| Sallen-Key 1 | f₀ / Q | 23.2 kHz / 0.73 | 19.3 kHz / 0.55 |
+| Sallen-Key 2 | f₀ / Q | — | 20.5 kHz / 1.29 |
+
+#### Attenuation Comparison
+
+| Metric | 3rd Order | 5th Order | Improvement |
+|--------|-----------|-----------|-------------|
+| **-3 dB cutoff** | 20.0 kHz | 19.1 kHz | Similar passband |
+| **@ 31.25 kHz (PWM)** | -8.9 dB | -16.9 dB | +8.0 dB |
+| **@ 62.5 kHz (2nd harmonic)** | -23.9 dB | -44.0 dB | +20.1 dB |
+| **@ 93.75 kHz (3rd harmonic)** | -33.8 dB | -60.6 dB | +26.8 dB |
+| **Roll-off rate** | -58 dB/dec | -97 dB/dec | Steeper transition |
+
+#### Audio Band Detail
+
+![Audio band passband detail](../../Resources/Pi%20Zero%20PWM%20Filter/images/filter_comparison_audioband.png)
+
+Both filters are flat within ±1 dB across the audio band (20 Hz – 15 kHz). The 5th order is slightly flatter thanks to the Q=1.29 stage compensating for the early roll-off of the Q=0.55 stage.
+
+#### 5th Order Stage Contributions
+
+![5th order individual stage contributions](../../Resources/Pi%20Zero%20PWM%20Filter/images/filter_5th_order_stages.png)
+
+The RC input (fc=48 kHz) provides gentle initial roll-off. The Q=0.55 stage gives the main filtering knee, while the Q=1.29 stage adds a slight resonance peak before steep attenuation — this is what produces the sharp transition band and ~100 dB/decade ultimate roll-off.
 
 ---
 
@@ -228,13 +263,11 @@ Higher complexity design with superior PWM rejection. Uses cascaded Sallen-Key s
 |-----|-----------|-------|------------|-------|
 | 2 | Resistor | 2.2 kΩ | - | 1% metal film |
 | 4 | Resistor | 1.05 kΩ | - | 1% (or 1kΩ) |
-| 4 | Resistor | 10 kΩ | - | Bias network |
 | 2 | Capacitor | 2.2 nF | - | Film (C0G/NP0) |
 | 2 | Capacitor | 4.7 nF | - | Film |
 | 2 | Capacitor | 10 nF | - | Film |
 | 2 | Capacitor | 6.8 µF | - | Electrolytic output |
-| 2 | Capacitor | 10 µF | - | Electrolytic bias |
-| 2 | Capacitor | 100 nF | - | Ceramic bypass |
+| 1 | Capacitor | 100 nF | - | Ceramic bypass |
 | 1 | Op-Amp | TL072 | - | Dual JFET |
 
 ### 5th Order Filter (Stereo)
@@ -244,14 +277,13 @@ Higher complexity design with superior PWM rejection. Uses cascaded Sallen-Key s
 | 2 | Resistor | 2.2 kΩ | - | Input RC |
 | 4 | Resistor | 887 Ω | - | Stage 2 (use 910Ω) |
 | 4 | Resistor | 2.05 kΩ | - | Stage 3 (use 2kΩ) |
-| 4 | Resistor | 10 kΩ | - | Bias network |
 | 4 | Capacitor | 1.5 nF | - | Film |
 | 2 | Capacitor | 8.2 nF | - | Film |
 | 4 | Capacitor | 10 nF | - | Film |
 | 2 | Capacitor | 6.8 µF | - | Electrolytic output |
-| 2 | Capacitor | 10 µF | - | Electrolytic bias |
-| 2 | Capacitor | 100 nF | - | Ceramic bypass |
+| 1 | Capacitor | 100 nF | - | Ceramic bypass |
 | 1 | Op-Amp | TL074 | - | Quad JFET |
+| 1 | Dual RCA jack | PCB-mount | - | Red/white stereo output |
 
 ### Common Parts
 
@@ -259,7 +291,8 @@ Higher complexity design with superior PWM rejection. Uses cascaded Sallen-Key s
 |-----|-----------|-------------|
 | 1 | Raspberry Pi Zero 2W | Main board |
 | 1 | MicroSD Card | 8GB+ for Raspbian Lite |
-| 2 | Screw terminal block | 2-pin, for audio output |
+| 2 | Screw terminal block | 2-pin, for audio output (3rd order) |
+| 1 | Dual RCA jack | PCB-mount, red/white stereo (5th order) |
 | 1 | Protoboard | For filter circuit |
 | - | Hookup wire | 22-24 AWG |
 | 1 | USB-C power supply | 5V 2.5A for Pi |
@@ -290,7 +323,7 @@ Higher complexity design with superior PWM rejection. Uses cascaded Sallen-Key s
 - [x] TL072 or TL074
 - [x] Raspberry Pi Zero 2W
 - [x] MicroSD card
-- [x] RCA jacks (×2)
+- [x] RCA jacks (×2) or dual RCA jack (PCB-mount)
 - [x] Protoboard
 - [x] USB-C power supply
 
@@ -401,7 +434,7 @@ journalctl -u raspotify -f
 - Shield cable from Pi GPIO to filter input if noise is an issue
 
 ### Testing
-1. Power up without Pi connected - verify Vbias = Vcc/2
+1. Power up without Pi connected - verify Vcc at op-amp power pins
 2. Connect function generator, sweep 100Hz-50kHz
 3. Verify -3dB point near design frequency
 4. Connect Pi and test with Spotify
@@ -473,11 +506,12 @@ The 47nF + 10Ω in series across the output provides high-frequency stability an
 
 - [x] **Research** - Filter design and component selection
 - [x] **Components** - Acquire all parts
-- [x] **Breadboard prototype** - Test filter response with Analog Discovery 3
+- [x] **Breadboard prototype (3rd order)** - Test filter response with Analog Discovery 3
 - [x] **Software setup** - Configure Pi and Raspotify
-- [x] **Proto board build** - Soldered 3rd order filter on proto board
+- [x] **Proto board build (3rd order)** - Soldered 3rd order filter on proto board
 - [x] **Integration** - Working with active speakers and Schiit Saga preamp
-- [ ] **Noise reduction** - Additional bypass caps, potentially upgrade to 5th order
+- [ ] **Breadboard prototype (5th order)** - Test 5th order filter with AD3
+- [ ] **Proto board build (5th order)** - Solder with TL074 and RCA output
 - [ ] **Enclosure** - 3D print or project box
 - [ ] **PCB design** - Proper PCB layout for cleaner signal
 
@@ -487,8 +521,10 @@ The 47nF + 10Ω in series across the output provides high-frequency stability an
 
 - [Raspberry Pi PWM Audio](https://learn.adafruit.com/adding-basic-audio-ouput-to-raspberry-pi-zero)
 - [Raspotify GitHub](https://github.com/dtcooper/raspotify)
-- [Sallen-Key Filter Design](https://www.ti.com/lit/an/sloa024b/sloa024b.pdf)
+- [Sallen-Key Filter Design (TI SLOA024B)](https://www.ti.com/lit/an/sloa024b/sloa024b.pdf)
 - [TL072 Datasheet](https://www.ti.com/product/TL072)
+- [TL074 Datasheet](https://www.ti.com/product/TL074)
 - [LM386 Datasheet](https://www.ti.com/product/LM386)
+- Simulation script: `sim/filter_comparison.py`
 
 ---
