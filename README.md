@@ -34,14 +34,21 @@ Building a pair of audiophile-grade 3D-printed bookshelf speakers from scratch.
 
 Filtered PWM audio output for Raspberry Pi Zero 2W running Raspotify (Spotify Connect).
 
-**Status:** 🟢 Ready to Build
+![Proto board build](Resources/Pi%20Zero%20PWM%20Filter/images/proto-board-build.jpg)
+
+**Status:** 🟢 Working Prototype
 
 **Key Specs:**
 - **Platform:** Raspberry Pi Zero 2W
 - **Software:** Raspotify (Spotify Connect)
-- **Filter:** 3rd order Sallen-Key (fc ~19kHz)
-- **Output:** Stereo RCA line-level
-- **PWM Attenuation:** -10dB @ 31.25kHz
+- **Filter:** 3rd order Sallen-Key (RC + active, TL072)
+- **Output:** Stereo line-level via screw terminals
+- **PWM Attenuation:** -40.6dB @ 31.25kHz
+- **Optimal Volume:** ALSA PCM at 75% (-22.6 dB)
+
+**Tested With:**
+- Active speakers (direct connection) — clean audio
+- Schiit Saga preamp — working, noise floor at high gain
 
 **Documentation:**
 - [📋 Main Project](Projects/Pi%20Zero%20PWM%20Filter/Pi%20Zero%202W%20PWM%20Audio%20Filter.md) - Filter designs, BOM, Pi configuration
@@ -142,4 +149,4 @@ Alternatively, all files are standard markdown and can be viewed directly on Git
 
 ---
 
-**Last Updated:** 2026-02-01
+**Last Updated:** 2026-02-23
