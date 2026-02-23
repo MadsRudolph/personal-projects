@@ -56,6 +56,27 @@ Filtered PWM audio output for Raspberry Pi Zero 2W running Raspotify (Spotify Co
 
 ---
 
+### 📡 [ESP32 IR Blaster - Smart Home IR Controller](Projects/ESP32%20IR%20Blaster/ESP32%20IR%20Blaster%20-%20Smart%20Home.md)
+
+WiFi-connected IR blaster/receiver using ESP32 and ESPHome, integrating with Home Assistant to control any IR device.
+
+**Status:** 🟢 Proof of Concept Complete
+
+**Key Specs:**
+- **Platform:** ESP32 with ESPHome firmware
+- **Integration:** Home Assistant (native API)
+- **IR Transmitter:** SFH4546 LED via 2N2222 driver
+- **IR Receiver:** VS1838 (38 kHz demodulator)
+- **Protocols:** NEC (including repeat codes for hold buttons)
+
+**HAOS Add-on:** [IR Remote Wizard](https://github.com/MadsRudolph/ir-remote-wizard) — Auto-discovery add-on using the Flipper-IRDB database to find IR codes for your devices without manual learning.
+
+**Documentation:**
+- [📋 Main Project](Projects/ESP32%20IR%20Blaster/ESP32%20IR%20Blaster%20-%20Smart%20Home.md) - Circuit design, BOM, ESPHome config
+- [🔧 Learning Remote Codes](Projects/ESP32%20IR%20Blaster/Learning%20Remote%20Codes%20-%20ESP32%20IR%20Blaster.md) - How to capture and add IR codes
+
+---
+
 ## 📂 Repository Structure
 
 ```
@@ -66,13 +87,18 @@ Projects/
 │   │   ├── Parts List - Illuminate 7Mk2.md
 │   │   ├── Build Log - Illuminate 7Mk2.md
 │   │   └── Amplifier - Fosi Audio V3.md
-│   └── Pi Zero PWM Filter/           # PWM audio filter project
-│       ├── Pi Zero 2W PWM Audio Filter.md
-│       └── Build Guide - 3rd Order PWM Filter.md
+│   ├── Pi Zero PWM Filter/           # PWM audio filter project
+│   │   ├── Pi Zero 2W PWM Audio Filter.md
+│   │   └── Build Guide - 3rd Order PWM Filter.md
+│   └── ESP32 IR Blaster/             # Smart home IR controller
+│       ├── ESP32 IR Blaster - Smart Home.md
+│       └── Learning Remote Codes - ESP32 IR Blaster.md
 ├── Resources/
 │   ├── Illuminate 7Mk2/              # Speaker resources
 │   │   └── *.pdf
 │   └── Pi Zero PWM Filter/           # PWM filter resources
+│       └── images/
+├── ir-remote-wizard/                  # HAOS add-on (git submodule)
 ├── Notes/                            # Quick reference notes
 └── Home.md                           # Vault index
 ```
@@ -83,8 +109,10 @@ Projects/
 
 - **Documentation:** Obsidian (markdown-based)
 - **3D Modeling/Printing:** PLA filament, support-free design
-- **Electronics:** Crossover networks (passive components)
-- **Audio:** Dayton Audio drivers, Fosi Audio amplification
+- **Electronics:** Analog filters, crossover networks, IR circuits
+- **Audio:** Dayton Audio drivers, Fosi Audio amplification, PWM filtering
+- **Smart Home:** Home Assistant, ESPHome, ESP32
+- **Embedded:** Raspberry Pi Zero 2W, ESP32
 - **Version Control:** Git + GitHub
 
 ---
@@ -103,7 +131,7 @@ These projects combine my academic knowledge with hands-on building experience.
 
 ## 🏷️ Topics
 
-`audio` `speakers` `diy` `3d-printing` `electroacoustics` `electronics` `amplifiers` `class-d` `power-electronics` `raspberry-pi` `spotify` `obsidian`
+`audio` `speakers` `diy` `3d-printing` `electroacoustics` `electronics` `amplifiers` `class-d` `power-electronics` `raspberry-pi` `spotify` `esp32` `esphome` `home-assistant` `smart-home` `ir-remote` `obsidian`
 
 ---
 
