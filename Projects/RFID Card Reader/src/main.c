@@ -91,25 +91,54 @@ static const uint8_t PROGMEM known_keys[NUM_KEYS][6] = {
     {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF},  // Common test key
 };
 
+// Re-select the card after a failed auth (card requires full re-activation).
+// Returns MI_OK if card re-selected, MI_ERR otherwise.
+static uint8_t reselect_card(uint8_t *uid) {
+    uint8_t atqa[2];
+    uint8_t sak;
+
+    if (mfrc522_request(PICC_REQALL, atqa) != MI_OK)
+        return MI_ERR;
+    if (mfrc522_anticoll(PICC_ANTICOLL1, uid) != MI_OK)
+        return MI_ERR;
+    if (mfrc522_select(PICC_ANTICOLL1, uid, &sak) != MI_OK)
+        return MI_ERR;
+    return MI_OK;
+}
+
 // Try authenticating a block with all known keys (Key A and Key B).
+// Re-selects card between failed attempts (MIFARE Classic requirement).
 // Returns MI_OK on first success, MI_ERR if all attempts fail.
 static uint8_t try_auth(uint8_t block, uint8_t *uid) {
     uint8_t key_buf[6];
+    uint8_t first_attempt = 1;
 
     for (uint8_t k = 0; k < NUM_KEYS; k++) {
         for (uint8_t i = 0; i < 6; i++) {
             key_buf[i] = pgm_read_byte(&known_keys[k][i]);
         }
 
+        // Key A
+        if (!first_attempt) {
+            mfrc522_stop_crypto();
+            if (reselect_card(uid) != MI_OK)
+                return MI_ERR;
+        }
+        first_attempt = 0;
+
         if (mfrc522_auth(PICC_AUTHKA, block, key_buf, uid) == MI_OK)
             return MI_OK;
+
+        // Key B
         mfrc522_stop_crypto();
+        if (reselect_card(uid) != MI_OK)
+            return MI_ERR;
 
         if (mfrc522_auth(PICC_AUTHKB, block, key_buf, uid) == MI_OK)
             return MI_OK;
-        mfrc522_stop_crypto();
     }
 
+    mfrc522_stop_crypto();
     return MI_ERR;
 }
 
