@@ -1,96 +1,213 @@
 #include <avr/io.h>
 #include <util/delay.h>
-#include <stdbool.h>
 #include "uart.h"
 #include "spi.h"
 #include "mfrc522.h"
 
-int main(void) {
-    uint8_t status;
-    uint8_t tag_type[2];
-    uint8_t uid[5];            // Current card UID + BCC
-    uint8_t saved_uid[4];      // Buffer for the UID we want to clone
-    bool has_saved_uid = false;
-    uint8_t i;
+#define MODE_IDLE       0
+#define MODE_CONTINUOUS 1
+#define MODE_ONESHOT    2
 
-    // Init peripherals
+// Print chip type and cloneability based on SAK byte (human-readable)
+static void print_chip_info(uint8_t sak) {
+    uart_puts("Chip Type: ");
+
+    if (sak & 0x04) {
+        uart_puts("(incomplete UID, cascade error)\r\n");
+        return;
+    }
+
+    switch (sak) {
+    case 0x08:
+        uart_puts("MIFARE Classic 1K\r\n");
+        uart_puts("Cloneable with RC522: YES\r\n");
+        break;
+    case 0x18:
+        uart_puts("MIFARE Classic 4K\r\n");
+        uart_puts("Cloneable with RC522: YES\r\n");
+        break;
+    case 0x09:
+        uart_puts("MIFARE Mini\r\n");
+        uart_puts("Cloneable with RC522: YES\r\n");
+        break;
+    case 0x20:
+        uart_puts("MIFARE DESFire or MIFARE Plus\r\n");
+        uart_puts("ISO 14443-4: YES\r\n");
+        uart_puts("Cloneable with RC522: NO\r\n");
+        uart_puts("Note: AES-128 encryption. Need PN532 or Proxmark3.\r\n");
+        break;
+    case 0x00:
+        uart_puts("MIFARE Ultralight or NTAG\r\n");
+        uart_puts("Cloneable with RC522: PARTIAL (no crypto)\r\n");
+        break;
+    case 0x01:
+        uart_puts("TNP3xxx (NFC Forum Type 2)\r\n");
+        uart_puts("Cloneable with RC522: NO\r\n");
+        break;
+    case 0x10:
+        uart_puts("MIFARE Plus (SL2)\r\n");
+        uart_puts("Cloneable with RC522: NO\r\n");
+        break;
+    case 0x11:
+        uart_puts("MIFARE Plus (SL3)\r\n");
+        uart_puts("Cloneable with RC522: NO\r\n");
+        break;
+    default:
+        uart_puts("Unknown (SAK=0x");
+        uart_put_hex(sak);
+        uart_puts(")\r\n");
+        uart_puts("Cloneable with RC522: UNKNOWN\r\n");
+        break;
+    }
+}
+
+// Send tag data in protocol format: TAG:<atqa>:<uid>:<sak>:<uid_len>
+static void send_tag_protocol(uint8_t *atqa, uint8_t *uid, uint8_t uid_len, uint8_t sak) {
+    uart_puts("TAG:");
+    uart_put_hex(atqa[0]);
+    uart_put_hex(atqa[1]);
+    uart_putc(':');
+    for (uint8_t i = 0; i < uid_len; i++) {
+        uart_put_hex(uid[i]);
+    }
+    uart_putc(':');
+    uart_put_hex(sak);
+    uart_putc(':');
+    uart_putc('0' + uid_len);
+    uart_puts("\r\n");
+}
+
+// Perform one scan cycle. Returns 1 if tag found, 0 otherwise.
+static uint8_t do_scan(void) {
+    uint8_t status;
+    uint8_t atqa[2];
+    uint8_t uid_cl1[5];
+    uint8_t uid_cl2[5];
+    uint8_t full_uid[10];
+    uint8_t uid_len;
+    uint8_t sak;
+
+    status = mfrc522_request(PICC_REQIDL, atqa);
+    if (status != MI_OK) return 0;
+
+    status = mfrc522_anticoll(PICC_ANTICOLL1, uid_cl1);
+    if (status != MI_OK) return 0;
+
+    status = mfrc522_select(PICC_ANTICOLL1, uid_cl1, &sak);
+    if (status != MI_OK) {
+        uart_puts("ERR:SELECT CL1 failed\r\n");
+        return 0;
+    }
+
+    uid_len = 4;
+    if (sak & 0x04) {
+        full_uid[0] = uid_cl1[1];
+        full_uid[1] = uid_cl1[2];
+        full_uid[2] = uid_cl1[3];
+
+        status = mfrc522_anticoll(PICC_ANTICOLL2, uid_cl2);
+        if (status != MI_OK) {
+            uart_puts("ERR:ANTICOLL CL2 failed\r\n");
+            return 0;
+        }
+
+        status = mfrc522_select(PICC_ANTICOLL2, uid_cl2, &sak);
+        if (status != MI_OK) {
+            uart_puts("ERR:SELECT CL2 failed\r\n");
+            return 0;
+        }
+
+        full_uid[3] = uid_cl2[0];
+        full_uid[4] = uid_cl2[1];
+        full_uid[5] = uid_cl2[2];
+        full_uid[6] = uid_cl2[3];
+        uid_len = 7;
+
+        if (sak & 0x04) {
+            uart_puts("ERR:Triple-size UID not supported\r\n");
+            mfrc522_halt();
+            return 0;
+        }
+    } else {
+        for (uint8_t i = 0; i < 4; i++) {
+            full_uid[i] = uid_cl1[i];
+        }
+    }
+
+    // LED on
+    PORTC |= (1 << PC0);
+
+    // Protocol line (for GUI)
+    send_tag_protocol(atqa, full_uid, uid_len, sak);
+
+    // Human-readable output (for terminal, ignored by GUI)
+    uart_puts("ATQA: ");
+    uart_put_hex(atqa[0]);
+    uart_putc(' ');
+    uart_put_hex(atqa[1]);
+    uart_puts("  UID: ");
+    for (uint8_t i = 0; i < uid_len; i++) {
+        uart_put_hex(full_uid[i]);
+        if (i < uid_len - 1) uart_putc(':');
+    }
+    uart_puts("  SAK: 0x");
+    uart_put_hex(sak);
+    uart_puts("\r\n");
+    print_chip_info(sak);
+
+    PORTC &= ~(1 << PC0);
+
+    mfrc522_halt();
+    return 1;
+}
+
+int main(void) {
+    uint8_t scan_mode = MODE_IDLE;
+
     spi_init();
     uart_init(9600);
     mfrc522_init();
 
-    // Setup LEDs for feedback (Optional: PC0 = Success, PC1 = Error)
-    DDRC |= (1 << PC0) | (1 << PC1);
+    DDRC |= (1 << PC0);
 
-    uart_puts("\r\n--- RFID Cloner: Bare Metal AVR ---\r\n");
-    uart_puts("Ready. Scan a source card to copy its UID.\r\n");
+    uart_puts("INFO:RFID Tag Analyzer v1.0\r\n");
 
     while (1) {
-        // Look for cards in the field
-        status = mfrc522_request(PICC_REQIDL, tag_type);
-
-        if (status == MI_OK) {
-            // Card detected, retrieve its UID
-            status = mfrc522_anticoll(uid);
-
-            if (status == MI_OK) {
-                if (!has_saved_uid) {
-                    // MODE 1: SAVE - Capture the source UID
-                    for (i = 0; i < 4; i++) {
-                        saved_uid[i] = uid[i];
-                    }
-                    has_saved_uid = true;
-
-                    uart_puts("UID Saved: ");
-                    for (i = 0; i < 4; i++) {
-                        uart_put_hex(saved_uid[i]);
-                        if (i < 3) uart_putc(':');
-                    }
-                    uart_puts("\r\nNow present a 'Magic' tag to write.\r\n");
-                    
-                    // Visual feedback: Short blink
-                    PORTC |= (1 << PC0);
-                    _delay_ms(200);
-                    PORTC &= ~(1 << PC0);
-                } 
-                else {
-                    // MODE 2: WRITE - Attempt to clone to the new tag
-                    uart_puts("Writing to Block 0...\r\n");
-
-                    // Prepare Block 0 data: [UID (4 bytes), BCC (1 byte), SAK, etc.]
-                    uint8_t block0_data[16] = {0};
-                    for (i = 0; i < 4; i++) {
-                        block0_data[i] = saved_uid[i];
-                    }
-                    // Calculate BCC (XOR checksum of the 4 UID bytes)
-                    block0_data[4] = saved_uid[0] ^ saved_uid[1] ^ saved_uid[2] ^ saved_uid[3];
-
-                    // Attempt write to Block 0 (Targeting "Magic" Gen1 tags)
-                    status = mfrc522_write_block(0, block0_data);
-
-                    if (status == MI_OK) {
-                        uart_puts("SUCCESS: Card Cloned!\r\n");
-                        has_saved_uid = false; // Reset for next pair
-                        
-                        // Long blink for success
-                        PORTC |= (1 << PC0);
-                        _delay_ms(1000);
-                        PORTC &= ~(1 << PC0);
-                    } else {
-                        uart_puts("ERROR: Write failed. Use a UID-changeable tag.\r\n");
-                        
-                        // Error blink
-                        PORTC |= (1 << PC1);
-                        _delay_ms(500);
-                        PORTC &= ~(1 << PC1);
-                    }
-                }
-                
-                // Halt the card to prevent constant re-reading while held at the reader
-                mfrc522_halt();
+        // Check for commands from GUI/terminal
+        if (uart_available()) {
+            char cmd = uart_getc();
+            switch (cmd) {
+            case 'S':
+                scan_mode = MODE_CONTINUOUS;
+                uart_puts("OK:Scanning\r\n");
+                break;
+            case 'P':
+                scan_mode = MODE_IDLE;
+                uart_puts("OK:Paused\r\n");
+                break;
+            case 'O':
+                scan_mode = MODE_ONESHOT;
+                uart_puts("OK:Single scan\r\n");
+                break;
+            case 'V':
+                uart_puts("INFO:RFID Tag Analyzer v1.0\r\n");
+                break;
             }
         }
 
-        _delay_ms(300); // Poll delay
+        if (scan_mode == MODE_IDLE) {
+            _delay_ms(100);
+            continue;
+        }
+
+        if (do_scan()) {
+            if (scan_mode == MODE_ONESHOT) {
+                scan_mode = MODE_IDLE;
+            }
+            _delay_ms(1500);
+        } else {
+            _delay_ms(200);
+        }
     }
 
     return 0;

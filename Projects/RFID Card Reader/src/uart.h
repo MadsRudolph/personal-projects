@@ -9,4 +9,7 @@ void uart_puts(const char *s);
 void uart_put_hex(uint8_t byte);
 void uart_put_hex16(uint16_t val);
 
+uint8_t uart_available(void);
+char    uart_getc(void);
+
 #endif
