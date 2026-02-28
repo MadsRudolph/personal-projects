@@ -48,8 +48,6 @@ class App(ctk.CTk):
         )
         self.connect_btn.pack(side="left", padx=5)
 
-<<<<<<< HEAD
-=======
         ctk.CTkButton(
             frame,
             text="Reset",
@@ -59,7 +57,6 @@ class App(ctk.CTk):
             command=self._reset_device,
         ).pack(side="left", padx=5)
 
->>>>>>> claude/pedantic-robinson
         self.status_label = ctk.CTkLabel(
             frame, text="Disconnected", text_color="red"
         )
@@ -184,11 +181,6 @@ class App(ctk.CTk):
         frame = ctk.CTkFrame(self)
         frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
-<<<<<<< HEAD
-        ctk.CTkLabel(
-            frame, text="Scan Log", font=ctk.CTkFont(weight="bold")
-        ).pack(anchor="w", padx=10, pady=(5, 0))
-=======
         log_header = ctk.CTkFrame(frame, fg_color="transparent")
         log_header.pack(fill="x", padx=10, pady=(5, 0))
 
@@ -199,7 +191,6 @@ class App(ctk.CTk):
         ctk.CTkButton(
             log_header, text="Clear", width=60, command=self._clear_log
         ).pack(side="right")
->>>>>>> claude/pedantic-robinson
 
         self.log_text = ctk.CTkTextbox(
             frame, font=ctk.CTkFont(family="Consolas", size=12), height=120
@@ -262,8 +253,6 @@ class App(ctk.CTk):
                     text=f"Error: {e}", text_color="red"
                 )
 
-<<<<<<< HEAD
-=======
     def _reset_device(self):
         """Toggle DTR to hardware-reset the ATmega328P."""
         if not self.serial.is_connected:
@@ -287,7 +276,6 @@ class App(ctk.CTk):
         self.log_text.insert("end", "-" * 78 + "\n")
         self.log_text.configure(state="disabled")
 
->>>>>>> claude/pedantic-robinson
     def _send(self, cmd):
         self.serial.send_command(cmd)
 
@@ -372,15 +360,7 @@ class App(ctk.CTk):
             )
             self.serial.send_load_block(block, hex_data)
         else:
-<<<<<<< HEAD
-<<<<<<< HEAD
-            self._send("D")
-=======
             self.serial.send_command("D\n")  # Needs newline - firmware is in line mode
->>>>>>> claude/pedantic-robinson
-=======
-            self.serial.send_command("D\n")  # Needs newline - firmware is in line mode
->>>>>>> claude/pedantic-robinson
 
     def _update_tag_display(self, tag):
         self.uid_label.configure(text=tag.uid_formatted)
