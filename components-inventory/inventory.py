@@ -157,3 +157,137 @@ def format_stock(stock_rows):
     lines.append("  " + "-" * 33)
     lines.append(f"  {'TOTAL':<15} {total_items:>6} {total_qty:>10}")
     return "\n".join(lines)
+
+
+# --- Task 4: Add mode — interactive loop with adaptive prompts ---
+
+CATEGORY_FIELDS = {
+    "resistor":   [("value", "Value (e.g. 10k, 4.7k)"), ("package", "Package (e.g. axial, 0805)")],
+    "capacitor":  [("value", "Value (e.g. 100nF, 10uF)"), ("package", "Package (e.g. ceramic disc, electrolytic)")],
+    "inductor":   [("value", "Value (e.g. 10uH, 100mH)"), ("package", "Package (e.g. axial, toroid)")],
+    "crystal":    [("value", "Frequency (e.g. 16MHz, 32.768kHz)"), ("package", "Package (e.g. HC-49)")],
+    "diode":      [("value", "Part # (e.g. 1N4148, 1N4007)"), ("package", "Package (e.g. DO-35, DO-41)")],
+    "transistor": [("value", "Part # (e.g. 2N2222, BC547)"), ("package", "Package (e.g. TO-92, TO-220)")],
+    "LED":        [("value", "Color/type (e.g. red 5mm, green 3mm)"), ("package", "Package (e.g. 5mm, 3mm)")],
+    "IC":         [("value", "Part # (e.g. ATmega328P, NE555)"), ("package", "Package (e.g. DIP-8, DIP-28)")],
+    "connector":  [("value", "Description (e.g. 2-pin JST, DB9 male)")],
+    "switch":     [("value", "Description (e.g. tactile 6mm, SPDT toggle)")],
+    "other":      [("value", "Description")],
+}
+
+
+CHEATSHEET = """
+=== Component Inventory ===
+
+  Commands:
+    python inventory.py              Add components (interactive)
+    python inventory.py search <q>   Search all fields
+    python inventory.py list <cat>   List by category
+    python inventory.py stock        Inventory summary
+    python inventory.py update <id> quantity <n>
+    python inventory.py export       Dump to CSV
+
+  Categories: {}
+
+  During add mode:
+    - Press Enter to accept [default] values
+    - Type 'q' or 'quit' at the name prompt to exit
+""".format(", ".join(CATEGORIES))
+
+
+def prompt(label, default="", required=False):
+    """Prompt for input with optional default. Returns stripped string."""
+    if default:
+        display = f"  {label} [{default}]: "
+    else:
+        display = f"  {label}: "
+    while True:
+        val = input(display).strip()
+        if not val and default:
+            return default
+        if not val and not required:
+            return ""
+        if not val and required:
+            print("    (required)")
+            continue
+        return val
+
+
+def prompt_category(default=""):
+    """Show numbered category list, return selected category."""
+    print("  Category:")
+    for i, cat in enumerate(CATEGORIES, 1):
+        marker = " *" if cat == default else ""
+        print(f"    {i:2}. {cat}{marker}")
+    while True:
+        if default:
+            raw = input(f"  Choose [{CATEGORIES.index(default) + 1}]: ").strip()
+        else:
+            raw = input("  Choose: ").strip()
+        if not raw and default:
+            return default
+        # Accept number or name
+        try:
+            idx = int(raw)
+            if 1 <= idx <= len(CATEGORIES):
+                return CATEGORIES[idx - 1]
+        except ValueError:
+            low = raw.lower()
+            for cat in CATEGORIES:
+                if cat.lower() == low:
+                    return cat
+        print("    (invalid — enter number or category name)")
+
+
+def add_mode(conn):
+    """Interactive add loop optimized for rapid entry."""
+    print(CHEATSHEET)
+    print("  Entering add mode. Type 'q' at name prompt to stop.\n")
+
+    count = 0
+    last_category = ""
+    last_location = ""
+
+    while True:
+        print(f"  --- Component #{count + 1} ---")
+        name = input("  Name: ").strip()
+        if name.lower() in ("q", "quit", "exit"):
+            break
+        if not name:
+            print("    (name is required)\n")
+            continue
+
+        category = prompt_category(default=last_category)
+        last_category = category
+
+        data = {"name": name, "category": category}
+
+        # Adaptive fields based on category
+        fields = CATEGORY_FIELDS.get(category, CATEGORY_FIELDS["other"])
+        for field_key, field_label in fields:
+            data[field_key] = prompt(field_label)
+
+        # Ensure keys exist
+        data.setdefault("value", "")
+        data.setdefault("package", "")
+
+        qty_str = prompt("Quantity", default="1")
+        try:
+            data["quantity"] = int(qty_str)
+        except ValueError:
+            data["quantity"] = 1
+
+        data["location"] = prompt("Location (e.g. A1)", default=last_location, required=True)
+        last_location = data["location"]
+
+        data["notes"] = prompt("Notes (optional)")
+
+        cid = insert_component(conn, data)
+        count += 1
+
+        # Summary line
+        val_str = f" {data.get('value', '')}" if data.get("value") else ""
+        pkg_str = f" [{data.get('package', '')}]" if data.get("package") else ""
+        print(f"  -> #{cid}: {name}{val_str}{pkg_str} x{data['quantity']} @ {data['location']}  ({count} added)\n")
+
+    print(f"\n  Session complete: {count} components added.")
