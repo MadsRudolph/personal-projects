@@ -27,6 +27,62 @@ void mfrc522_clear_bit(uint8_t reg, uint8_t mask) {
     mfrc522_write_reg(reg, mfrc522_read_reg(reg) & ~mask);
 }
 
+// --- NEW: CRC Calculation Function ---
+void mfrc522_calculate_crc(uint8_t *data, uint8_t len, uint8_t *result) {
+    mfrc522_clear_bit(DivIrqReg, 0x04);    // Clear CRCIRq
+    mfrc522_set_bit(FIFOLevelReg, 0x80);   // Flush FIFO
+    mfrc522_write_reg(CommandReg, PCD_Idle);
+
+    for (uint8_t i = 0; i < len; i++) {
+        mfrc522_write_reg(FIFODataReg, data[i]);
+    }
+    
+    mfrc522_write_reg(CommandReg, PCD_CalcCRC);
+
+    // Wait for CRC calculation to complete
+    uint8_t i = 0xFF;
+    while (i--) {
+        uint8_t n = mfrc522_read_reg(DivIrqReg);
+        if (n & 0x04) break; 
+    }
+
+    result[0] = mfrc522_read_reg(CRCResultRegL);
+    result[1] = mfrc522_read_reg(CRCResultRegH);
+}
+
+uint8_t mfrc522_write_block(uint8_t block_addr, uint8_t *data) {
+    uint8_t status;
+    uint8_t cmd_buffer[4];
+
+    // Step 1: Send Write Command and Block Address
+    cmd_buffer[0] = PICC_WRITE;
+    cmd_buffer[1] = block_addr;
+    mfrc522_calculate_crc(cmd_buffer, 2, &cmd_buffer[2]);
+    
+    status = mfrc522_to_card(PCD_Transceive, cmd_buffer, 4, cmd_buffer, &status);
+    if (status != MI_OK) return status;
+
+    // Step 2: Send 16 bytes of data
+    uint8_t data_buffer[18];
+    for (uint8_t i = 0; i < 16; i++) data_buffer[i] = data[i];
+    mfrc522_calculate_crc(data_buffer, 16, &data_buffer[16]);
+
+    return mfrc522_to_card(PCD_Transceive, data_buffer, 18, data_buffer, &status);
+}
+
+// --- NEW: Halt Function ---
+void mfrc522_halt(void) {
+    uint8_t buffer[4];
+    buffer[0] = PICC_HALT;
+    buffer[1] = 0;
+    
+    mfrc522_calculate_crc(buffer, 2, &buffer[2]);
+    
+    uint8_t back_data[16];
+    uint8_t back_len;
+    mfrc522_to_card(PCD_Transceive, buffer, 4, back_data, &back_len);
+}
+
 void mfrc522_antenna_on(void) {
     uint8_t val = mfrc522_read_reg(TxControlReg);
     if (!(val & 0x03)) {
@@ -35,30 +91,24 @@ void mfrc522_antenna_on(void) {
 }
 
 void mfrc522_reset(void) {
-    // Hardware reset via RST pin
-    MFRC522_RST_DDR |= (1 << MFRC522_RST_PIN);   // RST as output
-    MFRC522_RST_PORT &= ~(1 << MFRC522_RST_PIN);  // RST low
+    MFRC522_RST_DDR |= (1 << MFRC522_RST_PIN);
+    MFRC522_RST_PORT &= ~(1 << MFRC522_RST_PIN);
     _delay_ms(10);
-    MFRC522_RST_PORT |= (1 << MFRC522_RST_PIN);   // RST high
+    MFRC522_RST_PORT |= (1 << MFRC522_RST_PIN);
     _delay_ms(50);
 
-    // Software reset
     mfrc522_write_reg(CommandReg, PCD_SoftReset);
     _delay_ms(50);
 }
 
 void mfrc522_init(void) {
     mfrc522_reset();
-
-    // Timer: auto-start, prescaler 169 => 40kHz
-    mfrc522_write_reg(TModeReg, 0x80);       // TAuto=1
-    mfrc522_write_reg(TPrescalerReg, 0xA9);  // prescaler = 169
-    mfrc522_write_reg(TReloadRegH, 0x03);    // reload = 0x03E8 = 1000
-    mfrc522_write_reg(TReloadRegL, 0xE8);    // => 25ms timeout
-
-    mfrc522_write_reg(TxASKReg, 0x40);       // 100% ASK modulation
-    mfrc522_write_reg(ModeReg, 0x3D);        // CRC preset 0x6363
-
+    mfrc522_write_reg(TModeReg, 0x80);
+    mfrc522_write_reg(TPrescalerReg, 0xA9);
+    mfrc522_write_reg(TReloadRegH, 0x03);
+    mfrc522_write_reg(TReloadRegL, 0xE8);
+    mfrc522_write_reg(TxASKReg, 0x40);
+    mfrc522_write_reg(ModeReg, 0x3D);
     mfrc522_antenna_on();
 }
 
@@ -72,83 +122,63 @@ uint8_t mfrc522_to_card(uint8_t command, uint8_t *send_data, uint8_t send_len,
     uint8_t i;
 
     if (command == PCD_Transceive) {
-        irq_en = 0x77;    // TxIEn, RxIEn, IdleIEn, LoAlertIEn, ErrIEn, TimerIEn
-        wait_irq = 0x30;  // RxIRq and IdleIRq
+        irq_en = 0x77;
+        wait_irq = 0x30;
     }
 
-    mfrc522_write_reg(ComIEnReg, irq_en | 0x80);  // enable IRQs
-    mfrc522_clear_bit(ComIrqReg, 0x80);            // clear IRQ flags
-    mfrc522_set_bit(FIFOLevelReg, 0x80);           // flush FIFO
+    mfrc522_write_reg(ComIEnReg, irq_en | 0x80);
+    mfrc522_clear_bit(ComIrqReg, 0x80);
+    mfrc522_set_bit(FIFOLevelReg, 0x80);
+    mfrc522_write_reg(CommandReg, PCD_Idle);
 
-    mfrc522_write_reg(CommandReg, PCD_Idle);        // cancel any active command
-
-    // Write data to FIFO
     for (i = 0; i < send_len; i++) {
         mfrc522_write_reg(FIFODataReg, send_data[i]);
     }
 
-    // Execute command
     mfrc522_write_reg(CommandReg, command);
 
     if (command == PCD_Transceive) {
-        mfrc522_set_bit(BitFramingReg, 0x80);  // StartSend=1
+        mfrc522_set_bit(BitFramingReg, 0x80);
     }
 
-    // Wait for completion (timeout ~25ms from timer config)
     i = 255;
     do {
         n = mfrc522_read_reg(ComIrqReg);
         i--;
-    } while (i && !(n & 0x01) && !(n & wait_irq));  // TimerIRq or wait_irq
+    } while (i && !(n & 0x01) && !(n & wait_irq));
 
-    mfrc522_clear_bit(BitFramingReg, 0x80);  // stop transmission
+    mfrc522_clear_bit(BitFramingReg, 0x80);
 
-    if (i == 0) {
-        return MI_ERR;  // timeout
-    }
+    if (i == 0) return MI_ERR;
 
-    if (!(mfrc522_read_reg(ErrorReg) & 0x1B)) {  // no protocol errors
+    if (!(mfrc522_read_reg(ErrorReg) & 0x1B)) {
         status = MI_OK;
-
-        if (n & 0x01) {  // TimerIRq — no card response
-            status = MI_NOTAGERR;
-        }
+        if (n & 0x01) status = MI_NOTAGERR;
 
         if (command == PCD_Transceive) {
             n = mfrc522_read_reg(FIFOLevelReg);
             last_bits = mfrc522_read_reg(ControlReg) & 0x07;
-
-            if (last_bits) {
-                *back_len = (n - 1) * 8 + last_bits;
-            } else {
-                *back_len = n * 8;
-            }
+            if (last_bits) *back_len = (n - 1) * 8 + last_bits;
+            else *back_len = n * 8;
 
             if (n == 0) n = 1;
-            if (n > 16) n = 16;  // max 16 bytes from FIFO
+            if (n > 16) n = 16;
 
             for (i = 0; i < n; i++) {
                 back_data[i] = mfrc522_read_reg(FIFODataReg);
             }
         }
     }
-
     return status;
 }
 
 uint8_t mfrc522_request(uint8_t req_mode, uint8_t *tag_type) {
     uint8_t status;
     uint8_t back_bits;
-
-    mfrc522_write_reg(BitFramingReg, 0x07);  // TxLastBits=7 (short frame, 7 bits)
-
+    mfrc522_write_reg(BitFramingReg, 0x07);
     tag_type[0] = req_mode;
     status = mfrc522_to_card(PCD_Transceive, tag_type, 1, tag_type, &back_bits);
-
-    if (status != MI_OK || back_bits != 0x10) {  // expect 16-bit ATQA
-        status = MI_ERR;
-    }
-
+    if (status != MI_OK || back_bits != 0x10) status = MI_ERR;
     return status;
 }
 
@@ -159,22 +189,15 @@ uint8_t mfrc522_anticoll(uint8_t *uid) {
     uint8_t back_bits;
     uint8_t send[2];
 
-    mfrc522_write_reg(BitFramingReg, 0x00);  // all bits valid
-
-    send[0] = PICC_ANTICOLL;  // anti-collision command CL1
-    send[1] = 0x20;           // NVB: 2 bytes sent (command + NVB only)
+    mfrc522_write_reg(BitFramingReg, 0x00);
+    send[0] = PICC_ANTICOLL;
+    send[1] = 0x20;
 
     status = mfrc522_to_card(PCD_Transceive, send, 2, uid, &back_bits);
 
     if (status == MI_OK) {
-        // Verify BCC (byte 5 = XOR of bytes 1-4)
-        for (i = 0; i < 4; i++) {
-            uid_check ^= uid[i];
-        }
-        if (uid_check != uid[4]) {
-            status = MI_ERR;
-        }
+        for (i = 0; i < 4; i++) uid_check ^= uid[i];
+        if (uid_check != uid[4]) status = MI_ERR;
     }
-
     return status;
 }

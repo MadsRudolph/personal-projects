@@ -2,7 +2,7 @@
 #include <avr/io.h>
 
 void uart_init(uint32_t baud) {
-    uint16_t ubrr = (F_CPU / (16UL * baud)) - 1;
+    uint16_t ubrr = (F_CPU / (16UL * baud)) - 1; 
     UBRR0H = (uint8_t)(ubrr >> 8);
     UBRR0L = (uint8_t)(ubrr);
     UCSR0B = (1 << TXEN0);          // enable transmitter

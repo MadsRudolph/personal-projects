@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(esphome version:*)",
+      "Bash(pip show:*)",
+      "Bash(python:*)",
+      "Bash(esphome run:*)",
+      "Bash(ls:*)",
+      "Bash(esphome logs:*)",
+      "Bash(python3:*)",
+      "WebSearch",
+      "Bash(git submodule update:*)",
+      "Bash(git submodule:*)",
+      "Bash(git pull:*)",
+      "Bash(echo:*)",
+      "Bash(git -C \"C:/Users/Mads2/Documents/Projects/ir-remote-wizard\" log --oneline -5)",
+      "Bash(git -C \"C:/Users/Mads2/Documents/Projects/ir-remote-wizard\" status)",
+      "Bash(git -C \"C:/Users/Mads2/Documents/Projects/ir-remote-wizard\" remote -v:*)",
+      "Bash(git -C \"C:/Users/Mads2/Documents/Projects/ir-remote-wizard\" log --oneline --all)",
+      "Bash(git -C \"C:/Users/Mads2/Documents/Projects/ir-remote-wizard\" log --format=\"%H %ai %s\")",
+      "Bash(git update-index:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:esphome.io)",
+      "Bash(__NEW_LINE_7911c18f15387747__ python -c \"\n# Search for SubscribeLogsResponse in all submodules\nimport pkgutil, aioesphomeapi\nfor importer, modname, ispkg in pkgutil.walk_packages\\(aioesphomeapi.__path__, ''aioesphomeapi.''\\):\n    try:\n        mod = __import__\\(modname, fromlist=[''SubscribeLogsResponse'']\\)\n        if hasattr\\(mod, ''SubscribeLogsResponse''\\):\n            print\\(f''Found in {modname}''\\)\n            cls = getattr\\(mod, ''SubscribeLogsResponse''\\)\n            obj = cls\\(\\)\n            print\\(''  Fields:'', [a for a in dir\\(obj\\) if not a.startswith\\(''_''\\) and not callable\\(getattr\\(obj, a\\)\\)]\\)\n            break\n    except:\n        pass\n\")",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(# Maybe HA hasn''t created the replacement yet. Let me check if there are any backups ls \"\"//192.168.50.206/config/backups/\"\" || echo \"\"no backups dir\"\" ls \"\"//192.168.50.206/config/.storage/\"\")",
+      "Bash(# The file with colons is visible in directory listing but can''t be accessed from Windows. # We need to access it from the HA side. Let''s try the HA API or Supervisor API. # The addon has hassio_api: true, so maybe we can use the supervisor API. # But actually we can use the HA terminal/SSH if available. # Let''s check if we can use the HA REST API to work with the dashboard # First let''s get a long-lived access token - check if there''s one stored cat \"\"//192.168.50.206/config/.storage/auth\"\")",
+      "Bash(# Check if there are HA backups in the backup directory ls \"\"//192.168.50.206/backup/\"\")",
+      "Bash(ssh:*)",
+      "Bash(# Need:*)",
+      "Bash(# Quick:*)",
+      "Bash(git diff:*)",
+      "Bash(git status:*)",
+      "Bash(git -C /c/Users/Mads2/Documents/Projects/ir-remote-wizard show HEAD:ir-remote-wizard/app/esphome_client.py)"
+    ]
+  }
+}

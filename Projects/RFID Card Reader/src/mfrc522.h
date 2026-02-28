@@ -2,6 +2,7 @@
 #define MFRC522_H
 
 #include <stdint.h>
+#define PICC_WRITE 0xA0 // MIFARE Write command
 
 // RST pin - PB1 (Arduino D9)
 #define MFRC522_RST_DDR   DDRB
@@ -68,6 +69,12 @@
 #define PICC_ANTICOLL   0x93  // Anti-collision/Select CL1
 #define PICC_HALT       0x50
 
+#define PICC_WRITE      0xA0
+
+// Add these to your function prototypes list
+void    mfrc522_calculate_crc(uint8_t *data, uint8_t len, uint8_t *result);
+uint8_t mfrc522_write_block(uint8_t block_addr, uint8_t *data);
+void    mfrc522_halt(void);
 // Max UID length
 #define MFRC522_UID_LEN 4
 
