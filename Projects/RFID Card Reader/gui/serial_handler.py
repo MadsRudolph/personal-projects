@@ -12,8 +12,10 @@ class SerialHandler:
     def __init__(self):
         self.ser = None
         self.queue = queue.Queue()
+        self.raw_queue = queue.Queue()
         self._thread = None
         self._running = False
+        self._lock = threading.Lock()
 
     @staticmethod
     def list_ports():
@@ -29,35 +31,45 @@ class SerialHandler:
         self._running = False
         if self._thread:
             self._thread.join(timeout=2)
-        if self.ser and self.ser.is_open:
-            self.ser.close()
-        self.ser = None
+        with self._lock:
+            if self.ser and self.ser.is_open:
+                self.ser.close()
+            self.ser = None
 
     def send_command(self, cmd):
-        if self.ser and self.ser.is_open:
-            self.ser.write(cmd.encode())
+        with self._lock:
+            if self.ser and self.ser.is_open:
+                self.ser.write(cmd.encode())
 
     @property
     def is_connected(self):
         return self.ser is not None and self.ser.is_open
 
     def _read_loop(self):
-        while self._running and self.ser and self.ser.is_open:
+        while self._running:
             try:
-                line = self.ser.readline().decode("ascii", errors="ignore").strip()
+                with self._lock:
+                    s = self.ser
+                if not s or not s.is_open:
+                    break
+                line = s.readline().decode("ascii", errors="ignore").strip()
                 if not line:
                     continue
+                self.raw_queue.put(line)
                 msg = self.parse_line(line)
                 if msg:
                     self.queue.put(msg)
+            except (OSError, serial.SerialException):
+                break
             except Exception:
                 continue
 
     def send_load_block(self, block, hex_data):
         """Send a LOAD:<block_hex>:<data_hex> line for writing."""
         cmd = f"LOAD:{block:02X}:{hex_data}\n"
-        if self.ser and self.ser.is_open:
-            self.ser.write(cmd.encode())
+        with self._lock:
+            if self.ser and self.ser.is_open:
+                self.ser.write(cmd.encode())
 
     @staticmethod
     def parse_line(line):
