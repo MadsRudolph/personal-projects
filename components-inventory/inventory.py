@@ -5,19 +5,176 @@ import sqlite3
 import sys
 from datetime import datetime
 
-DB_NAME = "inventory.db"
+# --- Constants & Paths ---
+PROJECT_DIR = r"C:\Users\Mads2\Documents\Projects\components-inventory"
+
+def get_db_path():
+    """Always prioritize the database in the original project folder."""
+    path = os.path.join(PROJECT_DIR, "inventory.db")
+    if os.path.exists(path):
+        return path
+    return os.path.join(os.getcwd(), "inventory.db")
+
+DB_NAME = get_db_path()
+
+def get_shop_csv_path():
+    """Smart lookup for the shop CSV, prioritizing the project folder."""
+    paths = [
+        os.path.join(PROJECT_DIR, "dtu_component_shop(1).csv"),
+        r"C:\Users\Mads2\OneDrive\Skrivebord\dtu_component_shop(1).csv",
+        os.path.join(os.environ["USERPROFILE"], "Desktop", "dtu_component_shop(1).csv"),
+        os.path.join(os.getcwd(), "dtu_component_shop(1).csv")
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    return paths[0] 
+
+SHOP_CSV_PATH = get_shop_csv_path()
 
 CATEGORIES = [
     "resistor", "capacitor", "inductor", "diode", "transistor",
     "IC", "connector", "LED", "crystal", "switch", "other",
 ]
 
-def get_db_path():
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), DB_NAME)
+# --- Resistor Color Code Data ---
+RESISTOR_COLORS = {
+    "black":  {"digit": 0, "multiplier": 1,          "tolerance": None, "color": "#000000"},
+    "brown":  {"digit": 1, "multiplier": 10,         "tolerance": 1,    "color": "#8b4513"},
+    "red":    {"digit": 2, "multiplier": 100,        "tolerance": 2,    "color": "#ff0000"},
+    "orange": {"digit": 3, "multiplier": 1000,       "tolerance": 0.05, "color": "#ffa500"},
+    "yellow": {"digit": 4, "multiplier": 10000,      "tolerance": 0.02, "color": "#ffff00"},
+    "green":  {"digit": 5, "multiplier": 100000,     "tolerance": 0.5,  "color": "#008000"},
+    "blue":   {"digit": 6, "multiplier": 1000000,    "tolerance": 0.25, "color": "#0000ff"},
+    "violet": {"digit": 7, "multiplier": 10000000,   "tolerance": 0.1,  "color": "#ee82ee"},
+    "gray":   {"digit": 8, "multiplier": 100000000,  "tolerance": 0.01, "color": "#808080"},
+    "white":  {"digit": 9, "multiplier": 1000000000, "tolerance": None, "color": "#ffffff"},
+    "gold":   {"digit": None, "multiplier": 0.1,      "tolerance": 5,    "color": "#ffd700"},
+    "silver": {"digit": None, "multiplier": 0.01,     "tolerance": 10,   "color": "#c0c0c0"},
+}
+
+COLOR_SHORTHAND = {
+    "bk": "black", "bn": "brown", "br": "brown", "r": "red", "o": "orange",
+    "y": "yellow", "g": "green", "bu": "blue", "v": "violet", "gy": "gray",
+    "w": "white", "gd": "gold", "si": "silver"
+}
+
+def calculate_resistance(bands):
+    if len(bands) < 4 or len(bands) > 5:
+        return None, None
+    try:
+        bands = [b.lower() for b in bands]
+        if len(bands) == 4:
+            d1 = RESISTOR_COLORS[bands[0]]["digit"]
+            d2 = RESISTOR_COLORS[bands[1]]["digit"]
+            mult = RESISTOR_COLORS[bands[2]]["multiplier"]
+            tol = RESISTOR_COLORS[bands[3]]["tolerance"]
+            if d1 is None or d2 is None: return None, None
+            value = (d1 * 10 + d2) * mult
+        else:
+            d1 = RESISTOR_COLORS[bands[0]]["digit"]
+            d2 = RESISTOR_COLORS[bands[1]]["digit"]
+            d3 = RESISTOR_COLORS[bands[2]]["digit"]
+            mult = RESISTOR_COLORS[bands[3]]["multiplier"]
+            tol = RESISTOR_COLORS[bands[4]]["tolerance"]
+            if d1 is None or d2 is None or d3 is None: return None, None
+            value = (d1 * 100 + d2 * 10 + d3) * mult
+        return value, tol
+    except (KeyError, TypeError):
+        return None, None
+
+def format_resistance(value):
+    if value is None: return ""
+    if value >= 1000000:
+        return f"{value/1000000:g}M"
+    if value >= 1000:
+        return f"{value/1000:g}k"
+    return f"{value:g}"
+
+def get_resistor_colors(value):
+    """Returns a list of 4 or 5 color names for a given resistance value. Prefers 5-band for precision."""
+    if value is None or value <= 0: return None
+    
+    import math
+    try:
+        # 5-band logic (3 digits + multiplier + tolerance)
+        exp5 = math.floor(math.log10(value)) - 2
+        mult5_val = 10**exp5
+        val5 = round(value / mult5_val)
+        
+        if val5 >= 1000:
+            val5 //= 10
+            exp5 += 1
+            mult5_val *= 10
+            
+        d1 = int(val5 // 100)
+        d2 = int((val5 // 10) % 10)
+        d3 = int(val5 % 10)
+        
+        digit_to_color = {d["digit"]: name for name, d in RESISTOR_COLORS.items() if d["digit"] is not None}
+        mult_to_color = {round(d["multiplier"], 4): name for name, d in RESISTOR_COLORS.items() if d["multiplier"] is not None}
+        
+        res5 = None
+        if (d1 in digit_to_color and d2 in digit_to_color and d3 in digit_to_color and 
+            round(mult5_val, 4) in mult_to_color):
+            res5 = [digit_to_color[d1], digit_to_color[d2], digit_to_color[d3], mult_to_color[round(mult5_val, 4)], "brown"]
+
+        # 4-band logic (2 digits + multiplier + tolerance)
+        exp4 = math.floor(math.log10(value)) - 1
+        mult4_val = 10**exp4
+        val4 = round(value / mult4_val)
+        if val4 >= 100:
+            val4 /= 10
+            exp4 += 1
+            mult4_val *= 10
+        
+        d1_4 = int(val4 // 10)
+        d2_4 = int(val4 % 10)
+        
+        res4 = None
+        if d1_4 in digit_to_color and d2_4 in digit_to_color and round(mult4_val, 4) in mult_to_color:
+            res4 = [digit_to_color[d1_4], digit_to_color[d2_4], mult_to_color[round(mult4_val, 4)], "gold"]
+            
+        # Decision: If the value is a standard E24 (10, 22, 47 etc), prefer 4-band
+        # Otherwise if it fits 5-band perfectly, use that.
+        if res4 and (value % mult4_val == 0):
+            return res4
+        return res5 or res4
+    except:
+        pass
+    return None
+
+def parse_shop_value(val_str):
+    if not val_str: return None
+    val_str = val_str.lower().strip().replace(" ", "").replace("ohm", "").replace("ω", "")
+    try:
+        val_str = val_str.replace(",", ".")
+        multiplier = 1
+        if val_str.endswith("k"):
+            multiplier = 1000
+            val_str = val_str[:-1]
+        elif val_str.endswith("m"):
+            multiplier = 1000000
+            val_str = val_str[:-1]
+        elif val_str.endswith("r"): 
+            val_str = val_str[:-1]
+        if "k" in val_str: 
+            parts = val_str.split("k")
+            left = float(parts[0])
+            right = float(parts[1] or 0)
+            return (left + right / (10**len(parts[1]))) * 1000
+        if "r" in val_str: 
+            parts = val_str.split("r")
+            left = float(parts[0])
+            right = float(parts[1] or 0)
+            return (left + right / (10**len(parts[1])))
+        return float(val_str) * multiplier
+    except:
+        return None
 
 def init_db(db_path=None):
     if db_path is None:
-        db_path = get_db_path()
+        db_path = DB_NAME
     conn = sqlite3.connect(db_path)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS components (
@@ -37,24 +194,56 @@ def init_db(db_path=None):
     return conn
 
 def insert_component(conn, data):
+    # Check for existing component to merge
+    name = data["name"]
+    cat = data["category"]
+    val = data.get("value", "") or None
+    pkg = data.get("package", "") or None
+    
+    match_sql = """
+        SELECT id, quantity FROM components 
+        WHERE LOWER(name) = LOWER(?) AND LOWER(category) = LOWER(?)
+    """
+    params = [name, cat]
+    if val:
+        match_sql += " AND value = ?"
+        params.append(val)
+    else:
+        match_sql += " AND value IS NULL"
+    
+    if pkg:
+        match_sql += " AND package = ?"
+        params.append(pkg)
+    else:
+        match_sql += " AND package IS NULL"
+        
+    existing = conn.execute(match_sql, params).fetchone()
+    
     now = datetime.now().isoformat(timespec="seconds")
+    if existing:
+        # Merge quantity
+        new_qty = existing[1] + int(data.get("quantity", 1))
+        conn.execute(
+            "UPDATE components SET quantity=?, updated_at=? WHERE id=?",
+            (new_qty, now, existing[0])
+        )
+        conn.commit()
+        return existing[0], True # Return ID and merge status
+    
+    # Insert new
     cur = conn.execute(
         """INSERT INTO components (name, category, value, package, quantity, location, notes, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
-            data["name"],
-            data["category"],
-            data.get("value", "") or None,
-            data.get("package", "") or None,
+            name, cat, val, pkg,
             data.get("quantity", 1),
-            data.get("location", ""),
+            data.get("location", "Main Box"),
             data.get("notes", "") or None,
-            now,
-            now,
+            now, now
         ),
     )
     conn.commit()
-    return cur.lastrowid
+    return cur.lastrowid, False
 
 
 def _row_to_dict(row, cursor):
@@ -130,15 +319,83 @@ def update_component(conn, component_id, data):
     return cur.rowcount > 0
 
 
+def get_category_stats(conn):
+    """Returns (category, count, total_quantity) for all components."""
+    query = """
+        SELECT category, COUNT(*), SUM(quantity) 
+        FROM components 
+        GROUP BY category 
+        ORDER BY SUM(quantity) DESC
+    """
+    cur = conn.execute(query)
+    return cur.fetchall()
+
 def export_csv(conn):
-    cur = conn.execute("SELECT * FROM components ORDER BY category, name")
+    """Generates a CSV string of the inventory, optimized for Excel."""
+    query = "SELECT id, name, category, value, package, quantity, notes FROM components ORDER BY category, name"
+    cur = conn.execute(query)
     rows = cur.fetchall()
-    cols = [d[0] for d in cur.description]
+    
     output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(cols)
-    writer.writerows(rows)
+    # Write BOM for Excel UTF-8 compatibility
+    output.write('\ufeff')
+    
+    writer = csv.writer(output, quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(["ID", "Name", "Category", "Value", "Package", "Quantity", "Notes"])
+    
+    for row in rows:
+        writer.writerow(row)
+        
     return output.getvalue()
+
+class ShopData:
+    """Helper to load and search the master shop CSV."""
+    def __init__(self, csv_path=SHOP_CSV_PATH):
+        self.csv_path = csv_path
+        self.items = []
+        self._load()
+
+    def _load(self):
+        if not os.path.exists(self.csv_path):
+            return
+        
+        try:
+            # Use utf-8-sig to handle potential BOM and errors='replace' for robustness
+            with open(self.csv_path, "r", encoding="utf-8-sig", errors="replace") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    # Map shop CSV headers: Category,Subcategory,Part_Number,Value,Description
+                    self.items.append({
+                        "id": row.get("Part_Number", ""),
+                        "category": row.get("Category", "").lower().strip(),
+                        "subcategory": row.get("Subcategory", ""),
+                        "part_number": row.get("Part_Number", ""),
+                        "value": row.get("Value", ""),
+                        "description": row.get("Description", "")
+                    })
+            print(f"Shop data loaded: {len(self.items)} items from {self.csv_path}")
+        except Exception as e:
+            print(f"Error loading shop CSV: {e}")
+
+    def search(self, query, cat_filter=None, limit=10):
+        query = query.lower() if query else ""
+        cat_filter = cat_filter.lower() if cat_filter else None
+        
+        results = []
+        for item in self.items:
+            if cat_filter and item["category"] != cat_filter:
+                continue
+                
+            if query:
+                match_str = f"{item['category']} {item['part_number']} {item['value']} {item['subcategory']} {item['description']}".lower()
+                if query in match_str:
+                    results.append(item)
+            elif cat_filter:
+                results.append(item)
+            
+            if limit is not None and len(results) >= limit:
+                break
+        return results
 
 
 DISPLAY_COLS = ["id", "name", "category", "value", "package", "qty", "location", "notes"]
