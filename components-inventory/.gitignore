@@ -1,0 +1,4 @@
+inventory.db
+inventory_export_*.csv
+__pycache__/
+.pytest_cache/

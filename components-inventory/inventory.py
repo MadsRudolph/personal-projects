@@ -1,4 +1,3 @@
-# inventory.py — initial scaffold
 import csv
 import io
 import os
@@ -159,8 +158,6 @@ def format_stock(stock_rows):
     return "\n".join(lines)
 
 
-# --- Task 4: Add mode — interactive loop with adaptive prompts ---
-
 CATEGORY_FIELDS = {
     "resistor":   [("value", "Value (e.g. 10k, 4.7k)"), ("package", "Package (e.g. axial, 0805)")],
     "capacitor":  [("value", "Value (e.g. 100nF, 10uF)"), ("package", "Package (e.g. ceramic disc, electrolytic)")],
@@ -292,8 +289,6 @@ def add_mode(conn):
 
     print(f"\n  Session complete: {count} components added.")
 
-
-# --- Task 5: CLI dispatch — main function and all commands ---
 
 def cmd_search(conn, query):
     results = search_components(conn, query)
