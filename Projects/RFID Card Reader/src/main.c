@@ -4,12 +4,15 @@
 #include "spi.h"
 #include "mfrc522.h"
 
-// Print chip type and cloneability based on SAK byte
+#define MODE_IDLE       0
+#define MODE_CONTINUOUS 1
+#define MODE_ONESHOT    2
+
+// Print chip type and cloneability based on SAK byte (human-readable)
 static void print_chip_info(uint8_t sak) {
     uart_puts("Chip Type: ");
 
     if (sak & 0x04) {
-        // Cascade bit set -- should not reach here after full resolution
         uart_puts("(incomplete UID, cascade error)\r\n");
         return;
     }
@@ -58,126 +61,153 @@ static void print_chip_info(uint8_t sak) {
     }
 }
 
-int main(void) {
+// Send tag data in protocol format: TAG:<atqa>:<uid>:<sak>:<uid_len>
+static void send_tag_protocol(uint8_t *atqa, uint8_t *uid, uint8_t uid_len, uint8_t sak) {
+    uart_puts("TAG:");
+    uart_put_hex(atqa[0]);
+    uart_put_hex(atqa[1]);
+    uart_putc(':');
+    for (uint8_t i = 0; i < uid_len; i++) {
+        uart_put_hex(uid[i]);
+    }
+    uart_putc(':');
+    uart_put_hex(sak);
+    uart_putc(':');
+    uart_putc('0' + uid_len);
+    uart_puts("\r\n");
+}
+
+// Perform one scan cycle. Returns 1 if tag found, 0 otherwise.
+static uint8_t do_scan(void) {
     uint8_t status;
     uint8_t atqa[2];
-    uint8_t uid_cl1[5];  // 4 UID bytes + BCC from CL1
-    uint8_t uid_cl2[5];  // 4 UID bytes + BCC from CL2
+    uint8_t uid_cl1[5];
+    uint8_t uid_cl2[5];
     uint8_t full_uid[10];
     uint8_t uid_len;
     uint8_t sak;
+
+    status = mfrc522_request(PICC_REQIDL, atqa);
+    if (status != MI_OK) return 0;
+
+    status = mfrc522_anticoll(PICC_ANTICOLL1, uid_cl1);
+    if (status != MI_OK) return 0;
+
+    status = mfrc522_select(PICC_ANTICOLL1, uid_cl1, &sak);
+    if (status != MI_OK) {
+        uart_puts("ERR:SELECT CL1 failed\r\n");
+        return 0;
+    }
+
+    uid_len = 4;
+    if (sak & 0x04) {
+        full_uid[0] = uid_cl1[1];
+        full_uid[1] = uid_cl1[2];
+        full_uid[2] = uid_cl1[3];
+
+        status = mfrc522_anticoll(PICC_ANTICOLL2, uid_cl2);
+        if (status != MI_OK) {
+            uart_puts("ERR:ANTICOLL CL2 failed\r\n");
+            return 0;
+        }
+
+        status = mfrc522_select(PICC_ANTICOLL2, uid_cl2, &sak);
+        if (status != MI_OK) {
+            uart_puts("ERR:SELECT CL2 failed\r\n");
+            return 0;
+        }
+
+        full_uid[3] = uid_cl2[0];
+        full_uid[4] = uid_cl2[1];
+        full_uid[5] = uid_cl2[2];
+        full_uid[6] = uid_cl2[3];
+        uid_len = 7;
+
+        if (sak & 0x04) {
+            uart_puts("ERR:Triple-size UID not supported\r\n");
+            mfrc522_halt();
+            return 0;
+        }
+    } else {
+        for (uint8_t i = 0; i < 4; i++) {
+            full_uid[i] = uid_cl1[i];
+        }
+    }
+
+    // LED on
+    PORTC |= (1 << PC0);
+
+    // Protocol line (for GUI)
+    send_tag_protocol(atqa, full_uid, uid_len, sak);
+
+    // Human-readable output (for terminal, ignored by GUI)
+    uart_puts("ATQA: ");
+    uart_put_hex(atqa[0]);
+    uart_putc(' ');
+    uart_put_hex(atqa[1]);
+    uart_puts("  UID: ");
+    for (uint8_t i = 0; i < uid_len; i++) {
+        uart_put_hex(full_uid[i]);
+        if (i < uid_len - 1) uart_putc(':');
+    }
+    uart_puts("  SAK: 0x");
+    uart_put_hex(sak);
+    uart_puts("\r\n");
+    print_chip_info(sak);
+
+    PORTC &= ~(1 << PC0);
+
+    mfrc522_halt();
+    return 1;
+}
+
+int main(void) {
+    uint8_t scan_mode = MODE_IDLE;
 
     spi_init();
     uart_init(9600);
     mfrc522_init();
 
-    // LED pins: PC0 = detection indicator
     DDRC |= (1 << PC0);
 
-    uart_puts("\r\n--- RFID Tag Analyzer ---\r\n");
-    uart_puts("Present a tag to scan...\r\n\r\n");
+    uart_puts("INFO:RFID Tag Analyzer v1.0\r\n");
 
     while (1) {
-        // Step 1: REQA -- detect card, get ATQA
-        status = mfrc522_request(PICC_REQIDL, atqa);
-        if (status != MI_OK) {
-            _delay_ms(200);
+        // Check for commands from GUI/terminal
+        if (uart_available()) {
+            char cmd = uart_getc();
+            switch (cmd) {
+            case 'S':
+                scan_mode = MODE_CONTINUOUS;
+                uart_puts("OK:Scanning\r\n");
+                break;
+            case 'P':
+                scan_mode = MODE_IDLE;
+                uart_puts("OK:Paused\r\n");
+                break;
+            case 'O':
+                scan_mode = MODE_ONESHOT;
+                uart_puts("OK:Single scan\r\n");
+                break;
+            case 'V':
+                uart_puts("INFO:RFID Tag Analyzer v1.0\r\n");
+                break;
+            }
+        }
+
+        if (scan_mode == MODE_IDLE) {
+            _delay_ms(100);
             continue;
         }
 
-        // Step 2: Anti-collision CL1 -- get first 4 UID bytes + BCC
-        status = mfrc522_anticoll(PICC_ANTICOLL1, uid_cl1);
-        if (status != MI_OK) {
-            _delay_ms(200);
-            continue;
-        }
-
-        // Step 3: SELECT CL1 -- activate card, get SAK
-        status = mfrc522_select(PICC_ANTICOLL1, uid_cl1, &sak);
-        if (status != MI_OK) {
-            uart_puts("SELECT CL1 failed\r\n");
-            _delay_ms(500);
-            continue;
-        }
-
-        // Step 4: Check if cascade needed (SAK bit 2)
-        uid_len = 4;
-        if (sak & 0x04) {
-            // CL1 UID starts with cascade tag (0x88) -- real UID bytes are [1..3]
-            full_uid[0] = uid_cl1[1];
-            full_uid[1] = uid_cl1[2];
-            full_uid[2] = uid_cl1[3];
-
-            // Anti-collision CL2
-            status = mfrc522_anticoll(PICC_ANTICOLL2, uid_cl2);
-            if (status != MI_OK) {
-                uart_puts("ANTICOLL CL2 failed\r\n");
-                _delay_ms(500);
-                continue;
+        if (do_scan()) {
+            if (scan_mode == MODE_ONESHOT) {
+                scan_mode = MODE_IDLE;
             }
-
-            // SELECT CL2
-            status = mfrc522_select(PICC_ANTICOLL2, uid_cl2, &sak);
-            if (status != MI_OK) {
-                uart_puts("SELECT CL2 failed\r\n");
-                _delay_ms(500);
-                continue;
-            }
-
-            full_uid[3] = uid_cl2[0];
-            full_uid[4] = uid_cl2[1];
-            full_uid[5] = uid_cl2[2];
-            full_uid[6] = uid_cl2[3];
-            uid_len = 7;
-
-            // Check for triple cascade (10-byte UID, very rare)
-            if (sak & 0x04) {
-                uart_puts("Triple-size UID (10 bytes) -- not supported yet\r\n");
-                mfrc522_halt();
-                _delay_ms(1000);
-                continue;
-            }
+            _delay_ms(1500);
         } else {
-            // Simple 4-byte UID
-            for (uint8_t i = 0; i < 4; i++) {
-                full_uid[i] = uid_cl1[i];
-            }
+            _delay_ms(200);
         }
-
-        // LED blink: tag detected
-        PORTC |= (1 << PC0);
-
-        // Print diagnostic report
-        uart_puts("=== Tag Detected ===\r\n");
-
-        uart_puts("ATQA: ");
-        uart_put_hex(atqa[0]);
-        uart_putc(' ');
-        uart_put_hex(atqa[1]);
-        uart_puts("\r\n");
-
-        uart_puts("UID:  ");
-        for (uint8_t i = 0; i < uid_len; i++) {
-            uart_put_hex(full_uid[i]);
-            if (i < uid_len - 1) uart_putc(':');
-        }
-        uart_puts(" (");
-        uart_putc('0' + uid_len);  // works for 4, 7
-        uart_puts(" bytes)\r\n");
-
-        uart_puts("SAK:  0x");
-        uart_put_hex(sak);
-        uart_puts("\r\n");
-
-        print_chip_info(sak);
-
-        uart_puts("====================\r\n\r\n");
-
-        PORTC &= ~(1 << PC0);
-
-        // Halt card, wait before next scan
-        mfrc522_halt();
-        _delay_ms(2000);
     }
 
     return 0;
