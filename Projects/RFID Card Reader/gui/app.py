@@ -49,11 +49,12 @@ class OperationGuard:
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("RFID Tag Analyzer")
-        self.geometry("900x900")
+        self.title("RFID Tag Analyzer Pro")
+        self.geometry("1100x800")
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
+        # Data & Handlers
         self.serial = SerialHandler()
         self.card_data = CardData()
         self._write_pending = []
@@ -61,187 +62,272 @@ class App(ctk.CTk):
         self._guard = OperationGuard()
         self.attack = AttackOrchestrator(self.serial)
 
-        self._build_connection_bar()
-        self._build_tag_card()
-        self._build_scan_buttons()
-        self._build_rw_buttons()
-        self._build_attack_controls()
-        self._build_hex_viewer()
-        self._build_log_table()
-        self._build_system_log()
+        # UI State
+        self.current_page = None
+        self.nav_buttons = {}
+
+        self._setup_grid()
+        self._build_sidebar()
+        self._build_main_frames()
+        self._show_page("dashboard")
+        
         self._poll_serial()
 
-    def _build_connection_bar(self):
-        frame = ctk.CTkFrame(self)
-        frame.pack(fill="x", padx=10, pady=(10, 5))
+    def _setup_grid(self):
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=4)  # Page content area
+        self.grid_rowconfigure(1, weight=1)  # Persistent log area
 
-        ctk.CTkLabel(frame, text="Port:").pack(side="left", padx=(10, 5))
+    def _build_sidebar(self):
+        self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0)
+        self.sidebar.grid(row=0, column=0, rowspan=2, sticky="nsew")
+        self.sidebar.grid_rowconfigure(5, weight=1)
+
+        logo = ctk.CTkLabel(
+            self.sidebar, text="RFID ANALYZER", 
+            font=ctk.CTkFont(size=20, weight="bold")
+        )
+        logo.grid(row=0, column=0, padx=20, pady=(20, 10))
+
+        pages = [
+            ("dashboard", "Dashboard", "house"),
+            ("rw", "Read / Write", "pen-to-square"),
+            ("attacks", "Attacks", "bolt"),
+        ]
+
+        for i, (id, label, icon) in enumerate(pages):
+            btn = ctk.CTkButton(
+                self.sidebar, text=label, corner_radius=0, height=40,
+                border_spacing=10, fg_color="transparent", text_color=("gray10", "gray90"),
+                hover_color=("gray70", "gray30"), anchor="w",
+                command=lambda p=id: self._show_page(p)
+            )
+            btn.grid(row=i+1, column=0, sticky="ew")
+            self.nav_buttons[id] = btn
+
+        # Connection Bar (now simple in sidebar)
+        conn_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        conn_frame.grid(row=6, column=0, padx=10, pady=10, sticky="ew")
 
         self.port_var = ctk.StringVar()
         self.port_menu = ctk.CTkOptionMenu(
-            frame, variable=self.port_var, values=[""], width=120
+            conn_frame, variable=self.port_var, values=[""], height=30
         )
-        self.port_menu.pack(side="left", padx=5)
+        self.port_menu.pack(fill="x", pady=5)
+
+        btn_row = ctk.CTkFrame(conn_frame, fg_color="transparent")
+        btn_row.pack(fill="x")
 
         ctk.CTkButton(
-            frame, text="Refresh", width=70, command=self._refresh_ports
-        ).pack(side="left", padx=5)
+            btn_row, text="Refresh", width=80, height=28, command=self._refresh_ports
+        ).pack(side="left", padx=(0, 5))
 
         self.connect_btn = ctk.CTkButton(
-            frame, text="Connect", width=90, command=self._toggle_connect
+            btn_row, text="Connect", width=80, height=28, command=self._toggle_connect
         )
-        self.connect_btn.pack(side="left", padx=5)
+        self.connect_btn.pack(side="left")
 
         ctk.CTkButton(
-            frame,
-            text="Reset",
-            fg_color="#da3633",
-            hover_color="#b62324",
-            width=70,
-            command=self._reset_device,
-        ).pack(side="left", padx=5)
+            conn_frame, text="HW Reset", fg_color="#da3633", hover_color="#b62324",
+            height=28, command=self._reset_device
+        ).pack(fill="x", pady=(5, 0))
 
-        self.status_label = ctk.CTkLabel(
-            frame, text="Disconnected", text_color="red"
+        self.status_label = ctk.CTkLabel(conn_frame, text="Disconnected", text_color="#da3633", font=ctk.CTkFont(size=11))
+        self.status_label.pack(pady=(5, 0))
+
+        # Global STOP button - very prominent
+        self.sidebar_stop_btn = ctk.CTkButton(
+            self.sidebar, text="GLOBAL STOP", fg_color="#da3633", hover_color="#b62324",
+            height=50, font=ctk.CTkFont(size=14, weight="bold"),
+            command=self._global_stop
         )
-        self.status_label.pack(side="right", padx=10)
+        self.sidebar_stop_btn.grid(row=7, column=0, padx=10, pady=(20, 20), sticky="ew")
 
         self._refresh_ports()
 
-    def _build_tag_card(self):
-        self.card = ctk.CTkFrame(self)
-        self.card.pack(fill="x", padx=10, pady=5)
+    def _build_main_frames(self):
+        self.pages = {}
+        for p in ["dashboard", "rw", "attacks"]:
+            frame = ctk.CTkFrame(self, fg_color="transparent")
+            self.pages[p] = frame
 
+        self._build_dashboard_page()
+        self._build_rw_page()
+        self._build_attacks_page()
+        self._build_persistent_log()
+
+    def _show_page(self, name):
+        if self.current_page:
+            self.pages[self.current_page].grid_forget()
+            self.nav_buttons[self.current_page].configure(fg_color="transparent")
+
+        self.pages[name].grid(row=0, column=1, sticky="nsew", padx=20, pady=(20, 10))
+        self.nav_buttons[name].configure(fg_color=("gray75", "gray25"))
+        self.current_page = name
+
+    def _build_persistent_log(self):
+        self.log_frame = ctk.CTkFrame(self)
+        self.log_frame.grid(row=1, column=1, sticky="nsew", padx=20, pady=(0, 20))
+        self.log_frame.grid_columnconfigure(0, weight=1)
+        self.log_frame.grid_rowconfigure(1, weight=1)
+
+        header = ctk.CTkFrame(self.log_frame, fg_color="transparent", height=30)
+        header.grid(row=0, column=0, sticky="ew", padx=10, pady=(5, 0))
+
+        ctk.CTkLabel(header, text="System & Debug Logs", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left")
+        ctk.CTkButton(header, text="Clear Logs", width=80, height=22, command=self._clear_system_log).pack(side="right")
+
+        self.sys_log = ctk.CTkTextbox(self.log_frame, font=ctk.CTkFont(family="Consolas", size=11), height=150)
+        self.sys_log.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+        self.sys_log.configure(state="disabled")
+
+    def _build_dashboard_page(self):
+        p = self.pages["dashboard"]
+        p.grid_columnconfigure(0, weight=1)
+
+        # Tag Card
+        self.card = ctk.CTkFrame(p, border_width=2, border_color="#1f6feb", corner_radius=15)
+        self.card.grid(row=0, column=0, sticky="ew", pady=(0, 20))
+        
         self.uid_label = ctk.CTkLabel(
-            self.card,
-            text="No tag scanned",
-            font=ctk.CTkFont(family="Consolas", size=28, weight="bold"),
+            self.card, text="No tag scanned",
+            font=ctk.CTkFont(family="Consolas", size=32, weight="bold"),
         )
-        self.uid_label.pack(pady=(15, 5))
+        self.uid_label.pack(pady=(25, 10))
 
-        info = ctk.CTkFrame(self.card, fg_color="transparent")
-        info.pack(pady=5)
+        info_row = ctk.CTkFrame(self.card, fg_color="transparent")
+        info_row.pack(pady=10)
 
-        self.atqa_label = ctk.CTkLabel(info, text="ATQA: --", font=ctk.CTkFont(size=13))
-        self.atqa_label.pack(side="left", padx=20)
+        self.atqa_label = ctk.CTkLabel(info_row, text="ATQA: --", font=ctk.CTkFont(size=14))
+        self.atqa_label.pack(side="left", padx=30)
 
-        self.sak_label = ctk.CTkLabel(info, text="SAK: --", font=ctk.CTkFont(size=13))
-        self.sak_label.pack(side="left", padx=20)
+        self.sak_label = ctk.CTkLabel(info_row, text="SAK: --", font=ctk.CTkFont(size=14))
+        self.sak_label.pack(side="left", padx=30)
 
-        self.chip_label = ctk.CTkLabel(
-            self.card, text="", font=ctk.CTkFont(size=15)
-        )
+        self.chip_label = ctk.CTkLabel(self.card, text="", font=ctk.CTkFont(size=18))
         self.chip_label.pack(pady=5)
 
-        self.clone_label = ctk.CTkLabel(
-            self.card, text="", font=ctk.CTkFont(size=14, weight="bold")
-        )
-        self.clone_label.pack(pady=(0, 15))
+        self.clone_label = ctk.CTkLabel(self.card, text="", font=ctk.CTkFont(size=16, weight="bold"))
+        self.clone_label.pack(pady=(0, 25))
 
-    def _build_scan_buttons(self):
-        frame = ctk.CTkFrame(self, fg_color="transparent")
-        frame.pack(pady=3)
+        # Scan Controls
+        ctrls = ctk.CTkFrame(p)
+        ctrls.grid(row=1, column=0, sticky="ew", pady=10, padx=2)
+        
+        ctk.CTkLabel(ctrls, text="Scan Controls", font=ctk.CTkFont(weight="bold")).pack(pady=10)
+
+        btns = ctk.CTkFrame(ctrls, fg_color="transparent")
+        btns.pack(pady=(0, 15))
 
         self.scan_btn = ctk.CTkButton(
-            frame,
-            text="Start Scan",
-            fg_color="#2ea043",
-            hover_color="#238636",
-            width=120,
-            command=lambda: self._send("S"),
+            btns, text="Start Continuous Scan", fg_color="#2ea043", hover_color="#238636",
+            width=180, height=40, command=lambda: self._send("S")
         )
-        self.scan_btn.pack(side="left", padx=5)
-
-        self.stop_btn = ctk.CTkButton(
-            frame,
-            text="Stop",
-            fg_color="#da3633",
-            hover_color="#b62324",
-            width=90,
-            command=lambda: self._send("P"),
-        )
-        self.stop_btn.pack(side="left", padx=5)
+        self.scan_btn.pack(side="left", padx=10)
 
         self.single_btn = ctk.CTkButton(
-            frame, text="Single Scan", width=110, command=lambda: self._send("O")
+            btns, text="Single Scan", width=120, height=40, command=lambda: self._send("O")
         )
-        self.single_btn.pack(side="left", padx=5)
+        self.single_btn.pack(side="left", padx=10)
 
-    def _build_rw_buttons(self):
-        frame = ctk.CTkFrame(self, fg_color="transparent")
-        frame.pack(pady=3)
+        self.stop_btn = ctk.CTkButton(
+            btns, text="Stop", fg_color="#da3633", hover_color="#b62324",
+            width=100, height=40, command=self._global_stop
+        )
+        self.stop_btn.pack(side="left", padx=10)
+
+        # Recent Scan Log (Mini version)
+        ctk.CTkLabel(p, text="Recent Activity", font=ctk.CTkFont(weight="bold")).grid(row=2, column=0, sticky="w", pady=(10, 5))
+        
+        self.log_text = ctk.CTkTextbox(p, font=ctk.CTkFont(family="Consolas", size=12), height=200)
+        self.log_text.grid(row=3, column=0, sticky="nsew")
+        header = f"{'Time':<10} | {'UID':<22} | {'Chip Type':<25} | SAK\n"
+        self.log_text.insert("end", header)
+        self.log_text.insert("end", "-" * 70 + "\n")
+        self.log_text.configure(state="disabled")
+
+    def _build_rw_page(self):
+        p = self.pages["rw"]
+        p.grid_columnconfigure(0, weight=1)
+        p.grid_rowconfigure(2, weight=1)
+
+        # Operational Controls
+        ctrls = ctk.CTkFrame(p)
+        ctrls.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+
+        top_row = ctk.CTkFrame(ctrls, fg_color="transparent")
+        top_row.pack(fill="x", padx=10, pady=10)
 
         self.read_btn = ctk.CTkButton(
-            frame,
-            text="Read Card",
-            fg_color="#1f6feb",
-            hover_color="#1958c7",
-            width=120,
-            command=self._read_card,
+            top_row, text="Read Full Dump", fg_color="#1f6feb", hover_color="#1958c7",
+            width=150, height=35, command=self._read_card
         )
         self.read_btn.pack(side="left", padx=5)
 
         self.write_btn = ctk.CTkButton(
-            frame,
-            text="Write Card",
-            fg_color="#d29922",
-            hover_color="#b07d1a",
-            width=120,
-            command=self._write_card,
+            top_row, text="Write to Card", fg_color="#d29922", hover_color="#b07d1a",
+            width=150, height=35, command=self._write_card
         )
         self.write_btn.pack(side="left", padx=5)
 
-        ctk.CTkButton(
-            frame,
-            text="Format Card",
-            fg_color="#da3633",
-            hover_color="#b62324",
-            width=110,
-            command=self._format_card,
-        ).pack(side="left", padx=5)
-
         self.blk0_var = ctk.BooleanVar(value=False)
-        ctk.CTkCheckBox(
-            frame, text="Write Block 0", variable=self.blk0_var
-        ).pack(side="left", padx=10)
+        ctk.CTkCheckBox(top_row, text="Lock Block 0", variable=self.blk0_var).pack(side="left", padx=10)
 
         ctk.CTkButton(
-            frame, text="Save Dump", width=90, command=self._save_dump
-        ).pack(side="left", padx=5)
+            top_row, text="Format (Erase)", fg_color="#da3633", hover_color="#b62324",
+            width=130, height=35, command=self._format_card
+        ).pack(side="right", padx=5)
 
-        ctk.CTkButton(
-            frame, text="Load Dump", width=90, command=self._load_dump
-        ).pack(side="left", padx=5)
+        mid_row = ctk.CTkFrame(ctrls, fg_color="transparent")
+        mid_row.pack(fill="x", padx=10, pady=(0, 10))
 
-        self.progress_label = ctk.CTkLabel(frame, text="")
-        self.progress_label.pack(side="left", padx=10)
+        ctk.CTkButton(mid_row, text="Open .bin", width=100, command=self._load_dump).pack(side="left", padx=5)
+        ctk.CTkButton(mid_row, text="Save .bin", width=100, command=self._save_dump).pack(side="left", padx=5)
 
-    def _build_attack_controls(self):
-        frame = ctk.CTkFrame(self, fg_color="transparent")
-        frame.pack(pady=3)
+        self.progress_bar = ctk.CTkProgressBar(mid_row, width=300)
+        self.progress_bar.pack(side="right", padx=10)
+        self.progress_bar.set(0)
+
+        self.progress_label = ctk.CTkLabel(mid_row, text="Idle", font=ctk.CTkFont(size=12, slant="italic"))
+        self.progress_label.pack(side="right", padx=5)
+
+        # Hex Viewer
+        self.hex_text = ctk.CTkTextbox(p, font=ctk.CTkFont(family="Consolas", size=11))
+        self.hex_text.grid(row=2, column=0, sticky="nsew", pady=10)
+        self._refresh_hex_viewer()
+
+    def _build_attacks_page(self):
+        p = self.pages["attacks"]
+        p.grid_columnconfigure(0, weight=1)
+
+        info = ctk.CTkFrame(p, fg_color="#2b2b2b")
+        info.grid(row=0, column=0, sticky="ew", pady=(0, 20), padx=2)
+        ctk.CTkLabel(
+            info, text="Mifare Classic Vulnerability Scanner", 
+            font=ctk.CTkFont(size=16, weight="bold")
+        ).pack(pady=10)
+        ctk.CTkLabel(
+            info, text="These tools use known weaknesses like Darkside and Nested attacks\nto recover keys from Mifare Classic tags.",
+            justify="center"
+        ).pack(pady=(0, 15))
+
+        ctrls = ctk.CTkFrame(p)
+        ctrls.grid(row=1, column=0, sticky="ew", pady=10)
 
         self.crack_btn = ctk.CTkButton(
-            frame,
-            text="Crack Keys",
-            fg_color="#8b5cf6",
-            hover_color="#7c3aed",
-            width=120,
-            command=self._start_crack,
+            ctrls, text="Start Darkside Attack", fg_color="#8b5cf6", hover_color="#7c3aed",
+            width=200, height=45, command=self._start_crack
         )
-        self.crack_btn.pack(side="left", padx=5)
+        self.crack_btn.pack(pady=20)
 
         self.stop_attack_btn = ctk.CTkButton(
-            frame,
-            text="Stop Attack",
-            fg_color="#da3633",
-            hover_color="#b62324",
-            width=110,
-            command=self._stop_crack,
+            ctrls, text="Abort Attack", fg_color="#da3633", hover_color="#b62324",
+            width=150, command=self._global_stop
         )
-        self.stop_attack_btn.pack(side="left", padx=5)
+        self.stop_attack_btn.pack(pady=(0, 20))
 
-        self.attack_label = ctk.CTkLabel(frame, text="")
-        self.attack_label.pack(side="left", padx=10)
+        self.attack_label = ctk.CTkLabel(p, text="Ready", font=ctk.CTkFont(size=14))
+        self.attack_label.grid(row=2, column=0, pady=10)
 
     def _start_crack(self):
         if not self.serial.is_connected:
@@ -254,6 +340,22 @@ class App(ctk.CTk):
         self._log("Starting darkside attack on sector 0")
         self.attack.start_darkside(0)
 
+    def _global_stop(self):
+        """Global halt for all active processes."""
+        # Stop scanning
+        self._send("P")
+        # Stop attacks
+        if self.attack.state != "idle":
+            self.attack.stop()
+            self._guard.finish()
+            self.attack_label.configure(text="Stopped")
+            self._log("Global STOP triggered: halting all processes", "WARN")
+        else:
+            self._log("Stop signal sent", "INFO")
+        
+        self.progress_label.configure(text="Stopped")
+        self.progress_bar.set(0)
+
     def _stop_crack(self):
         if self.attack.state != "idle":
             self.attack.stop()
@@ -261,64 +363,6 @@ class App(ctk.CTk):
             self.attack_label.configure(text="Attack stopped")
             self._log("Attack stopped by user", "WARN")
 
-    def _build_hex_viewer(self):
-        frame = ctk.CTkFrame(self)
-        frame.pack(fill="both", expand=True, padx=10, pady=(3, 5))
-
-        ctk.CTkLabel(
-            frame, text="Card Data", font=ctk.CTkFont(weight="bold")
-        ).pack(anchor="w", padx=10, pady=(5, 0))
-
-        self.hex_text = ctk.CTkTextbox(
-            frame, font=ctk.CTkFont(family="Consolas", size=11), height=180
-        )
-        self.hex_text.pack(fill="both", expand=True, padx=5, pady=5)
-        self._refresh_hex_viewer()
-
-    def _build_log_table(self):
-        frame = ctk.CTkFrame(self)
-        frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
-
-        log_header = ctk.CTkFrame(frame, fg_color="transparent")
-        log_header.pack(fill="x", padx=10, pady=(5, 0))
-
-        ctk.CTkLabel(
-            log_header, text="Scan Log", font=ctk.CTkFont(weight="bold")
-        ).pack(side="left")
-
-        ctk.CTkButton(
-            log_header, text="Clear", width=60, command=self._clear_log
-        ).pack(side="right")
-
-        self.log_text = ctk.CTkTextbox(
-            frame, font=ctk.CTkFont(family="Consolas", size=12), height=120
-        )
-        self.log_text.pack(fill="both", expand=True, padx=5, pady=5)
-        header = f"{'Time':<10} | {'UID':<22} | {'Chip Type':<30} | SAK\n"
-        self.log_text.insert("end", header)
-        self.log_text.insert("end", "-" * 78 + "\n")
-        self.log_text.configure(state="disabled")
-
-    def _build_system_log(self):
-        frame = ctk.CTkFrame(self)
-        frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
-
-        header = ctk.CTkFrame(frame, fg_color="transparent")
-        header.pack(fill="x", padx=10, pady=(5, 0))
-
-        ctk.CTkLabel(
-            header, text="System Log", font=ctk.CTkFont(weight="bold")
-        ).pack(side="left")
-
-        ctk.CTkButton(
-            header, text="Clear", width=60, command=self._clear_system_log
-        ).pack(side="right")
-
-        self.sys_log = ctk.CTkTextbox(
-            frame, font=ctk.CTkFont(family="Consolas", size=11), height=130
-        )
-        self.sys_log.pack(fill="both", expand=True, padx=5, pady=5)
-        self.sys_log.configure(state="disabled")
 
     def _log(self, text, level="INFO"):
         ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
@@ -552,15 +596,13 @@ class App(ctk.CTk):
                 elif msg["type"] == "DATA":
                     self.card_data.set_block(msg["block"], msg["data"])
                     sector = self.card_data.sector_for_block(msg["block"])
-                    self.progress_label.configure(
-                        text=f"Reading sector {sector}/15..."
-                    )
+                    self.progress_label.configure(text=f"Reading sector {sector}/15...")
+                    self.progress_bar.set(sector / 15)
                 elif msg["type"] == "OK":
                     if msg["message"] == "DUMP_COMPLETE":
                         self._guard.finish()
-                        self.progress_label.configure(
-                            text=f"Read complete: {self.card_data.block_count} blocks"
-                        )
+                        self.progress_label.configure(text="Dump complete")
+                        self.progress_bar.set(1.0)
                         self._refresh_hex_viewer()
                         self._log(f"Dump complete: {self.card_data.block_count} blocks read")
                     elif msg["message"] == "WRITE_READY":
@@ -572,19 +614,20 @@ class App(ctk.CTk):
                         self._guard.finish()
                         self._writing = False
                         self.progress_label.configure(text="Write complete!")
+                        self.progress_bar.set(1.0)
                         self._log("Write complete!")
                     elif msg["message"].startswith("FORMAT:"):
                         sector_hex = msg["message"][7:]
                         try:
                             sector = int(sector_hex, 16)
-                            self.progress_label.configure(
-                                text=f"Formatting sector {sector}/15..."
-                            )
+                            self.progress_label.configure(text=f"Formatting sector {sector}/15...")
+                            self.progress_bar.set(sector / 15)
                         except ValueError:
                             pass
                     elif msg["message"] == "FORMAT_COMPLETE":
                         self._guard.finish()
                         self.progress_label.configure(text="Format complete!")
+                        self.progress_bar.set(1.0)
                         self._log("Card formatted to factory defaults")
                         self.card_data.clear()
                         self._refresh_hex_viewer()
@@ -595,26 +638,25 @@ class App(ctk.CTk):
                     elif err_msg.startswith("FORMAT_WRITE:"):
                         self._log(f"Format: write failed on block 0x{err_msg[13:]}", "WARN")
                     else:
-                        self.progress_label.configure(
-                            text=f"Error: {err_msg}"
-                        )
+                        self.progress_label.configure(text=f"Error: {err_msg}")
                         self._log(f"Firmware error: {err_msg}", "ERROR")
                 elif msg["type"] == "INFO":
                     self._log(f"Firmware: {msg['message']}")
+        
         if self._guard.check_timeout():
-            self.progress_label.configure(text="Timeout — operation reset")
+            self.progress_label.configure(text="Timeout")
+            self.progress_bar.set(0)
             self._log("Operation timed out after 30s", "WARN")
         self.after(100, self._poll_serial)
 
     def _send_next_write(self):
         if self._write_pending:
             block, hex_data = self._write_pending.pop(0)
-            total = self.card_data.block_count
+            total = self.card_data.block_count or 64
             remaining = len(self._write_pending)
             written = total - remaining - 1
-            self.progress_label.configure(
-                text=f"Writing block {block} ({written}/{total})..."
-            )
+            self.progress_label.configure(text=f"Writing blk {block}...")
+            self.progress_bar.set(written / total)
             self._log(f"Sent: LOAD:{block:02X}:{hex_data[:8]}...", "TX")
             self.serial.send_load_block(block, hex_data)
         else:
