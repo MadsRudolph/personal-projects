@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from datetime import datetime
 from tkinter import filedialog
 
 from serial_handler import SerialHandler
@@ -10,7 +11,7 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("RFID Tag Analyzer")
-        self.geometry("900x750")
+        self.geometry("900x900")
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
@@ -25,6 +26,7 @@ class App(ctk.CTk):
         self._build_rw_buttons()
         self._build_hex_viewer()
         self._build_log_table()
+        self._build_system_log()
         self._poll_serial()
 
     def _build_connection_bar(self):
@@ -201,6 +203,42 @@ class App(ctk.CTk):
         self.log_text.insert("end", "-" * 78 + "\n")
         self.log_text.configure(state="disabled")
 
+    def _build_system_log(self):
+        frame = ctk.CTkFrame(self)
+        frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+
+        header = ctk.CTkFrame(frame, fg_color="transparent")
+        header.pack(fill="x", padx=10, pady=(5, 0))
+
+        ctk.CTkLabel(
+            header, text="System Log", font=ctk.CTkFont(weight="bold")
+        ).pack(side="left")
+
+        ctk.CTkButton(
+            header, text="Clear", width=60, command=self._clear_system_log
+        ).pack(side="right")
+
+        self.sys_log = ctk.CTkTextbox(
+            frame, font=ctk.CTkFont(family="Consolas", size=11), height=130
+        )
+        self.sys_log.pack(fill="both", expand=True, padx=5, pady=5)
+        self.sys_log.configure(state="disabled")
+
+    def _log(self, text, level="INFO"):
+        ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        tag = {"INFO": "INFO ", "WARN": "WARN ", "ERROR": "ERROR", "TX": " TX  ", "RX": " RX  "}
+        prefix = tag.get(level, level.ljust(5))
+        line = f"[{ts}] {prefix}  {text}\n"
+        self.sys_log.configure(state="normal")
+        self.sys_log.insert("end", line)
+        self.sys_log.see("end")
+        self.sys_log.configure(state="disabled")
+
+    def _clear_system_log(self):
+        self.sys_log.configure(state="normal")
+        self.sys_log.delete("1.0", "end")
+        self.sys_log.configure(state="disabled")
+
     def _refresh_hex_viewer(self):
         self.hex_text.configure(state="normal")
         self.hex_text.delete("1.0", "end")
@@ -238,6 +276,7 @@ class App(ctk.CTk):
             self.serial.disconnect()
             self.connect_btn.configure(text="Connect")
             self.status_label.configure(text="Disconnected", text_color="red")
+            self._log("Disconnected")
         else:
             port = self.port_var.get()
             if not port or port == "No ports found":
@@ -248,10 +287,12 @@ class App(ctk.CTk):
                 self.status_label.configure(
                     text=f"Connected: {port}", text_color="#2ea043"
                 )
+                self._log(f"Connected to {port}")
             except Exception as e:
                 self.status_label.configure(
                     text=f"Error: {e}", text_color="red"
                 )
+                self._log(f"Connection failed: {e}", "ERROR")
 
     def _reset_device(self):
         """Toggle DTR to hardware-reset the ATmega328P."""
@@ -264,9 +305,12 @@ class App(ctk.CTk):
         self._write_pending = []
         self._writing = False
         self.progress_label.configure(text="Reset!")
-        # Drain the queue
+        # Drain both queues
         while not self.serial.queue.empty():
             self.serial.queue.get_nowait()
+        while not self.serial.raw_queue.empty():
+            self.serial.raw_queue.get_nowait()
+        self._log("Device reset (DTR toggle)", "WARN")
 
     def _clear_log(self):
         self.log_text.configure(state="normal")
@@ -278,21 +322,30 @@ class App(ctk.CTk):
 
     def _send(self, cmd):
         self.serial.send_command(cmd)
+        self._log(f"Sent: {cmd!r}", "TX")
 
     def _read_card(self):
         if not self.serial.is_connected:
+            self._log("Read card failed: not connected", "ERROR")
             return
         self.card_data.clear()
         self.progress_label.configure(text="Reading...")
+        self._log("Starting card read (full dump)")
         self._send("R")
 
     def _write_card(self):
-        if not self.serial.is_connected or not self.card_data.has_data:
+        if not self.serial.is_connected:
+            self._log("Write card failed: not connected", "ERROR")
+            return
+        if not self.card_data.has_data:
+            self._log("Write card failed: no card data loaded", "ERROR")
             return
         self._write_pending = self.card_data.blocks_for_write(
             allow_block0=self.blk0_var.get()
         )
         self._writing = True
+        blk0 = " (including block 0)" if self.blk0_var.get() else ""
+        self._log(f"Starting card write: {len(self._write_pending)} blocks{blk0}")
         self.progress_label.configure(text="Waiting for card...")
         cmd = "B" if self.blk0_var.get() else "W"
         self._send(cmd)
@@ -307,6 +360,7 @@ class App(ctk.CTk):
         if path:
             self.card_data.save_bin(path)
             self.progress_label.configure(text="Saved!")
+            self._log(f"Dump saved to {path}")
 
     def _load_dump(self):
         path = filedialog.askopenfilename(
@@ -316,8 +370,14 @@ class App(ctk.CTk):
             self.card_data.load_bin(path)
             self._refresh_hex_viewer()
             self.progress_label.configure(text=f"Loaded {self.card_data.block_count} blocks")
+            self._log(f"Dump loaded from {path} ({self.card_data.block_count} blocks)")
 
     def _poll_serial(self):
+        # Log raw serial lines
+        while not self.serial.raw_queue.empty():
+            raw = self.serial.raw_queue.get_nowait()
+            self._log(raw, "RX")
+
         while not self.serial.queue.empty():
             msg = self.serial.queue.get_nowait()
             if isinstance(msg, Tag):
@@ -336,17 +396,23 @@ class App(ctk.CTk):
                             text=f"Read complete: {self.card_data.block_count} blocks"
                         )
                         self._refresh_hex_viewer()
+                        self._log(f"Dump complete: {self.card_data.block_count} blocks read")
                     elif msg["message"] == "WRITE_READY":
+                        self._log("Card ready for writing")
                         self._send_next_write()
                     elif msg["message"].startswith("WROTE:"):
                         self._send_next_write()
                     elif msg["message"] == "WRITE_DONE":
                         self._writing = False
                         self.progress_label.configure(text="Write complete!")
+                        self._log("Write complete!")
                 elif msg["type"] == "ERR":
                     self.progress_label.configure(
                         text=f"Error: {msg['message']}"
                     )
+                    self._log(f"Firmware error: {msg['message']}", "ERROR")
+                elif msg["type"] == "INFO":
+                    self._log(f"Firmware: {msg['message']}")
         self.after(100, self._poll_serial)
 
     def _send_next_write(self):
@@ -358,9 +424,11 @@ class App(ctk.CTk):
             self.progress_label.configure(
                 text=f"Writing block {block} ({written}/{total})..."
             )
+            self._log(f"Sent: LOAD:{block:02X}:{hex_data[:8]}...", "TX")
             self.serial.send_load_block(block, hex_data)
         else:
-            self.serial.send_command("D\n")  # Needs newline - firmware is in line mode
+            self._log("Sent: D (write done)", "TX")
+            self.serial.send_command("D\n")
 
     def _update_tag_display(self, tag):
         self.uid_label.configure(text=tag.uid_formatted)
