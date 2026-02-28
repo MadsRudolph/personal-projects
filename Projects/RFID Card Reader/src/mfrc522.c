@@ -50,26 +50,6 @@ void mfrc522_calculate_crc(uint8_t *data, uint8_t len, uint8_t *result) {
     result[1] = mfrc522_read_reg(CRCResultRegH);
 }
 
-uint8_t mfrc522_write_block(uint8_t block_addr, uint8_t *data) {
-    uint8_t status;
-    uint8_t cmd_buffer[4];
-
-    // Step 1: Send Write Command and Block Address
-    cmd_buffer[0] = PICC_WRITE;
-    cmd_buffer[1] = block_addr;
-    mfrc522_calculate_crc(cmd_buffer, 2, &cmd_buffer[2]);
-    
-    status = mfrc522_to_card(PCD_Transceive, cmd_buffer, 4, cmd_buffer, &status);
-    if (status != MI_OK) return status;
-
-    // Step 2: Send 16 bytes of data
-    uint8_t data_buffer[18];
-    for (uint8_t i = 0; i < 16; i++) data_buffer[i] = data[i];
-    mfrc522_calculate_crc(data_buffer, 16, &data_buffer[16]);
-
-    return mfrc522_to_card(PCD_Transceive, data_buffer, 18, data_buffer, &status);
-}
-
 // --- NEW: Halt Function ---
 void mfrc522_halt(void) {
     uint8_t buffer[4];
@@ -182,7 +162,7 @@ uint8_t mfrc522_request(uint8_t req_mode, uint8_t *tag_type) {
     return status;
 }
 
-uint8_t mfrc522_anticoll(uint8_t *uid) {
+uint8_t mfrc522_anticoll(uint8_t cascade_level, uint8_t *uid) {
     uint8_t status;
     uint8_t i;
     uint8_t uid_check = 0;
@@ -190,7 +170,7 @@ uint8_t mfrc522_anticoll(uint8_t *uid) {
     uint8_t send[2];
 
     mfrc522_write_reg(BitFramingReg, 0x00);
-    send[0] = PICC_ANTICOLL;
+    send[0] = cascade_level;
     send[1] = 0x20;
 
     status = mfrc522_to_card(PCD_Transceive, send, 2, uid, &back_bits);
@@ -198,6 +178,29 @@ uint8_t mfrc522_anticoll(uint8_t *uid) {
     if (status == MI_OK) {
         for (i = 0; i < 4; i++) uid_check ^= uid[i];
         if (uid_check != uid[4]) status = MI_ERR;
+    }
+    return status;
+}
+
+uint8_t mfrc522_select(uint8_t cascade_level, uint8_t *uid, uint8_t *sak) {
+    uint8_t status;
+    uint8_t buffer[9];
+    uint8_t back_data[3];
+    uint8_t back_len;
+
+    // Build SELECT command: [CL, NVB=0x70, UID0, UID1, UID2, UID3, BCC, CRC_L, CRC_H]
+    buffer[0] = cascade_level;
+    buffer[1] = 0x70;  // NVB: all 40 UID bits complete
+    for (uint8_t i = 0; i < 5; i++) {
+        buffer[2 + i] = uid[i];  // 4 UID bytes + BCC from anticoll
+    }
+    mfrc522_calculate_crc(buffer, 7, &buffer[7]);
+
+    mfrc522_write_reg(BitFramingReg, 0x00);  // Full byte framing
+
+    status = mfrc522_to_card(PCD_Transceive, buffer, 9, back_data, &back_len);
+    if (status == MI_OK) {
+        *sak = back_data[0];
     }
     return status;
 }
