@@ -61,6 +61,7 @@ class App(ctk.CTk):
         self._writing = False
         self._guard = OperationGuard()
         self.attack = AttackOrchestrator(self.serial)
+        self._last_tag_uid = None
 
         # UI State
         self.current_page = None
@@ -314,17 +315,37 @@ class App(ctk.CTk):
         ctrls = ctk.CTkFrame(p)
         ctrls.grid(row=1, column=0, sticky="ew", pady=10)
 
+        # Darkside attack
         self.crack_btn = ctk.CTkButton(
             ctrls, text="Start Darkside Attack", fg_color="#8b5cf6", hover_color="#7c3aed",
             width=200, height=45, command=self._start_crack
         )
-        self.crack_btn.pack(pady=20)
+        self.crack_btn.pack(pady=(20, 10))
+
+        # Nested attack
+        nested_row = ctk.CTkFrame(ctrls, fg_color="transparent")
+        nested_row.pack(pady=(5, 10))
+
+        ctk.CTkLabel(nested_row, text="Target sector:").pack(side="left", padx=(0, 8))
+        self._nested_sector_var = ctk.StringVar(value="5")
+        self._nested_sector_menu = ctk.CTkOptionMenu(
+            nested_row, variable=self._nested_sector_var,
+            values=[str(s) for s in range(5, 16)],
+            width=70, height=30,
+        )
+        self._nested_sector_menu.pack(side="left", padx=(0, 10))
+
+        self.nested_btn = ctk.CTkButton(
+            nested_row, text="Start Nested Attack", fg_color="#0d9488", hover_color="#0f766e",
+            width=200, height=45, command=self._start_nested
+        )
+        self.nested_btn.pack(side="left")
 
         self.stop_attack_btn = ctk.CTkButton(
             ctrls, text="Abort Attack", fg_color="#da3633", hover_color="#b62324",
             width=150, command=self._global_stop
         )
-        self.stop_attack_btn.pack(pady=(0, 20))
+        self.stop_attack_btn.pack(pady=(5, 20))
 
         self.attack_label = ctk.CTkLabel(p, text="Ready", font=ctk.CTkFont(size=14))
         self.attack_label.grid(row=2, column=0, pady=10)
@@ -339,6 +360,26 @@ class App(ctk.CTk):
         self.attack_label.configure(text="Darkside attack...")
         self._log("Starting darkside attack on sector 0")
         self.attack.start_darkside(0)
+
+    def _start_nested(self):
+        if not self.serial.is_connected:
+            self._log("Nested attack failed: not connected", "ERROR")
+            return
+        if not self._last_tag_uid:
+            self._log("Nested attack failed: scan a tag first", "ERROR")
+            return
+        if not self._guard.start("nested_attack"):
+            self._log("Operation in progress, please wait", "WARN")
+            return
+        target = int(self._nested_sector_var.get())
+        uid_int = int(self._last_tag_uid, 16)
+        self.attack._uid = uid_int
+        self.attack_label.configure(text="Nested: calibrating...")
+        self._log(f"Starting nested attack on sector {target} (UID={self._last_tag_uid})")
+        self.attack.start_nested_attack(
+            known_sector=0, target_sector=target,
+            known_key=bytes.fromhex("FFFFFFFFFFFF"),
+        )
 
     def _global_stop(self):
         """Global halt for all active processes."""
@@ -581,18 +622,33 @@ class App(ctk.CTk):
                                 )
                                 self._log(f"Darkside complete: {n} NACKs, no candidates", "WARN")
                         elif event == "nested_nonce":
+                            phase = result.get("phase", "")
+                            label = "calibrating" if phase == "calibrating" else "attacking"
                             self.attack_label.configure(
-                                text=f"Nested: {result['count']} nonce pairs"
+                                text=f"Nested ({label}): {result['count']} nonce pairs"
                             )
+                        elif event == "nested_calibrated":
+                            d = result["distance"]
+                            self.attack_label.configure(text=f"Nested: calibrated (dist={d}), attacking...")
+                            self._log(f"Nested: PRNG distance calibrated to {d} ({result['samples']} samples)")
                         elif event == "nested_fail":
-                            self._log(f"Nested: {result['reason']}", "WARN")
+                            self._guard.finish()
+                            self.attack_label.configure(text=f"Nested failed: {result['reason']}")
+                            self._log(f"Nested failed: {result['reason']}", "WARN")
                         elif event == "nested_complete":
                             self._guard.finish()
+                            keys = result.get("candidates", [])
                             n = result["nonce_pairs"]
-                            self.attack_label.configure(
-                                text=f"Nested done: {n} pairs"
-                            )
-                            self._log(f"Nested complete: {n} nonce pairs collected")
+                            if keys:
+                                self.attack_label.configure(
+                                    text=f"KEY FOUND: {keys[0]}"
+                                )
+                                self._log(f"Nested complete: {n} pairs -> KEY FOUND: {', '.join(keys)}")
+                            else:
+                                self.attack_label.configure(
+                                    text=f"No key found ({n} pairs)"
+                                )
+                                self._log(f"Nested complete: {n} pairs, no key found", "WARN")
                 elif msg["type"] == "DATA":
                     self.card_data.set_block(msg["block"], msg["data"])
                     sector = self.card_data.sector_for_block(msg["block"])
@@ -643,7 +699,7 @@ class App(ctk.CTk):
                 elif msg["type"] == "INFO":
                     self._log(f"Firmware: {msg['message']}")
         
-        attack_ops = ("cracking",)
+        attack_ops = ("cracking", "nested_attack")
         op_timeout = 300 if self._guard.operation in attack_ops else 30
         if self._guard.check_timeout(timeout=op_timeout):
             self.progress_label.configure(text="Timeout")
@@ -668,6 +724,7 @@ class App(ctk.CTk):
             self.serial.send_command("D\n")
 
     def _update_tag_display(self, tag):
+        self._last_tag_uid = tag.uid
         self.uid_label.configure(text=tag.uid_formatted)
         atqa = tag.atqa
         self.atqa_label.configure(
