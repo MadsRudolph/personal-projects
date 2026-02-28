@@ -757,41 +757,43 @@ static void do_nested_collect(void) {
     auth_cmd[0] = PICC_AUTHKA;
     auth_cmd[1] = nested_target_block;
 
-    // Compute CRC on plaintext
-    // Note: CRC is computed on plaintext, then encrypted with the data
-    // Actually for MIFARE Classic re-auth, the CRC calculation is on the
-    // plaintext command, then everything (cmd + CRC) is encrypted
+    // Compute CRC on plaintext, then encrypt everything
     mfrc522_calculate_crc(auth_cmd, 2, &auth_cmd[2]);
 
-    // Check parity for 4 encrypted bytes
-    crypto1_state cs_par = cs;
-    if (!parity_check_ok(&cs_par, 4)) {
-        uart_puts("NESTED:FAIL:PARITY\r\n");
+    // Encrypt byte-by-byte with parity clocking
+    uint8_t enc_cmd[4];
+    uint8_t parity_ok = 1;
+    for (uint8_t i = 0; i < 4; i++) {
+        uint8_t ks = crypto1_byte(&cs, auth_cmd[i], 0);
+        enc_cmd[i] = auth_cmd[i] ^ ks;
+        // Clock parity bit through LFSR
+        uint8_t wire_par = odd_parity8(enc_cmd[i]);
+        uint8_t ks_par = crypto1_bit(&cs, wire_par, 1);
+        if (odd_parity8(ks) != ks_par) {
+            parity_ok = 0;
+            break;
+        }
+    }
+
+    if (!parity_ok) {
+        // Auto-parity won't match crypto parity - silently retry
         mfrc522_halt();
         return;
     }
 
-    // Encrypt the 4 bytes
-    uint8_t enc_cmd[4];
-    for (uint8_t i = 0; i < 4; i++) {
-        enc_cmd[i] = auth_cmd[i] ^ crypto1_byte(&cs, auth_cmd[i], 0);
-    }
-
-    // Send encrypted auth command, expect 4-byte plaintext nonce
-    // After receiving re-auth, card drops crypto and sends nt in plaintext
-    mfrc522_clear_bit(TxModeReg, 0x80);  // No CRC (already in encrypted data)
+    // Send encrypted auth command, expect 4-byte encrypted nonce
+    mfrc522_clear_bit(TxModeReg, 0x80);
     mfrc522_clear_bit(RxModeReg, 0x80);
 
     uint8_t nt_target[4];
     uint8_t back_len;
     status = mfrc522_to_card(PCD_Transceive, enc_cmd, 4, nt_target, &back_len);
 
-    // Restore CRC settings
     mfrc522_set_bit(TxModeReg, 0x80);
     mfrc522_set_bit(RxModeReg, 0x80);
 
     if (status != MI_OK || back_len != 32) {
-        uart_puts("NESTED:FAIL:TARGET\r\n");
+        // Target auth failed - silently retry
         mfrc522_halt();
         return;
     }
@@ -957,7 +959,7 @@ int main(void) {
             }
             do_nested_collect();
             nested_rounds++;
-            if (nested_rounds >= 5) {
+            if (nested_rounds >= 50) {
                 uart_puts("NESTED:DONE\r\n");
                 scan_mode = MODE_IDLE;
                 nested_rounds = 0;
