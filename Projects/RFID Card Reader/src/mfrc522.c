@@ -204,3 +204,98 @@ uint8_t mfrc522_select(uint8_t cascade_level, uint8_t *uid, uint8_t *sak) {
     }
     return status;
 }
+
+uint8_t mfrc522_auth(uint8_t auth_mode, uint8_t block, uint8_t *key, uint8_t *uid) {
+    uint8_t buffer[12];
+    uint8_t n;
+    uint8_t i;
+
+    // Build auth command: [auth_mode, block, key(6), uid(4)]
+    buffer[0] = auth_mode;
+    buffer[1] = block;
+    for (i = 0; i < 6; i++) {
+        buffer[2 + i] = key[i];
+    }
+    for (i = 0; i < 4; i++) {
+        buffer[8 + i] = uid[i];
+    }
+
+    // PCD_MFAuthent does not use transceive - it's a special command
+    mfrc522_write_reg(ComIEnReg, 0x12);  // IdleIRq and ErrIRq
+    mfrc522_clear_bit(ComIrqReg, 0x80);
+    mfrc522_set_bit(FIFOLevelReg, 0x80); // Flush FIFO
+    mfrc522_write_reg(CommandReg, PCD_Idle);
+
+    // Write data to FIFO
+    for (i = 0; i < 12; i++) {
+        mfrc522_write_reg(FIFODataReg, buffer[i]);
+    }
+
+    mfrc522_write_reg(CommandReg, PCD_MFAuthent);
+
+    // Wait for completion
+    i = 255;
+    do {
+        n = mfrc522_read_reg(ComIrqReg);
+        i--;
+    } while (i && !(n & 0x01) && !(n & 0x10));
+
+    // Check Status2Reg - Crypto1On bit indicates successful auth
+    if (mfrc522_read_reg(Status2Reg) & 0x08) {
+        return MI_OK;
+    }
+    return MI_ERR;
+}
+
+uint8_t mfrc522_read_block(uint8_t block, uint8_t *buffer) {
+    uint8_t status;
+    uint8_t cmd[4];
+    uint8_t back_len;
+
+    cmd[0] = PICC_READ;
+    cmd[1] = block;
+    mfrc522_calculate_crc(cmd, 2, &cmd[2]);
+
+    status = mfrc522_to_card(PCD_Transceive, cmd, 4, buffer, &back_len);
+    if (status != MI_OK || back_len != 0x90) {
+        // 0x90 = 144 bits = 18 bytes (16 data + 2 CRC)
+        return MI_ERR;
+    }
+    return MI_OK;
+}
+
+uint8_t mfrc522_write_block(uint8_t block, uint8_t *data) {
+    uint8_t status;
+    uint8_t cmd[4];
+    uint8_t back_data[16];
+    uint8_t back_len;
+
+    // Phase 1: Send WRITE command + block number
+    cmd[0] = PICC_WRITE;
+    cmd[1] = block;
+    mfrc522_calculate_crc(cmd, 2, &cmd[2]);
+
+    status = mfrc522_to_card(PCD_Transceive, cmd, 4, back_data, &back_len);
+    // Expect 4-bit ACK (0x0A)
+    if (status != MI_OK || back_len != 4 || (back_data[0] & 0x0F) != 0x0A) {
+        return MI_ERR;
+    }
+
+    // Phase 2: Send 16 bytes of data + CRC
+    uint8_t write_buf[18];
+    for (uint8_t i = 0; i < 16; i++) {
+        write_buf[i] = data[i];
+    }
+    mfrc522_calculate_crc(write_buf, 16, &write_buf[16]);
+
+    status = mfrc522_to_card(PCD_Transceive, write_buf, 18, back_data, &back_len);
+    if (status != MI_OK || back_len != 4 || (back_data[0] & 0x0F) != 0x0A) {
+        return MI_ERR;
+    }
+
+    return MI_OK;
+}
+
+void mfrc522_stop_crypto(void) {
+    mfrc522_clear_bit(Status2Reg, 0x08);  // Clear MFCrypto1On bit
+}

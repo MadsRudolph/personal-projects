@@ -45,3 +45,41 @@ def test_parse_human_readable_ignored():
     assert SerialHandler.parse_line("ATQA: 03 44  UID: 04:A3") is None
     assert SerialHandler.parse_line("Chip Type: MIFARE DESFire") is None
     assert SerialHandler.parse_line("=== Tag Detected ===") is None
+
+
+def test_parse_data_line():
+    result = SerialHandler.parse_line("DATA:00:A1B2C3D4050607080910111213141516")
+    assert result == {
+        "type": "DATA",
+        "block": 0,
+        "data": "A1B2C3D4050607080910111213141516",
+    }
+
+
+def test_parse_data_line_high_block():
+    result = SerialHandler.parse_line("DATA:3F:00112233445566778899AABBCCDDEEFF")
+    assert result == {
+        "type": "DATA",
+        "block": 0x3F,
+        "data": "00112233445566778899AABBCCDDEEFF",
+    }
+
+
+def test_parse_ok_dump_complete():
+    result = SerialHandler.parse_line("OK:DUMP_COMPLETE")
+    assert result == {"type": "OK", "message": "DUMP_COMPLETE"}
+
+
+def test_parse_ok_write_ready():
+    result = SerialHandler.parse_line("OK:WRITE_READY")
+    assert result == {"type": "OK", "message": "WRITE_READY"}
+
+
+def test_parse_ok_wrote():
+    result = SerialHandler.parse_line("OK:WROTE:0A")
+    assert result == {"type": "OK", "message": "WROTE:0A"}
+
+
+def test_parse_err_auth_fail():
+    result = SerialHandler.parse_line("ERR:AUTH_FAIL:03")
+    assert result == {"type": "ERR", "message": "AUTH_FAIL:03"}
