@@ -142,7 +142,7 @@ static uint8_t reselect_card(uint8_t *uid) {
 static uint8_t manual_auth(uint8_t block, uint8_t *key, uint8_t *uid,
                            uint8_t *nt_out, crypto1_state *cs_out,
                            uint16_t max_retries) {
-    uint8_t cmd[4];
+    uint8_t cmd[2];
     uint8_t nt[4];
     uint8_t response[8];
     uint8_t at_buf[4];
@@ -162,16 +162,16 @@ static uint8_t manual_auth(uint8_t block, uint8_t *key, uint8_t *uid,
         if (mfrc522_select(PICC_ANTICOLL1, uid, &sak) != MI_OK) continue;
 
         // Step 1: Send AUTH command, receive plaintext nonce
+        // Use hardware CRC: send 2 bytes, MFRC522 appends CRC
         cmd[0] = PICC_AUTHKA;
         cmd[1] = block;
-        mfrc522_calculate_crc(cmd, 2, &cmd[2]);
 
         // Need CRC on TX, no CRC on RX for this step
         mfrc522_set_bit(TxModeReg, 0x80);    // TxCRCEn = 1
         mfrc522_clear_bit(RxModeReg, 0x80);  // RxCRCEn = 0
         mfrc522_write_reg(BitFramingReg, 0x00);
 
-        status = mfrc522_to_card(PCD_Transceive, cmd, 4, nt, &back_len);
+        status = mfrc522_to_card(PCD_Transceive, cmd, 2, nt, &back_len);
         if (status != MI_OK || back_len != 32) {
             mfrc522_halt();
             continue;
@@ -644,17 +644,19 @@ static void do_darkside_round(void) {
     }
 
     // Send AUTH command to get plaintext nonce
-    uint8_t cmd[4];
+    // Use hardware CRC: send 2 bytes, MFRC522 appends CRC
+    uint8_t cmd[2];
     cmd[0] = PICC_AUTHKA;
     cmd[1] = dark_sector * 4;  // first block of sector
-    mfrc522_calculate_crc(cmd, 2, &cmd[2]);
 
-    mfrc522_set_bit(TxModeReg, 0x80);    // TX CRC on
+    mfrc522_set_bit(TxModeReg, 0x80);    // TX CRC on (hardware appends CRC)
     mfrc522_clear_bit(RxModeReg, 0x80);  // RX CRC off
+    mfrc522_write_reg(BitFramingReg, 0x00);
 
-    status = mfrc522_to_card(PCD_Transceive, cmd, 4, nt, &back_len);
+    status = mfrc522_to_card(PCD_Transceive, cmd, 2, nt, &back_len);
     if (status != MI_OK || back_len != 32) {
         uart_puts("DARK:ERR:AUTH_CMD\r\n");
+        mfrc522_stop_crypto();
         mfrc522_halt();
         // Restore CRC
         mfrc522_set_bit(TxModeReg, 0x80);
@@ -696,6 +698,7 @@ static void do_darkside_round(void) {
         uart_puts("DARK:TIMEOUT\r\n");
     }
 
+    mfrc522_stop_crypto();
     mfrc522_halt();
 }
 
