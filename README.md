@@ -77,6 +77,24 @@ WiFi-connected IR blaster/receiver using ESP32 and ESPHome, integrating with Hom
 
 ---
 
+### 💳 [RFID Card Reader - Bare Metal AVR](Projects/RFID%20Card%20Reader/RFID%20Card%20Reader.md)
+
+Bare-metal RFID card reader using MFRC522 and Arduino Uno. Reads 13.56 MHz MIFARE card UIDs over serial. Pure embedded C with direct ATmega328P register access — no Arduino framework.
+
+**Status:** 🟡 Proof of Concept
+
+**Key Specs:**
+- **MCU:** ATmega328P (Arduino Uno), bare-metal C
+- **RFID Module:** MFRC522 RC522 (13.56 MHz, ISO 14443A)
+- **Interface:** Hardware SPI (~1 MHz)
+- **Output:** UART serial at 9600 baud
+- **Build System:** PlatformIO (atmelavr, no framework)
+
+**Documentation:**
+- [📋 Main Project](Projects/RFID%20Card%20Reader/RFID%20Card%20Reader.md) - Wiring, software architecture, technical notes
+
+---
+
 ## 📂 Repository Structure
 
 ```
@@ -90,9 +108,12 @@ Projects/
 │   ├── Pi Zero PWM Filter/           # PWM audio filter project
 │   │   ├── Pi Zero 2W PWM Audio Filter.md
 │   │   └── Build Guide - 3rd Order PWM Filter.md
-│   └── ESP32 IR Blaster/             # Smart home IR controller
-│       ├── ESP32 IR Blaster - Smart Home.md
-│       └── Learning Remote Codes - ESP32 IR Blaster.md
+│   ├── ESP32 IR Blaster/             # Smart home IR controller
+│   │   ├── ESP32 IR Blaster - Smart Home.md
+│   │   └── Learning Remote Codes - ESP32 IR Blaster.md
+│   └── RFID Card Reader/            # Bare-metal RFID reader
+│       ├── RFID Card Reader.md
+│       └── src/                     # Bare-metal C source (SPI, UART, MFRC522)
 ├── Resources/
 │   ├── Illuminate 7Mk2/              # Speaker resources
 │   │   └── *.pdf
@@ -112,7 +133,7 @@ Projects/
 - **Electronics:** Analog filters, crossover networks, IR circuits
 - **Audio:** Dayton Audio drivers, Fosi Audio amplification, PWM filtering
 - **Smart Home:** Home Assistant, ESPHome, ESP32
-- **Embedded:** Raspberry Pi Zero 2W, ESP32
+- **Embedded:** Raspberry Pi Zero 2W, ESP32, ATmega328P (bare-metal AVR)
 - **Version Control:** Git + GitHub
 
 ---
@@ -131,7 +152,7 @@ These projects combine my academic knowledge with hands-on building experience.
 
 ## 🏷️ Topics
 
-`audio` `speakers` `diy` `3d-printing` `electroacoustics` `electronics` `amplifiers` `class-d` `power-electronics` `raspberry-pi` `spotify` `esp32` `esphome` `home-assistant` `smart-home` `ir-remote` `obsidian`
+`audio` `speakers` `diy` `3d-printing` `electroacoustics` `electronics` `amplifiers` `class-d` `power-electronics` `raspberry-pi` `spotify` `esp32` `esphome` `home-assistant` `smart-home` `ir-remote` `rfid` `avr` `bare-metal` `obsidian`
 
 ---
 
@@ -177,4 +198,4 @@ Alternatively, all files are standard markdown and can be viewed directly on Git
 
 ---
 
-**Last Updated:** 2026-02-23
+**Last Updated:** 2026-02-28
