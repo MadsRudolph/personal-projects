@@ -321,7 +321,7 @@ class App(ctk.CTk):
             )
             self.serial.send_load_block(block, hex_data)
         else:
-            self._send("D")
+            self.serial.send_command("D\n")  # Needs newline - firmware is in line mode
 
     def _update_tag_display(self, tag):
         self.uid_label.configure(text=tag.uid_formatted)
