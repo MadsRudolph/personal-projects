@@ -1,11 +1,17 @@
 """
 MIFARE Classic key recovery algorithms.
 
-Darkside: Recovers key from NACK events (no known key needed).
+mfkey32: Recovers key from two sniffed authentication exchanges (uses crapto1 C library).
 Nested: Recovers key from nonce pairs (one known key needed).
 """
 
+import os
+import subprocess
+
 from crypto1 import Crypto1, prng_successor, odd_parity8, LF_POLY_ODD, LF_POLY_EVEN, _filter_bit, parity32
+
+# Path to the mfkey32 CLI tool (compiled crapto1)
+_MFKEY32_PATH = os.path.join(os.path.dirname(__file__), "crapto1", "mfkey32.exe")
 
 
 def find_prng_distance(nt_start: int, nt_end: int, max_dist: int = 65536) -> int | None:
@@ -81,9 +87,59 @@ def nested_recover(uid: int, nt_known: int, nt_target: int,
     return candidates
 
 
+def mfkey32_recover(uid: int, auth_data: list[dict]) -> list[bytes]:
+    """
+    Recover key using mfkey32 from pairs of sniffed authentication exchanges.
+
+    Each entry needs: nt (32-bit tag nonce), nr (32-bit encrypted reader nonce),
+    ar (32-bit encrypted reader answer).
+
+    Tries all pairs of exchanges; returns the first key found.
+
+    Args:
+        uid: 32-bit card UID
+        auth_data: list of {"nt": int, "nr": int, "ar": int} dicts
+
+    Returns:
+        List of candidate keys (6-byte bytes objects)
+    """
+    if len(auth_data) < 2 or not os.path.isfile(_MFKEY32_PATH):
+        return []
+
+    for i in range(len(auth_data)):
+        for j in range(i + 1, len(auth_data)):
+            d0 = auth_data[i]
+            d1 = auth_data[j]
+            args = [
+                _MFKEY32_PATH,
+                f"{uid:08X}",
+                f"{d0['nt']:08X}", f"{d0['nr']:08X}", f"{d0['ar']:08X}",
+                f"{d1['nt']:08X}", f"{d1['nr']:08X}", f"{d1['ar']:08X}",
+            ]
+            try:
+                result = subprocess.run(
+                    args, capture_output=True, text=True, timeout=30
+                )
+                for line in result.stdout.splitlines():
+                    if line.startswith("Found key:"):
+                        key_hex = line.split(":")[1].strip()
+                        return [bytes.fromhex(key_hex)]
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                continue
+
+    return []
+
+
 def darkside_recover(uid: int, nack_data: list[dict]) -> list[bytes]:
     """
     Recover key from darkside attack NACK data.
+
+    Note: The darkside attack requires parity bits and the encrypted NACK value,
+    which need firmware support for lfsr_common_prefix. The current firmware
+    only detects NACK presence, not the NACK value or parity bits.
+
+    For now, this tries mfkey32 on NACK pairs (works only if NR/AR happen to
+    form valid auth exchanges, which is unlikely with random data).
 
     Args:
         uid: 32-bit card UID
@@ -92,20 +148,18 @@ def darkside_recover(uid: int, nack_data: list[dict]) -> list[bytes]:
     Returns:
         List of candidate keys (6-byte bytes objects)
     """
-    candidates = []
-
     if len(nack_data) < 2:
-        return candidates
+        return []
 
-    # The darkside attack uses the parity oracle:
-    # For each NACK event, we know that the parity of our plaintext
-    # happened to match the encrypted parity from the card.
-    # This constrains bits of the keystream.
+    # Convert NACK data to mfkey32 format: split nr_ar into nr and ar
+    auth_data = []
+    for entry in nack_data:
+        nr_ar = entry["nr_ar"]
+        if len(nr_ar) == 8 and entry["nt"] is not None:
+            auth_data.append({
+                "nt": entry["nt"],
+                "nr": int.from_bytes(nr_ar[:4], "big"),
+                "ar": int.from_bytes(nr_ar[4:], "big"),
+            })
 
-    # Simplified approach: collect enough NACK events and use
-    # statistical analysis to recover key bits.
-
-    # Full implementation would use lfsr_recovery32 from crapto1.
-    # For now, this is a placeholder structure.
-
-    return candidates
+    return mfkey32_recover(uid, auth_data)
