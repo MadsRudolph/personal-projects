@@ -643,10 +643,14 @@ class App(ctk.CTk):
                 elif msg["type"] == "INFO":
                     self._log(f"Firmware: {msg['message']}")
         
-        if self._guard.check_timeout():
+        attack_ops = ("cracking",)
+        op_timeout = 300 if self._guard.operation in attack_ops else 30
+        if self._guard.check_timeout(timeout=op_timeout):
             self.progress_label.configure(text="Timeout")
             self.progress_bar.set(0)
-            self._log("Operation timed out after 30s", "WARN")
+            self._log(f"Operation timed out after {op_timeout}s", "WARN")
+            if self.attack.state != "idle":
+                self.attack.stop()
         self.after(100, self._poll_serial)
 
     def _send_next_write(self):

@@ -17,6 +17,7 @@ class AttackOrchestrator:
         self.state = "idle"
         self.result_queue = queue.Queue()  # results for GUI
         self._uid = None
+        self._last_nt = None
         self._nack_data = []
         self._nested_data = []
         self._known_keys = {}  # sector -> key bytes
@@ -25,6 +26,7 @@ class AttackOrchestrator:
     def start_darkside(self, sector: int):
         """Start darkside attack on a sector."""
         self.state = "darkside"
+        self._last_nt = None
         self._nack_data = []
         self._target_sector = sector
         self.serial.send_command(f"K{sector:02X}")
@@ -58,15 +60,18 @@ class AttackOrchestrator:
         if subtype == "UID":
             self._uid = int(msg["uid"], 16)
             self.result_queue.put({"event": "dark_uid", "uid": msg["uid"]})
+        elif subtype == "NT":
+            self._last_nt = int(msg["nt"], 16)
         elif subtype == "NACK":
-            nt = msg.get("_last_nt")  # set by feed pipeline
             nr_ar = bytes.fromhex(msg["nr_ar"])
-            self._nack_data.append({"nt": nt, "nr_ar": nr_ar})
+            self._nack_data.append({"nt": self._last_nt, "nr_ar": nr_ar})
+            self._last_nt = None
             self.result_queue.put({
                 "event": "dark_nack",
                 "count": len(self._nack_data)
             })
         elif subtype == "TIMEOUT":
+            self._last_nt = None
             self.result_queue.put({"event": "dark_timeout"})
         elif subtype == "DONE":
             # Try to recover key
