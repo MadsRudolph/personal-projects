@@ -291,3 +291,94 @@ def add_mode(conn):
         print(f"  -> #{cid}: {name}{val_str}{pkg_str} x{data['quantity']} @ {data['location']}  ({count} added)\n")
 
     print(f"\n  Session complete: {count} components added.")
+
+
+# --- Task 5: CLI dispatch — main function and all commands ---
+
+def cmd_search(conn, query):
+    results = search_components(conn, query)
+    print(f"\n  Search results for '{query}':\n")
+    print(format_table(results))
+
+
+def cmd_list(conn, category):
+    # Fuzzy match category name
+    match = None
+    for cat in CATEGORIES:
+        if cat.lower().startswith(category.lower()):
+            match = cat
+            break
+    if not match:
+        print(f"  Unknown category: {category}")
+        print(f"  Valid: {', '.join(CATEGORIES)}")
+        return
+    results = list_by_category(conn, match)
+    print(f"\n  {match} ({len(results)} items):\n")
+    print(format_table(results))
+
+
+def cmd_stock(conn):
+    stock = get_stock(conn)
+    print("\n  Inventory Stock:\n")
+    print(format_stock(stock))
+
+
+def cmd_update(conn, args):
+    # Expected: update <id> quantity <n>
+    if len(args) < 4 or args[2] != "quantity":
+        print("  Usage: update <id> quantity <new_qty>")
+        return
+    try:
+        cid = int(args[1])
+        qty = int(args[3])
+    except ValueError:
+        print("  Error: id and quantity must be numbers")
+        return
+    if update_quantity(conn, cid, qty):
+        print(f"  Updated component #{cid} quantity to {qty}")
+    else:
+        print(f"  Component #{cid} not found")
+
+
+def cmd_export(conn):
+    output = export_csv(conn)
+    filename = f"inventory_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
+    with open(filepath, "w", newline="") as f:
+        f.write(output)
+    print(f"  Exported to {filepath}")
+
+
+def main():
+    conn = init_db()
+    args = sys.argv[1:]
+
+    try:
+        if not args or args[0] == "add":
+            add_mode(conn)
+        elif args[0] == "search":
+            if len(args) < 2:
+                print("  Usage: search <query>")
+            else:
+                cmd_search(conn, " ".join(args[1:]))
+        elif args[0] == "list":
+            if len(args) < 2:
+                print("  Usage: list <category>")
+            else:
+                cmd_list(conn, args[1])
+        elif args[0] == "stock":
+            cmd_stock(conn)
+        elif args[0] == "update":
+            cmd_update(conn, args)
+        elif args[0] == "export":
+            cmd_export(conn)
+        else:
+            print(CHEATSHEET)
+    except KeyboardInterrupt:
+        print("\n  Bye!")
+    finally:
+        conn.close()
+
+
+if __name__ == "__main__":
+    main()
