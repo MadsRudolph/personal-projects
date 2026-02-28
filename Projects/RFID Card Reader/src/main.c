@@ -189,38 +189,43 @@ static uint8_t manual_auth(uint8_t block, uint8_t *key, uint8_t *uid,
                         ((uint32_t)nt[2] << 16) | ((uint32_t)nt[3] << 24);
         crypto1_word(&cs, uid32 ^ nt32, 0);
 
-        // Step 3: Check if parity will work for 8-byte response
-        crypto1_state cs_check = cs;  // copy state
-        if (!parity_check_ok(&cs_check, 8)) {
-            mfrc522_halt();
-            continue;  // Parity won't match, try new nonce
-        }
-
-        // Step 4: Compute encrypted response
-        // nr = reader nonce (use retry counter as simple source)
+        // Step 3: Compute and encrypt response (byte-by-byte with parity)
+        // Each byte on the wire is 9 bits (8 data + 1 parity).
+        // The LFSR must be clocked for parity bits too.
+        // Use is_encrypted=0 for plaintext input (reader encrypting).
         uint32_t nr = retry | ((uint32_t)retry << 16);
         uint32_t ar = prng_successor(nt32, 64);
 
-        // Encrypt nr
-        uint32_t ks_nr = crypto1_word(&cs, nr, 1);
-        uint32_t nr_enc = nr ^ ks_nr;
+        uint8_t plain[8];
+        plain[0] = nr & 0xFF;
+        plain[1] = (nr >> 8) & 0xFF;
+        plain[2] = (nr >> 16) & 0xFF;
+        plain[3] = (nr >> 24) & 0xFF;
+        plain[4] = ar & 0xFF;
+        plain[5] = (ar >> 8) & 0xFF;
+        plain[6] = (ar >> 16) & 0xFF;
+        plain[7] = (ar >> 24) & 0xFF;
 
-        // Encrypt ar
-        uint32_t ks_ar = crypto1_word(&cs, ar, 1);
-        uint32_t ar_enc = ar ^ ks_ar;
+        // Encrypt and check if MFRC522 auto-parity will match crypto parity
+        uint8_t parity_ok = 1;
+        for (uint8_t i = 0; i < 8; i++) {
+            uint8_t ks = crypto1_byte(&cs, plain[i], 0);
+            response[i] = plain[i] ^ ks;
+            // Clock the parity bit through the LFSR
+            uint8_t wire_par = odd_parity8(response[i]);
+            uint8_t ks_par = crypto1_bit(&cs, wire_par, 1);
+            if (odd_parity8(ks) != ks_par) {
+                parity_ok = 0;
+                break;
+            }
+        }
 
-        // Pack into response buffer (LSB first byte order)
-        response[0] = nr_enc & 0xFF;
-        response[1] = (nr_enc >> 8) & 0xFF;
-        response[2] = (nr_enc >> 16) & 0xFF;
-        response[3] = (nr_enc >> 24) & 0xFF;
-        response[4] = ar_enc & 0xFF;
-        response[5] = (ar_enc >> 8) & 0xFF;
-        response[6] = (ar_enc >> 16) & 0xFF;
-        response[7] = (ar_enc >> 24) & 0xFF;
+        if (!parity_ok) {
+            mfrc522_halt();
+            continue;
+        }
 
-        // Step 5: Send encrypted response, expect 4-byte at
-        // No CRC on TX or RX for this step
+        // Step 4: Send encrypted response, expect 4-byte at
         mfrc522_clear_bit(TxModeReg, 0x80);  // TxCRCEn = 0
         mfrc522_clear_bit(RxModeReg, 0x80);  // RxCRCEn = 0
 
@@ -230,11 +235,14 @@ static uint8_t manual_auth(uint8_t block, uint8_t *key, uint8_t *uid,
             continue;
         }
 
-        // Step 6: Verify at
-        uint32_t at_enc32 = ((uint32_t)at_buf[0]) | ((uint32_t)at_buf[1] << 8) |
-                            ((uint32_t)at_buf[2] << 16) | ((uint32_t)at_buf[3] << 24);
-        uint32_t ks_at = crypto1_word(&cs, 0, 0);
-        uint32_t at = at_enc32 ^ ks_at;
+        // Step 5: Decrypt and verify at (byte-by-byte with parity)
+        uint32_t at = 0;
+        for (uint8_t i = 0; i < 4; i++) {
+            uint8_t ks = crypto1_byte(&cs, at_buf[i], 1);
+            at |= ((uint32_t)(at_buf[i] ^ ks)) << (i * 8);
+            // Clock parity bit (card's auto-parity on encrypted byte)
+            crypto1_bit(&cs, odd_parity8(at_buf[i]), 1);
+        }
         uint32_t expected_at = prng_successor(nt32, 96);
 
         if (at != expected_at) {

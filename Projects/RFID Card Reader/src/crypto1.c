@@ -5,7 +5,7 @@ static const uint8_t ODD_PARITY[16] = {
     0,1,1,0, 1,0,0,1, 1,0,0,1, 0,1,1,0
 };
 
-static uint8_t odd_parity8(uint8_t x) {
+uint8_t odd_parity8(uint8_t x) {
     return ODD_PARITY[x >> 4] ^ ODD_PARITY[x & 0x0F];
 }
 
