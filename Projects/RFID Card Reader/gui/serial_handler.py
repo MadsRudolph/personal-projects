@@ -93,6 +93,45 @@ class SerialHandler:
                     "block": int(parts[0], 16),
                     "data": parts[1],
                 }
+        elif line.startswith("DARK:"):
+            parts = line[5:].split(":", 1)
+            subtype = parts[0]
+            if subtype == "UID" and len(parts) > 1:
+                return {"type": "DARK", "subtype": "UID", "uid": parts[1]}
+            elif subtype == "NT" and len(parts) > 1:
+                return {"type": "DARK", "subtype": "NT", "nt": parts[1]}
+            elif subtype == "NACK" and len(parts) > 1:
+                return {"type": "DARK", "subtype": "NACK", "nr_ar": parts[1]}
+            elif subtype == "TIMEOUT":
+                return {"type": "DARK", "subtype": "TIMEOUT"}
+            elif subtype == "DONE":
+                return {"type": "DARK", "subtype": "DONE"}
+            elif subtype == "ERR" and len(parts) > 1:
+                return {"type": "DARK", "subtype": "ERR", "message": parts[1]}
+        elif line.startswith("NESTED:"):
+            parts = line[7:].split(":", 2)
+            subtype = parts[0]
+            if subtype == "NT" and len(parts) >= 2:
+                nt_parts = parts[1].split(":")
+                if len(nt_parts) == 2:
+                    return {
+                        "type": "NESTED",
+                        "subtype": "NT",
+                        "nt_known": nt_parts[0],
+                        "nt_target": nt_parts[1],
+                    }
+                # Handle case: NESTED:NT:aabb:ccdd (3 parts after initial split)
+                elif len(parts) == 3:
+                    return {
+                        "type": "NESTED",
+                        "subtype": "NT",
+                        "nt_known": parts[1],
+                        "nt_target": parts[2],
+                    }
+            elif subtype == "FAIL" and len(parts) > 1:
+                return {"type": "NESTED", "subtype": "FAIL", "reason": parts[1]}
+            elif subtype == "DONE":
+                return {"type": "NESTED", "subtype": "DONE"}
         elif line.startswith(("OK:", "ERR:", "INFO:")):
             prefix_end = line.index(":")
             return {
