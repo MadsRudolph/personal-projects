@@ -1,6 +1,6 @@
 import customtkinter as ctk
 from datetime import datetime
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 
 from serial_handler import SerialHandler
 from tag_info import Tag
@@ -148,6 +148,15 @@ class App(ctk.CTk):
             command=self._write_card,
         )
         self.write_btn.pack(side="left", padx=5)
+
+        ctk.CTkButton(
+            frame,
+            text="Format Card",
+            fg_color="#da3633",
+            hover_color="#b62324",
+            width=110,
+            command=self._format_card,
+        ).pack(side="left", padx=5)
 
         self.blk0_var = ctk.BooleanVar(value=False)
         ctk.CTkCheckBox(
@@ -350,6 +359,23 @@ class App(ctk.CTk):
         cmd = "B" if self.blk0_var.get() else "W"
         self._send(cmd)
 
+    def _format_card(self):
+        if not self.serial.is_connected:
+            self._log("Format failed: not connected", "ERROR")
+            return
+        confirm = messagebox.askyesno(
+            "Format Card",
+            "This will erase ALL data and reset all keys to factory defaults.\n\n"
+            "This cannot be undone. Proceed?",
+            icon="warning",
+        )
+        if not confirm:
+            self._log("Format cancelled by user")
+            return
+        self.progress_label.configure(text="Formatting...")
+        self._log("Starting card format (erase to factory defaults)")
+        self._send("F")
+
     def _save_dump(self):
         if not self.card_data.has_data:
             return
@@ -406,11 +432,31 @@ class App(ctk.CTk):
                         self._writing = False
                         self.progress_label.configure(text="Write complete!")
                         self._log("Write complete!")
+                    elif msg["message"].startswith("FORMAT:"):
+                        sector_hex = msg["message"][7:]
+                        try:
+                            sector = int(sector_hex, 16)
+                            self.progress_label.configure(
+                                text=f"Formatting sector {sector}/15..."
+                            )
+                        except ValueError:
+                            pass
+                    elif msg["message"] == "FORMAT_COMPLETE":
+                        self.progress_label.configure(text="Format complete!")
+                        self._log("Card formatted to factory defaults")
+                        self.card_data.clear()
+                        self._refresh_hex_viewer()
                 elif msg["type"] == "ERR":
-                    self.progress_label.configure(
-                        text=f"Error: {msg['message']}"
-                    )
-                    self._log(f"Firmware error: {msg['message']}", "ERROR")
+                    err_msg = msg["message"]
+                    if err_msg.startswith("FORMAT_AUTH:"):
+                        self._log(f"Format: auth failed on sector 0x{err_msg[12:]}", "WARN")
+                    elif err_msg.startswith("FORMAT_WRITE:"):
+                        self._log(f"Format: write failed on block 0x{err_msg[13:]}", "WARN")
+                    else:
+                        self.progress_label.configure(
+                            text=f"Error: {err_msg}"
+                        )
+                        self._log(f"Firmware error: {err_msg}", "ERROR")
                 elif msg["type"] == "INFO":
                     self._log(f"Firmware: {msg['message']}")
         self.after(100, self._poll_serial)

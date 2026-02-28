@@ -1,4 +1,5 @@
 #include <avr/io.h>
+#include <avr/pgmspace.h>
 #include <util/delay.h>
 #include "uart.h"
 #include "spi.h"
@@ -79,7 +80,38 @@ static void send_tag_protocol(uint8_t *atqa, uint8_t *uid, uint8_t uid_len, uint
     uart_puts("\r\n");
 }
 
-static const uint8_t default_key[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+#define NUM_KEYS 6
+
+static const uint8_t PROGMEM known_keys[NUM_KEYS][6] = {
+    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},  // Most common default
+    {0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5},  // MAD key
+    {0xD3, 0xF7, 0xD3, 0xF7, 0xD3, 0xF7},  // NDEF key
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+    {0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5},  // Common transport key
+    {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF},  // Common test key
+};
+
+// Try authenticating a block with all known keys (Key A and Key B).
+// Returns MI_OK on first success, MI_ERR if all attempts fail.
+static uint8_t try_auth(uint8_t block, uint8_t *uid) {
+    uint8_t key_buf[6];
+
+    for (uint8_t k = 0; k < NUM_KEYS; k++) {
+        for (uint8_t i = 0; i < 6; i++) {
+            key_buf[i] = pgm_read_byte(&known_keys[k][i]);
+        }
+
+        if (mfrc522_auth(PICC_AUTHKA, block, key_buf, uid) == MI_OK)
+            return MI_OK;
+        mfrc522_stop_crypto();
+
+        if (mfrc522_auth(PICC_AUTHKB, block, key_buf, uid) == MI_OK)
+            return MI_OK;
+        mfrc522_stop_crypto();
+    }
+
+    return MI_ERR;
+}
 
 static void send_block_data(uint8_t block, uint8_t *data) {
     uart_puts("DATA:");
@@ -98,8 +130,8 @@ static void do_dump(void) {
     uint8_t sak;
     uint8_t block_data[18]; // 16 data + 2 CRC from read
 
-    // Detect card
-    status = mfrc522_request(PICC_REQIDL, atqa);
+    // Detect card (REQALL wakes halted cards too)
+    status = mfrc522_request(PICC_REQALL, atqa);
     if (status != MI_OK) {
         uart_puts("ERR:NO_TAG\r\n");
         return;
@@ -121,8 +153,8 @@ static void do_dump(void) {
     for (uint8_t sector = 0; sector < 16; sector++) {
         uint8_t first_block = sector * 4;
 
-        // Authenticate sector with Key A
-        status = mfrc522_auth(PICC_AUTHKA, first_block, (uint8_t *)default_key, uid);
+        // Authenticate sector with common keys
+        status = try_auth(first_block, uid);
         if (status != MI_OK) {
             uart_puts("ERR:AUTH_FAIL:");
             uart_put_hex(sector);
@@ -255,7 +287,7 @@ static void do_write_init(void) {
     uint8_t atqa[2];
     uint8_t sak;
 
-    status = mfrc522_request(PICC_REQIDL, atqa);
+    status = mfrc522_request(PICC_REQALL, atqa);
     if (status != MI_OK) {
         uart_puts("ERR:NO_TAG\r\n");
         return;
@@ -303,7 +335,7 @@ static void handle_load_line(char *line, uint8_t len, uint8_t allow_block0) {
     // Authenticate if needed (new sector)
     uint8_t sector = block / 4;
     if (sector != write_authenticated_sector) {
-        uint8_t status = mfrc522_auth(PICC_AUTHKA, block, (uint8_t *)default_key, write_uid);
+        uint8_t status = try_auth(block, write_uid);
         if (status != MI_OK) {
             uart_puts("ERR:WRITE_AUTH:");
             uart_put_hex(block);
@@ -324,6 +356,80 @@ static void handle_load_line(char *line, uint8_t len, uint8_t allow_block0) {
         uart_put_hex(block);
         uart_puts("\r\n");
     }
+}
+
+static void do_format(void) {
+    uint8_t status;
+    uint8_t atqa[2];
+    uint8_t uid[5];
+    uint8_t sak;
+
+    status = mfrc522_request(PICC_REQALL, atqa);
+    if (status != MI_OK) {
+        uart_puts("ERR:NO_TAG\r\n");
+        return;
+    }
+
+    status = mfrc522_anticoll(PICC_ANTICOLL1, uid);
+    if (status != MI_OK) {
+        uart_puts("ERR:ANTICOLL\r\n");
+        return;
+    }
+
+    status = mfrc522_select(PICC_ANTICOLL1, uid, &sak);
+    if (status != MI_OK) {
+        uart_puts("ERR:SELECT\r\n");
+        return;
+    }
+
+    // Factory default sector trailer
+    uint8_t trailer[16] = {
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  // Key A
+        0xFF, 0x07, 0x80, 0x69,               // Access bits
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF    // Key B
+    };
+    uint8_t zeros[16] = {0};
+
+    for (uint8_t sector = 0; sector < 16; sector++) {
+        uint8_t first_block = sector * 4;
+
+        status = try_auth(first_block, uid);
+        if (status != MI_OK) {
+            uart_puts("ERR:FORMAT_AUTH:");
+            uart_put_hex(sector);
+            uart_puts("\r\n");
+            continue;
+        }
+
+        // Write data blocks to zeros (skip block 0 - manufacturer block)
+        for (uint8_t b = 0; b < 3; b++) {
+            uint8_t block = first_block + b;
+            if (block == 0) continue;
+
+            status = mfrc522_write_block(block, zeros);
+            if (status != MI_OK) {
+                uart_puts("ERR:FORMAT_WRITE:");
+                uart_put_hex(block);
+                uart_puts("\r\n");
+            }
+        }
+
+        // Write sector trailer with factory default keys
+        status = mfrc522_write_block(first_block + 3, trailer);
+        if (status != MI_OK) {
+            uart_puts("ERR:FORMAT_WRITE:");
+            uart_put_hex(first_block + 3);
+            uart_puts("\r\n");
+        }
+
+        uart_puts("OK:FORMAT:");
+        uart_put_hex(sector);
+        uart_puts("\r\n");
+    }
+
+    mfrc522_stop_crypto();
+    mfrc522_halt();
+    uart_puts("OK:FORMAT_COMPLETE\r\n");
 }
 
 int main(void) {
@@ -392,6 +498,9 @@ int main(void) {
                 case 'B':
                     scan_mode = MODE_WRITE_BLK0;
                     do_write_init();
+                    break;
+                case 'F':
+                    do_format();
                     break;
                 }
             }
