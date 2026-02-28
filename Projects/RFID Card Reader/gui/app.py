@@ -1,3 +1,5 @@
+import time
+
 import customtkinter as ctk
 from datetime import datetime
 from tkinter import filedialog, messagebox
@@ -5,6 +7,42 @@ from tkinter import filedialog, messagebox
 from serial_handler import SerialHandler
 from tag_info import Tag
 from card_data import CardData
+
+
+class OperationGuard:
+    def __init__(self):
+        self._operation = None
+        self._op_start_time = None
+
+    @property
+    def is_busy(self):
+        return self._operation is not None
+
+    @property
+    def operation(self):
+        return self._operation
+
+    def start(self, op_name):
+        if self._operation is not None:
+            return False
+        self._operation = op_name
+        self._op_start_time = time.monotonic()
+        return True
+
+    def finish(self):
+        self._operation = None
+        self._op_start_time = None
+
+    def check_timeout(self, elapsed_seconds=None, timeout=30):
+        if not self._operation:
+            return False
+        if elapsed_seconds is None:
+            elapsed_seconds = time.monotonic() - self._op_start_time
+        if elapsed_seconds >= timeout:
+            self._operation = None
+            self._op_start_time = None
+            return True
+        return False
 
 
 class App(ctk.CTk):
@@ -19,6 +57,7 @@ class App(ctk.CTk):
         self.card_data = CardData()
         self._write_pending = []
         self._writing = False
+        self._guard = OperationGuard()
 
         self._build_connection_bar()
         self._build_tag_card()
@@ -313,6 +352,7 @@ class App(ctk.CTk):
         self.serial.ser.dtr = True
         self._write_pending = []
         self._writing = False
+        self._guard.finish()
         self.progress_label.configure(text="Reset!")
         # Drain both queues
         while not self.serial.queue.empty():
@@ -337,6 +377,9 @@ class App(ctk.CTk):
         if not self.serial.is_connected:
             self._log("Read card failed: not connected", "ERROR")
             return
+        if not self._guard.start("reading"):
+            self._log("Operation in progress, please wait", "WARN")
+            return
         self.card_data.clear()
         self.progress_label.configure(text="Reading...")
         self._log("Starting card read (full dump)")
@@ -348,6 +391,9 @@ class App(ctk.CTk):
             return
         if not self.card_data.has_data:
             self._log("Write card failed: no card data loaded", "ERROR")
+            return
+        if not self._guard.start("writing"):
+            self._log("Operation in progress, please wait", "WARN")
             return
         self._write_pending = self.card_data.blocks_for_write(
             allow_block0=self.blk0_var.get()
@@ -371,6 +417,9 @@ class App(ctk.CTk):
         )
         if not confirm:
             self._log("Format cancelled by user")
+            return
+        if not self._guard.start("formatting"):
+            self._log("Operation in progress, please wait", "WARN")
             return
         self.progress_label.configure(text="Formatting...")
         self._log("Starting card format (erase to factory defaults)")
@@ -418,6 +467,7 @@ class App(ctk.CTk):
                     )
                 elif msg["type"] == "OK":
                     if msg["message"] == "DUMP_COMPLETE":
+                        self._guard.finish()
                         self.progress_label.configure(
                             text=f"Read complete: {self.card_data.block_count} blocks"
                         )
@@ -429,6 +479,7 @@ class App(ctk.CTk):
                     elif msg["message"].startswith("WROTE:"):
                         self._send_next_write()
                     elif msg["message"] == "WRITE_DONE":
+                        self._guard.finish()
                         self._writing = False
                         self.progress_label.configure(text="Write complete!")
                         self._log("Write complete!")
@@ -442,6 +493,7 @@ class App(ctk.CTk):
                         except ValueError:
                             pass
                     elif msg["message"] == "FORMAT_COMPLETE":
+                        self._guard.finish()
                         self.progress_label.configure(text="Format complete!")
                         self._log("Card formatted to factory defaults")
                         self.card_data.clear()
@@ -459,6 +511,9 @@ class App(ctk.CTk):
                         self._log(f"Firmware error: {err_msg}", "ERROR")
                 elif msg["type"] == "INFO":
                     self._log(f"Firmware: {msg['message']}")
+        if self._guard.check_timeout():
+            self.progress_label.configure(text="Timeout — operation reset")
+            self._log("Operation timed out after 30s", "WARN")
         self.after(100, self._poll_serial)
 
     def _send_next_write(self):
