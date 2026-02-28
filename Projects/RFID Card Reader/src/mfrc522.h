@@ -69,6 +69,10 @@
 #define PICC_ANTICOLL2  0x95  // Anti-collision/Select CL2
 #define PICC_ANTICOLL3  0x97  // Anti-collision/Select CL3
 #define PICC_HALT       0x50
+#define PICC_READ    0x30  // Read block
+#define PICC_WRITE   0xA0  // Write block
+#define PICC_AUTHKA  0x60  // Auth with Key A
+#define PICC_AUTHKB  0x61  // Auth with Key B
 #define PICC_CASCADE_TAG 0x88 // Indicates UID not complete, cascade to next level
 
 // Max UID length (4, 7, or 10 bytes depending on chip)
@@ -89,5 +93,9 @@ uint8_t mfrc522_select(uint8_t cascade_level, uint8_t *uid, uint8_t *sak);
 void    mfrc522_halt(void);
 uint8_t mfrc522_to_card(uint8_t command, uint8_t *send_data, uint8_t send_len,
                         uint8_t *back_data, uint8_t *back_len);
+uint8_t mfrc522_auth(uint8_t auth_mode, uint8_t block, uint8_t *key, uint8_t *uid);
+uint8_t mfrc522_read_block(uint8_t block, uint8_t *buffer);
+uint8_t mfrc522_write_block(uint8_t block, uint8_t *data);
+void    mfrc522_stop_crypto(void);
 
 #endif
