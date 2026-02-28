@@ -53,6 +53,12 @@ class SerialHandler:
             except Exception:
                 continue
 
+    def send_load_block(self, block, hex_data):
+        """Send a LOAD:<block_hex>:<data_hex> line for writing."""
+        cmd = f"LOAD:{block:02X}:{hex_data}\n"
+        if self.ser and self.ser.is_open:
+            self.ser.write(cmd.encode())
+
     @staticmethod
     def parse_line(line):
         if not line:
@@ -67,10 +73,18 @@ class SerialHandler:
                     uid_len=int(parts[3]),
                     timestamp=datetime.now(),
                 )
+        elif line.startswith("DATA:"):
+            parts = line[5:].split(":")
+            if len(parts) == 2 and len(parts[1]) == 32:
+                return {
+                    "type": "DATA",
+                    "block": int(parts[0], 16),
+                    "data": parts[1],
+                }
         elif line.startswith(("OK:", "ERR:", "INFO:")):
             prefix_end = line.index(":")
             return {
                 "type": line[:prefix_end],
-                "message": line[prefix_end + 1 :],
+                "message": line[prefix_end + 1:],
             }
         return None
