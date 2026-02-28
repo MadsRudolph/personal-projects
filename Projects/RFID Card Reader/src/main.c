@@ -152,9 +152,10 @@ static uint8_t manual_auth(uint8_t block, uint8_t *key, uint8_t *uid,
     uint8_t sak;
 
     for (uint16_t retry = 0; retry < max_retries; retry++) {
-        // Ensure CRC is in default state for card selection
-        mfrc522_set_bit(TxModeReg, 0x80);
-        mfrc522_set_bit(RxModeReg, 0x80);
+        // Ensure CRC is in default state (off) for card selection
+        // mfrc522_request/anticoll/select use manual CRC
+        mfrc522_clear_bit(TxModeReg, 0x80);
+        mfrc522_clear_bit(RxModeReg, 0x80);
 
         // Re-select card each attempt
         if (mfrc522_request(PICC_REQALL, atqa) != MI_OK) continue;
@@ -245,16 +246,16 @@ static uint8_t manual_auth(uint8_t block, uint8_t *key, uint8_t *uid,
         memcpy(nt_out, nt, 4);
         *cs_out = cs;
 
-        // Restore CRC settings for normal operation
-        mfrc522_set_bit(TxModeReg, 0x80);
-        mfrc522_set_bit(RxModeReg, 0x80);
+        // Restore CRC to default (off) for normal operation
+        mfrc522_clear_bit(TxModeReg, 0x80);
+        mfrc522_clear_bit(RxModeReg, 0x80);
 
         return MI_OK;
     }
 
-    // Restore CRC settings
-    mfrc522_set_bit(TxModeReg, 0x80);
-    mfrc522_set_bit(RxModeReg, 0x80);
+    // Restore CRC to default (off)
+    mfrc522_clear_bit(TxModeReg, 0x80);
+    mfrc522_clear_bit(RxModeReg, 0x80);
 
     return MI_ERR;
 }
@@ -656,11 +657,11 @@ static void do_darkside_round(void) {
     status = mfrc522_to_card(PCD_Transceive, cmd, 2, nt, &back_len);
     if (status != MI_OK || back_len != 32) {
         uart_puts("DARK:ERR:AUTH_CMD\r\n");
+        // Restore CRC to default (off) before halt — halt uses manual CRC
+        mfrc522_clear_bit(TxModeReg, 0x80);
+        mfrc522_clear_bit(RxModeReg, 0x80);
         mfrc522_stop_crypto();
         mfrc522_halt();
-        // Restore CRC
-        mfrc522_set_bit(TxModeReg, 0x80);
-        mfrc522_set_bit(RxModeReg, 0x80);
         return;
     }
 
@@ -684,9 +685,9 @@ static void do_darkside_round(void) {
     uint8_t resp_buf[4];
     status = mfrc522_to_card(PCD_Transceive, fake_response, 8, resp_buf, &back_len);
 
-    // Restore CRC settings
-    mfrc522_set_bit(TxModeReg, 0x80);
-    mfrc522_set_bit(RxModeReg, 0x80);
+    // Restore CRC to default (off) — halt/request/select use manual CRC
+    mfrc522_clear_bit(TxModeReg, 0x80);
+    mfrc522_clear_bit(RxModeReg, 0x80);
 
     if (status == MI_OK && back_len == 4) {
         // Got 4-bit NACK — parity matched!
@@ -700,6 +701,13 @@ static void do_darkside_round(void) {
 
     mfrc522_stop_crypto();
     mfrc522_halt();
+
+    // Cycle RF field to force card power-on reset between rounds.
+    // Some MIFARE Classic cards need a full field reset after aborted auth.
+    mfrc522_clear_bit(TxControlReg, 0x03);  // antenna off
+    _delay_ms(25);
+    mfrc522_set_bit(TxControlReg, 0x03);    // antenna on
+    _delay_ms(25);
 }
 
 static void do_nested_collect(void) {
