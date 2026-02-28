@@ -397,7 +397,11 @@ int main(void) {
             }
         }
 
-        if (scan_mode == MODE_IDLE || scan_mode == MODE_WRITE || scan_mode == MODE_WRITE_BLK0) {
+        if (scan_mode == MODE_WRITE || scan_mode == MODE_WRITE_BLK0) {
+            continue;  // No delay - must read UART fast to avoid RX overflow
+        }
+
+        if (scan_mode == MODE_IDLE) {
             _delay_ms(10);
             continue;
         }
