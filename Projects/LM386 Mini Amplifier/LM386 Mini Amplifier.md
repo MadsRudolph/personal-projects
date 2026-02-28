@@ -18,7 +18,7 @@ links:
 # LM386 Mini Amplifier
 
 > [!summary] **Project Goal**
-> Build a standalone mini amplifier using the LM386N-1 to drive a salvaged 8Ω 1.5W passive speaker from a 9V battery. Minimal parts count, simple protoboard build.
+> Build a standalone mini amplifier using the LM386N-1 to drive a salvaged 8Ω 1.5W passive speaker. Breadboard prototype powered from bench supply, minimal parts count.
 
 ---
 
@@ -28,7 +28,7 @@ links:
 |-----------|-------|
 | **IC** | LM386N-1 (DIP-8) |
 | **Gain** | 20 (26 dB) — default, pins 1 & 8 open |
-| **Supply** | 9V battery (operating range: 4V–12V) |
+| **Supply** | Bench PSU set to 9V (operating range: 4V–12V) |
 | **Quiescent Current** | ~4 mA (typ.) |
 | **Output Power** | ~325 mW into 8Ω @ 9V (datasheet typ.) |
 | **Load** | 8Ω 1.5W salvaged speaker |
@@ -67,7 +67,7 @@ links:
 > [!note]- LM386 Amplifier Circuit (Gain = 20)
 > Based on TI datasheet Figure 9-1 with volume control and bypass additions.
 > ```
->                             +9V (Battery)
+>                             +9V (Bench PSU)
 >                              │
 >                       ┌──────┤
 >                       │      │
@@ -123,10 +123,10 @@ links:
 | C5 | 1 | Electrolytic cap | 10 µF 25V | Pin 7 bypass. + toward pin 7. |
 | R1 | 1 | Resistor | 10 Ω | Zobel network |
 | VR1 | 1 | Potentiometer | 10 kΩ linear | Volume control |
-| — | 1 | 8-pin DIP socket | — | Protects IC during soldering |
-| — | 1 | 9V battery clip | — | Power supply |
 | — | 1 | Speaker | 8Ω 1.5W | Salvaged |
-| — | 1 | Protoboard | — | For circuit build |
+| — | 1 | Breadboard | — | For prototype |
+| — | — | Bench power supply | 9V | Current limit ~200 mA |
+| — | — | Jumper wires | — | For breadboard connections |
 
 ---
 
@@ -195,38 +195,38 @@ Plenty of thermal margin — no heatsink needed.
 
 ### Wiring Steps
 
-1. **Place DIP socket** on protoboard — orient notch, leave room for components
-2. **Ground bus** — run a ground strip along one edge. Connect pin 4 to ground bus.
-3. **Power (pin 6)** — wire to 9V battery clip (red). Place C4 (100nF) directly at pin 6 with shortest leads possible, other leg to ground bus.
-4. **Bypass (pin 7)** — C5 (10µF, + to pin 7) to ground bus.
-5. **Input stage:**
-   - VR1 (10kΩ pot): one outer lug to ground, other outer lug receives audio through C1.
+1. **Place LM386** — straddle the center channel of the breadboard, orient notch/dot (pin 1).
+2. **Power rails** — connect bench PSU: +9V to the breadboard power rail, GND to the ground rail. Set current limit to ~200 mA.
+3. **Ground (pin 4)** — jumper to ground rail.
+4. **Power (pin 6)** — jumper to +9V rail. Place C4 (100nF) directly across pin 6 and adjacent ground rail — shortest leads possible.
+5. **Bypass (pin 7)** — C5 (10µF, + to pin 7) to ground rail.
+6. **Input stage:**
+   - VR1 (10kΩ pot): one outer lug to ground rail, other outer lug receives audio through C1.
    - C1 (10µF, + toward audio source) from audio input to pot lug.
    - Pot wiper to pin 3 (+INPUT).
-   - Pin 2 (-INPUT) to ground bus.
-6. **Output stage:**
+   - Pin 2 (-INPUT) to ground rail.
+7. **Output stage:**
    - C2 (220µF, **+ toward pin 5**) from pin 5 to speaker positive terminal.
-   - Speaker negative to ground bus.
-   - Zobel: C3 (47nF) in series with R1 (10Ω) from pin 5 to ground bus. Keep leads short.
-7. **Gain pins** — leave pins 1 and 8 unconnected (gain = 20).
-8. **Battery** — 9V clip: red → +9V rail, black → ground bus. Add a SPST switch in series if desired.
+   - Speaker negative to ground rail.
+   - Zobel: C3 (47nF) in series with R1 (10Ω) from pin 5 to ground rail. Keep leads short.
+8. **Gain pins** — leave pins 1 and 8 unconnected (gain = 20).
 
 ### Layout Tips
 
 - Keep input wiring (pins 2, 3) physically separated from output wiring (pin 5) to prevent oscillation feedback
-- C4 bypass cap: absolute shortest leads, directly at pin 6 to ground
+- C4 bypass cap: absolute shortest leads, directly at pin 6 to ground rail
 - Zobel network: close to pin 5 and speaker terminal
-- Use DIP socket — protects IC and allows easy replacement
 - Star grounding: all ground returns converge at a single point near pin 4
+- Set bench PSU current limit to ~200 mA — protects the IC during wiring mistakes
 
 ---
 
 ## Testing
 
-1. **Power check (no IC)** — apply 9V and verify with multimeter:
-   - 9V at socket pin 6
-   - 0V at socket pin 4
-   - No short between pins 4 and 6
+1. **Power check (no IC)** — set bench PSU to 9V with ~200 mA current limit, power on and verify with multimeter:
+   - 9V at pin 6 row
+   - 0V at pin 4 row
+   - No short between power and ground (bench PSU should show only a few mA draw)
 2. **Insert IC** — power off first. Observe notch/dot orientation (pin 1 = GAIN).
 3. **No-signal test** — power on, no audio connected. Current draw should be ~4 mA. Listen for silence — any squealing means oscillation (check bypass caps and ground routing).
 4. **Audio test** — connect phone or audio source via 3.5mm cable. Start with VR1 fully counter-clockwise (min volume), slowly increase. Should hear clean audio through speaker.
@@ -239,15 +239,16 @@ Plenty of thermal margin — no heatsink needed.
 
 ---
 
-## Battery Life
+## Bench PSU Settings
 
-At ~4 mA quiescent + ~50 mA average during playback:
+| Parameter | Value |
+|-----------|-------|
+| **Voltage** | 9V DC |
+| **Current Limit** | 200 mA |
+| **Expected Quiescent Draw** | ~4 mA |
+| **Expected Draw During Playback** | ~50–100 mA |
 
-| Battery | Capacity | Estimated Life |
-|---------|----------|----------------|
-| 9V alkaline | ~550 mAh | ~10 hours |
-| 9V lithium | ~1200 mAh | ~22 hours |
-| 6×AA holder (9V) | ~2500 mAh | ~46 hours |
+> [!tip] The current limit on the bench PSU acts as protection during prototyping — if there's a wiring mistake the supply will current-limit instead of frying the IC.
 
 ---
 
