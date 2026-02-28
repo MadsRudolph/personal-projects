@@ -10,17 +10,60 @@ import subprocess
 
 from crypto1 import Crypto1, prng_successor, odd_parity8, LF_POLY_ODD, LF_POLY_EVEN, _filter_bit, parity32
 
-# Path to the mfkey32 CLI tool (compiled crapto1)
+# Paths to compiled crapto1 CLI tools
 _MFKEY32_PATH = os.path.join(os.path.dirname(__file__), "crapto1", "mfkey32.exe")
+_NESTED_PATH = os.path.join(os.path.dirname(__file__), "crapto1", "nested.exe")
+
+
+def _bswap32(x: int) -> int:
+    """Byte-swap a 32-bit value (big-endian <-> little-endian).
+
+    The firmware sends nonces as big-endian hex strings (wire order), but
+    Python's crypto1 processes values in little-endian (firmware-internal)
+    order. The C crapto1 library handles this with SWAPENDIAN internally.
+    This function bridges the gap for Python-side crypto operations.
+    """
+    return (((x >> 24) & 0xFF) |
+            ((x >> 8) & 0xFF00) |
+            ((x << 8) & 0xFF0000) |
+            ((x << 24) & 0xFF000000))
 
 
 def find_prng_distance(nt_start: int, nt_end: int, max_dist: int = 65536) -> int | None:
-    """Find how many PRNG ticks separate two nonce values."""
-    state = nt_start
+    """Find how many PRNG ticks separate two nonce values.
+
+    Values are in wire order (big-endian hex from firmware). Internally
+    byte-swaps to match Python's PRNG implementation.
+    """
+    state = _bswap32(nt_start)
+    target = _bswap32(nt_end)
     for i in range(max_dist + 1):
-        if state == nt_end:
+        if state == target:
             return i
         state = prng_successor(state, 1)
+    return None
+
+
+def calibrate_nested_distance(uid: int, nt_known: int, nt_target_enc: int,
+                              known_key: bytes, max_dist: int = 65536) -> int | None:
+    """Find PRNG distance by checking which distance produces matching keystream.
+
+    All nonce/uid values are in wire order (big-endian hex from firmware).
+    Internally byte-swaps to match Python crypto1's little-endian processing.
+
+    During nested auth, nt_target is encrypted with the key's initial keystream:
+      nt_enc = nt_plain XOR crypto1_word(key, uid ^ nt_plain)
+    We try each distance until the keystream matches.
+    """
+    uid_le = _bswap32(uid)
+    nt_pred = _bswap32(nt_known)
+    nt_target_le = _bswap32(nt_target_enc)
+    for d in range(max_dist + 1):
+        c = Crypto1(known_key)
+        ks32 = c.crypto1_word(uid_le ^ nt_pred, 0)
+        if ks32 == (nt_target_le ^ nt_pred):
+            return d
+        nt_pred = prng_successor(nt_pred, 1)
     return None
 
 
@@ -49,42 +92,45 @@ def lfsr_rollback_bit(odd: int, even: int, inp: int, is_encrypted: int):
     return odd, even, ret
 
 
-def nested_recover(uid: int, nt_known: int, nt_target: int,
-                   known_key: bytes, target_block: int) -> list[bytes]:
+def nested_recover(uid: int, distance: int,
+                   nonce_pairs: list[tuple[int, int]]) -> list[bytes]:
     """
-    Recover target sector key from nested authentication nonce pair.
+    Recover target sector key from nested authentication nonce pairs.
+
+    Uses the nested.exe CLI tool (crapto1 lfsr_recovery32) to find the key
+    from encrypted nonce data and a calibrated PRNG distance.
 
     Args:
         uid: 32-bit card UID
-        nt_known: plaintext nonce from known-key auth
-        nt_target: nonce from target sector (may be encrypted or plain depending on protocol)
-        known_key: 6-byte known key
-        target_block: target sector's first block number
+        distance: calibrated PRNG tick distance between nonces
+        nonce_pairs: list of (nt_known, nt_target_enc) tuples
 
     Returns:
         List of candidate keys (6-byte bytes objects)
     """
-    candidates = []
+    if not nonce_pairs or not os.path.isfile(_NESTED_PATH):
+        return []
 
-    # Find PRNG distance between nonces
-    # The PRNG advances during the auth protocol, typically 160-1200 ticks
-    dist = find_prng_distance(nt_known, nt_target, max_dist=65536)
+    args = [
+        _NESTED_PATH,
+        f"{uid:08X}",
+        str(distance),
+    ]
+    for nt_k, nt_t in nonce_pairs:
+        args.extend([f"{nt_k:08X}", f"{nt_t:08X}"])
 
-    if dist is not None:
-        # nt_target matches a PRNG prediction -- it was sent in plaintext
-        # This means the card dropped crypto before sending it
-        # The key recovery uses the fact that we can predict the nonce
-        # For each possible key, check if the PRNG timing is consistent
-        pass  # Placeholder for full LFSR rollback attack
+    try:
+        result = subprocess.run(
+            args, capture_output=True, text=True, timeout=300
+        )
+        for line in result.stdout.splitlines():
+            if line.startswith("Found key:"):
+                key_hex = line.split(":")[1].strip()
+                return [bytes.fromhex(key_hex)]
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
 
-    # Brute-force approach for nested (works when PRNG is predictable):
-    # Try all 65536 possible PRNG states and check consistency
-    # This is the simplified version -- the full crapto1 nested attack
-    # uses LFSR rollback for O(2^16) instead of O(2^48)
-
-    # For now, return empty -- full implementation requires the LFSR
-    # rollback tables which are generated from the crypto1 structure
-    return candidates
+    return []
 
 
 def mfkey32_recover(uid: int, auth_data: list[dict]) -> list[bytes]:
