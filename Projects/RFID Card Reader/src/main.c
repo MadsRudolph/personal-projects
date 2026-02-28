@@ -1,9 +1,11 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include <util/delay.h>
+#include <string.h>
 #include "uart.h"
 #include "spi.h"
 #include "mfrc522.h"
+#include "crypto1.h"
 
 #define MODE_IDLE       0
 #define MODE_CONTINUOUS 1
@@ -128,6 +130,131 @@ static uint8_t reselect_card(uint8_t *uid) {
     if (mfrc522_select(PICC_ANTICOLL1, uid, &sak) != MI_OK)
         return MI_ERR;
     return MI_OK;
+}
+
+// Perform manual authentication capturing the plaintext nonce.
+// Uses PCD_Transceive (not PCD_MFAuthent) so we get the raw nonce.
+// Retries up to max_retries times to find a nonce where auto-parity works.
+// On success: nt_out contains the 4-byte plaintext nonce, crypto state is active.
+// Returns MI_OK on success, MI_ERR on failure.
+static uint8_t manual_auth(uint8_t block, uint8_t *key, uint8_t *uid,
+                           uint8_t *nt_out, crypto1_state *cs_out,
+                           uint16_t max_retries) {
+    uint8_t cmd[4];
+    uint8_t nt[4];
+    uint8_t response[8];
+    uint8_t at_buf[4];
+    uint8_t back_len;
+    uint8_t status;
+    uint8_t atqa[2];
+    uint8_t sak;
+
+    for (uint16_t retry = 0; retry < max_retries; retry++) {
+        // Ensure CRC is in default state for card selection
+        mfrc522_set_bit(TxModeReg, 0x80);
+        mfrc522_set_bit(RxModeReg, 0x80);
+
+        // Re-select card each attempt
+        if (mfrc522_request(PICC_REQALL, atqa) != MI_OK) continue;
+        if (mfrc522_anticoll(PICC_ANTICOLL1, uid) != MI_OK) continue;
+        if (mfrc522_select(PICC_ANTICOLL1, uid, &sak) != MI_OK) continue;
+
+        // Step 1: Send AUTH command, receive plaintext nonce
+        cmd[0] = PICC_AUTHKA;
+        cmd[1] = block;
+        mfrc522_calculate_crc(cmd, 2, &cmd[2]);
+
+        // Need CRC on TX, no CRC on RX for this step
+        mfrc522_set_bit(TxModeReg, 0x80);    // TxCRCEn = 1
+        mfrc522_clear_bit(RxModeReg, 0x80);  // RxCRCEn = 0
+        mfrc522_write_reg(BitFramingReg, 0x00);
+
+        status = mfrc522_to_card(PCD_Transceive, cmd, 4, nt, &back_len);
+        if (status != MI_OK || back_len != 32) {
+            mfrc522_halt();
+            continue;
+        }
+
+        // Step 2: Initialize crypto1
+        crypto1_state cs;
+        crypto1_init(&cs, key);
+
+        // Feed uid ^ nt into LFSR
+        uint32_t uid32 = ((uint32_t)uid[0]) | ((uint32_t)uid[1] << 8) |
+                         ((uint32_t)uid[2] << 16) | ((uint32_t)uid[3] << 24);
+        uint32_t nt32 = ((uint32_t)nt[0]) | ((uint32_t)nt[1] << 8) |
+                        ((uint32_t)nt[2] << 16) | ((uint32_t)nt[3] << 24);
+        crypto1_word(&cs, uid32 ^ nt32, 0);
+
+        // Step 3: Check if parity will work for 8-byte response
+        crypto1_state cs_check = cs;  // copy state
+        if (!parity_check_ok(&cs_check, 8)) {
+            mfrc522_halt();
+            continue;  // Parity won't match, try new nonce
+        }
+
+        // Step 4: Compute encrypted response
+        // nr = reader nonce (use retry counter as simple source)
+        uint32_t nr = retry | ((uint32_t)retry << 16);
+        uint32_t ar = prng_successor(nt32, 64);
+
+        // Encrypt nr
+        uint32_t ks_nr = crypto1_word(&cs, nr, 1);
+        uint32_t nr_enc = nr ^ ks_nr;
+
+        // Encrypt ar
+        uint32_t ks_ar = crypto1_word(&cs, ar, 1);
+        uint32_t ar_enc = ar ^ ks_ar;
+
+        // Pack into response buffer (LSB first byte order)
+        response[0] = nr_enc & 0xFF;
+        response[1] = (nr_enc >> 8) & 0xFF;
+        response[2] = (nr_enc >> 16) & 0xFF;
+        response[3] = (nr_enc >> 24) & 0xFF;
+        response[4] = ar_enc & 0xFF;
+        response[5] = (ar_enc >> 8) & 0xFF;
+        response[6] = (ar_enc >> 16) & 0xFF;
+        response[7] = (ar_enc >> 24) & 0xFF;
+
+        // Step 5: Send encrypted response, expect 4-byte at
+        // No CRC on TX or RX for this step
+        mfrc522_clear_bit(TxModeReg, 0x80);  // TxCRCEn = 0
+        mfrc522_clear_bit(RxModeReg, 0x80);  // RxCRCEn = 0
+
+        status = mfrc522_to_card(PCD_Transceive, response, 8, at_buf, &back_len);
+        if (status != MI_OK || back_len != 32) {
+            mfrc522_halt();
+            continue;
+        }
+
+        // Step 6: Verify at
+        uint32_t at_enc32 = ((uint32_t)at_buf[0]) | ((uint32_t)at_buf[1] << 8) |
+                            ((uint32_t)at_buf[2] << 16) | ((uint32_t)at_buf[3] << 24);
+        uint32_t ks_at = crypto1_word(&cs, 0, 0);
+        uint32_t at = at_enc32 ^ ks_at;
+        uint32_t expected_at = prng_successor(nt32, 96);
+
+        if (at != expected_at) {
+            mfrc522_halt();
+            continue;
+        }
+
+        // Auth successful!
+        memcpy(nt_out, nt, 4);
+        *cs_out = cs;
+
+        // Restore CRC settings for normal operation
+        mfrc522_set_bit(TxModeReg, 0x80);
+        mfrc522_set_bit(RxModeReg, 0x80);
+
+        return MI_OK;
+    }
+
+    // Restore CRC settings
+    mfrc522_set_bit(TxModeReg, 0x80);
+    mfrc522_set_bit(RxModeReg, 0x80);
+
+    return MI_ERR;
 }
 
 // Try authenticating a block with all known keys (Key A and Key B).
