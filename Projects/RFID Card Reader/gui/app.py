@@ -1,3 +1,5 @@
+import time
+
 import customtkinter as ctk
 from datetime import datetime
 from tkinter import filedialog, messagebox
@@ -5,6 +7,43 @@ from tkinter import filedialog, messagebox
 from serial_handler import SerialHandler
 from tag_info import Tag
 from card_data import CardData
+from attack import AttackOrchestrator
+
+
+class OperationGuard:
+    def __init__(self):
+        self._operation = None
+        self._op_start_time = None
+
+    @property
+    def is_busy(self):
+        return self._operation is not None
+
+    @property
+    def operation(self):
+        return self._operation
+
+    def start(self, op_name):
+        if self._operation is not None:
+            return False
+        self._operation = op_name
+        self._op_start_time = time.monotonic()
+        return True
+
+    def finish(self):
+        self._operation = None
+        self._op_start_time = None
+
+    def check_timeout(self, elapsed_seconds=None, timeout=30):
+        if not self._operation:
+            return False
+        if elapsed_seconds is None:
+            elapsed_seconds = time.monotonic() - self._op_start_time
+        if elapsed_seconds >= timeout:
+            self._operation = None
+            self._op_start_time = None
+            return True
+        return False
 
 
 class App(ctk.CTk):
@@ -19,11 +58,14 @@ class App(ctk.CTk):
         self.card_data = CardData()
         self._write_pending = []
         self._writing = False
+        self._guard = OperationGuard()
+        self.attack = AttackOrchestrator(self.serial)
 
         self._build_connection_bar()
         self._build_tag_card()
         self._build_scan_buttons()
         self._build_rw_buttons()
+        self._build_attack_controls()
         self._build_hex_viewer()
         self._build_log_table()
         self._build_system_log()
@@ -174,6 +216,51 @@ class App(ctk.CTk):
         self.progress_label = ctk.CTkLabel(frame, text="")
         self.progress_label.pack(side="left", padx=10)
 
+    def _build_attack_controls(self):
+        frame = ctk.CTkFrame(self, fg_color="transparent")
+        frame.pack(pady=3)
+
+        self.crack_btn = ctk.CTkButton(
+            frame,
+            text="Crack Keys",
+            fg_color="#8b5cf6",
+            hover_color="#7c3aed",
+            width=120,
+            command=self._start_crack,
+        )
+        self.crack_btn.pack(side="left", padx=5)
+
+        self.stop_attack_btn = ctk.CTkButton(
+            frame,
+            text="Stop Attack",
+            fg_color="#da3633",
+            hover_color="#b62324",
+            width=110,
+            command=self._stop_crack,
+        )
+        self.stop_attack_btn.pack(side="left", padx=5)
+
+        self.attack_label = ctk.CTkLabel(frame, text="")
+        self.attack_label.pack(side="left", padx=10)
+
+    def _start_crack(self):
+        if not self.serial.is_connected:
+            self._log("Crack failed: not connected", "ERROR")
+            return
+        if not self._guard.start("cracking"):
+            self._log("Operation in progress, please wait", "WARN")
+            return
+        self.attack_label.configure(text="Darkside attack...")
+        self._log("Starting darkside attack on sector 0")
+        self.attack.start_darkside(0)
+
+    def _stop_crack(self):
+        if self.attack.state != "idle":
+            self.attack.stop()
+            self._guard.finish()
+            self.attack_label.configure(text="Attack stopped")
+            self._log("Attack stopped by user", "WARN")
+
     def _build_hex_viewer(self):
         frame = ctk.CTkFrame(self)
         frame.pack(fill="both", expand=True, padx=10, pady=(3, 5))
@@ -313,6 +400,9 @@ class App(ctk.CTk):
         self.serial.ser.dtr = True
         self._write_pending = []
         self._writing = False
+        self._guard.finish()
+        self.attack.stop()
+        self.attack_label.configure(text="")
         self.progress_label.configure(text="Reset!")
         # Drain both queues
         while not self.serial.queue.empty():
@@ -337,6 +427,9 @@ class App(ctk.CTk):
         if not self.serial.is_connected:
             self._log("Read card failed: not connected", "ERROR")
             return
+        if not self._guard.start("reading"):
+            self._log("Operation in progress, please wait", "WARN")
+            return
         self.card_data.clear()
         self.progress_label.configure(text="Reading...")
         self._log("Starting card read (full dump)")
@@ -348,6 +441,9 @@ class App(ctk.CTk):
             return
         if not self.card_data.has_data:
             self._log("Write card failed: no card data loaded", "ERROR")
+            return
+        if not self._guard.start("writing"):
+            self._log("Operation in progress, please wait", "WARN")
             return
         self._write_pending = self.card_data.blocks_for_write(
             allow_block0=self.blk0_var.get()
@@ -371,6 +467,9 @@ class App(ctk.CTk):
         )
         if not confirm:
             self._log("Format cancelled by user")
+            return
+        if not self._guard.start("formatting"):
+            self._log("Operation in progress, please wait", "WARN")
             return
         self.progress_label.configure(text="Formatting...")
         self._log("Starting card format (erase to factory defaults)")
@@ -410,7 +509,47 @@ class App(ctk.CTk):
                 self._update_tag_display(msg)
                 self._add_log_entry(msg)
             elif isinstance(msg, dict):
-                if msg["type"] == "DATA":
+                if msg.get("type") in ("DARK", "NESTED"):
+                    self.attack.feed(msg)
+                    while not self.attack.result_queue.empty():
+                        result = self.attack.result_queue.get_nowait()
+                        event = result.get("event", "")
+                        if event == "dark_uid":
+                            self._log(f"Darkside: card UID={result['uid']}")
+                        elif event == "dark_nack":
+                            self.attack_label.configure(
+                                text=f"Darkside: {result['count']} NACKs"
+                            )
+                        elif event == "dark_timeout":
+                            self._log("Darkside: timeout (retrying)")
+                        elif event == "dark_complete":
+                            self._guard.finish()
+                            n = result["nack_count"]
+                            keys = result["candidates"]
+                            if keys:
+                                self.attack_label.configure(
+                                    text=f"Found {len(keys)} key candidate(s)"
+                                )
+                                self._log(f"Darkside complete: {n} NACKs -> {len(keys)} candidates: {', '.join(keys)}")
+                            else:
+                                self.attack_label.configure(
+                                    text=f"No keys found ({n} NACKs)"
+                                )
+                                self._log(f"Darkside complete: {n} NACKs, no candidates", "WARN")
+                        elif event == "nested_nonce":
+                            self.attack_label.configure(
+                                text=f"Nested: {result['count']} nonce pairs"
+                            )
+                        elif event == "nested_fail":
+                            self._log(f"Nested: {result['reason']}", "WARN")
+                        elif event == "nested_complete":
+                            self._guard.finish()
+                            n = result["nonce_pairs"]
+                            self.attack_label.configure(
+                                text=f"Nested done: {n} pairs"
+                            )
+                            self._log(f"Nested complete: {n} nonce pairs collected")
+                elif msg["type"] == "DATA":
                     self.card_data.set_block(msg["block"], msg["data"])
                     sector = self.card_data.sector_for_block(msg["block"])
                     self.progress_label.configure(
@@ -418,6 +557,7 @@ class App(ctk.CTk):
                     )
                 elif msg["type"] == "OK":
                     if msg["message"] == "DUMP_COMPLETE":
+                        self._guard.finish()
                         self.progress_label.configure(
                             text=f"Read complete: {self.card_data.block_count} blocks"
                         )
@@ -429,6 +569,7 @@ class App(ctk.CTk):
                     elif msg["message"].startswith("WROTE:"):
                         self._send_next_write()
                     elif msg["message"] == "WRITE_DONE":
+                        self._guard.finish()
                         self._writing = False
                         self.progress_label.configure(text="Write complete!")
                         self._log("Write complete!")
@@ -442,6 +583,7 @@ class App(ctk.CTk):
                         except ValueError:
                             pass
                     elif msg["message"] == "FORMAT_COMPLETE":
+                        self._guard.finish()
                         self.progress_label.configure(text="Format complete!")
                         self._log("Card formatted to factory defaults")
                         self.card_data.clear()
@@ -459,6 +601,9 @@ class App(ctk.CTk):
                         self._log(f"Firmware error: {err_msg}", "ERROR")
                 elif msg["type"] == "INFO":
                     self._log(f"Firmware: {msg['message']}")
+        if self._guard.check_timeout():
+            self.progress_label.configure(text="Timeout — operation reset")
+            self._log("Operation timed out after 30s", "WARN")
         self.after(100, self._poll_serial)
 
     def _send_next_write(self):

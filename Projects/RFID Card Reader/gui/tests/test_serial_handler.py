@@ -103,3 +103,48 @@ def test_parse_err_format_auth():
 def test_parse_err_format_write():
     result = SerialHandler.parse_line("ERR:FORMAT_WRITE:0A")
     assert result == {"type": "ERR", "message": "FORMAT_WRITE:0A"}
+
+
+def test_parse_dark_uid():
+    result = SerialHandler.parse_line("DARK:UID:E413B3DA")
+    assert result == {"type": "DARK", "subtype": "UID", "uid": "E413B3DA"}
+
+
+def test_parse_dark_nt():
+    result = SerialHandler.parse_line("DARK:NT:A1B2C3D4")
+    assert result == {"type": "DARK", "subtype": "NT", "nt": "A1B2C3D4"}
+
+
+def test_parse_dark_nack():
+    result = SerialHandler.parse_line("DARK:NACK:0102030405060708")
+    assert result == {"type": "DARK", "subtype": "NACK", "nr_ar": "0102030405060708"}
+
+
+def test_parse_dark_timeout():
+    result = SerialHandler.parse_line("DARK:TIMEOUT")
+    assert result == {"type": "DARK", "subtype": "TIMEOUT"}
+
+
+def test_parse_dark_done():
+    result = SerialHandler.parse_line("DARK:DONE")
+    assert result == {"type": "DARK", "subtype": "DONE"}
+
+
+def test_parse_nested_nt():
+    result = SerialHandler.parse_line("NESTED:NT:A1B2C3D4:E5F6A7B8")
+    assert result == {
+        "type": "NESTED",
+        "subtype": "NT",
+        "nt_known": "A1B2C3D4",
+        "nt_target": "E5F6A7B8",
+    }
+
+
+def test_parse_nested_fail():
+    result = SerialHandler.parse_line("NESTED:FAIL:AUTH")
+    assert result == {"type": "NESTED", "subtype": "FAIL", "reason": "AUTH"}
+
+
+def test_parse_nested_done():
+    result = SerialHandler.parse_line("NESTED:DONE")
+    assert result == {"type": "NESTED", "subtype": "DONE"}

