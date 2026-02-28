@@ -83,3 +83,23 @@ def test_parse_ok_wrote():
 def test_parse_err_auth_fail():
     result = SerialHandler.parse_line("ERR:AUTH_FAIL:03")
     assert result == {"type": "ERR", "message": "AUTH_FAIL:03"}
+
+
+def test_parse_ok_format_progress():
+    result = SerialHandler.parse_line("OK:FORMAT:05")
+    assert result == {"type": "OK", "message": "FORMAT:05"}
+
+
+def test_parse_ok_format_complete():
+    result = SerialHandler.parse_line("OK:FORMAT_COMPLETE")
+    assert result == {"type": "OK", "message": "FORMAT_COMPLETE"}
+
+
+def test_parse_err_format_auth():
+    result = SerialHandler.parse_line("ERR:FORMAT_AUTH:03")
+    assert result == {"type": "ERR", "message": "FORMAT_AUTH:03"}
+
+
+def test_parse_err_format_write():
+    result = SerialHandler.parse_line("ERR:FORMAT_WRITE:0A")
+    assert result == {"type": "ERR", "message": "FORMAT_WRITE:0A"}
