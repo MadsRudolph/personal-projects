@@ -109,6 +109,21 @@ class TestDatabase(unittest.TestCase):
         ok = inventory.update_quantity(self.conn, 9999, 1)
         self.assertFalse(ok)
 
+    def test_delete_component(self):
+        self._seed()
+        ok = inventory.delete_component(self.conn, 1)
+        self.assertTrue(ok)
+        row = self.conn.execute("SELECT * FROM components WHERE id=1").fetchone()
+        self.assertIsNone(row)
+
+    def test_update_component(self):
+        self._seed()
+        ok = inventory.update_component(self.conn, 1, {"name": "Updated Resistor", "quantity": 100})
+        self.assertTrue(ok)
+        row = self.conn.execute("SELECT name, quantity FROM components WHERE id=1").fetchone()
+        self.assertEqual(row[0], "Updated Resistor")
+        self.assertEqual(row[1], 100)
+
     def test_export_csv(self):
         self._seed()
         output = inventory.export_csv(self.conn)

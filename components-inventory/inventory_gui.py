@@ -1,12 +1,17 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
+import customtkinter as ctk
 import os
 import sys
+from PIL import Image
 
 # Import data layer from inventory.py
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import inventory
 
+# Appearance settings
+ctk.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
+ctk.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
 # Adaptive field config: category -> (value_label, show_package)
 FIELD_CONFIG = {
@@ -23,201 +28,402 @@ FIELD_CONFIG = {
     "other":      ("Description", False),
 }
 
+class EditDialog(ctk.CTkToplevel):
+    def __init__(self, parent, component_data, on_update):
+        super().__init__(parent)
+        self.title(f"Edit Component: {component_data['name']}")
+        self.geometry("600x650")
+        self.transient(parent)
+        self.grab_set()
+        
+        self.component_data = component_data
+        self.on_update = on_update
+        self.conn = parent.conn
+        
+        self.grid_columnconfigure(0, weight=1)
+        
+        container = ctk.CTkFrame(self)
+        container.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+        container.grid_columnconfigure(1, weight=1)
+        
+        # Form fields
+        row = 0
+        ctk.CTkLabel(container, text="Name:").grid(row=row, column=0, padx=20, pady=10, sticky="e")
+        self.name_entry = ctk.CTkEntry(container, width=300)
+        self.name_entry.grid(row=row, column=1, padx=20, pady=10, sticky="w")
+        self.name_entry.insert(0, component_data['name'])
+        
+        row += 1
+        ctk.CTkLabel(container, text="Category:").grid(row=row, column=0, padx=20, pady=10, sticky="e")
+        self.cat_menu = ctk.CTkOptionMenu(container, values=inventory.CATEGORIES, command=self._on_category_change)
+        self.cat_menu.grid(row=row, column=1, padx=20, pady=10, sticky="w")
+        self.cat_menu.set(component_data['category'])
+        
+        row += 1
+        self.value_label = ctk.CTkLabel(container, text="Value:")
+        self.value_label.grid(row=row, column=0, padx=20, pady=10, sticky="e")
+        self.value_entry = ctk.CTkEntry(container, width=300)
+        self.value_entry.grid(row=row, column=1, padx=20, pady=10, sticky="w")
+        self.value_entry.insert(0, component_data['value'] or "")
+        
+        row += 1
+        self.pkg_label = ctk.CTkLabel(container, text="Package:")
+        self.pkg_label.grid(row=row, column=0, padx=20, pady=10, sticky="e")
+        self.pkg_entry = ctk.CTkEntry(container, width=300)
+        self.pkg_entry.grid(row=row, column=1, padx=20, pady=10, sticky="w")
+        self.pkg_entry.insert(0, component_data['package'] or "")
+        
+        row += 1
+        ctk.CTkLabel(container, text="Quantity:").grid(row=row, column=0, padx=20, pady=10, sticky="e")
+        self.qty_entry = ctk.CTkEntry(container, width=100)
+        self.qty_entry.grid(row=row, column=1, padx=20, pady=10, sticky="w")
+        self.qty_entry.insert(0, str(component_data['quantity']))
+        
+        row += 1
+        ctk.CTkLabel(container, text="Location:").grid(row=row, column=0, padx=20, pady=10, sticky="e")
+        self.loc_entry = ctk.CTkEntry(container, width=200)
+        self.loc_entry.grid(row=row, column=1, padx=20, pady=10, sticky="w")
+        self.loc_entry.insert(0, component_data['location'] or "")
+        
+        row += 1
+        ctk.CTkLabel(container, text="Notes:").grid(row=row, column=0, padx=20, pady=10, sticky="e")
+        self.notes_entry = ctk.CTkEntry(container, width=300)
+        self.notes_entry.grid(row=row, column=1, padx=20, pady=10, sticky="w")
+        self.notes_entry.insert(0, component_data['notes'] or "")
+        
+        # Action Buttons
+        row += 1
+        btn_frame = ctk.CTkFrame(container, fg_color="transparent")
+        btn_frame.grid(row=row, column=1, padx=20, pady=20, sticky="w")
+        
+        self.save_btn = ctk.CTkButton(btn_frame, text="Update", command=self._do_update)
+        self.save_btn.grid(row=0, column=0, padx=(0, 10))
+        
+        self.delete_btn = ctk.CTkButton(btn_frame, text="Delete", fg_color="#d32f2f", hover_color="#b71c1c", command=self._do_delete)
+        self.delete_btn.grid(row=0, column=1)
+        
+        self._update_adaptive_fields()
 
-class InventoryApp(tk.Tk):
+    def _on_category_change(self, choice):
+        self._update_adaptive_fields()
+
+    def _update_adaptive_fields(self):
+        cat = self.cat_menu.get()
+        label_text, show_pkg = FIELD_CONFIG.get(cat, ("Description", False))
+        self.value_label.configure(text=label_text + ":")
+        if show_pkg:
+            self.pkg_label.grid()
+            self.pkg_entry.grid()
+        else:
+            self.pkg_label.grid_remove()
+            self.pkg_entry.grid_remove()
+
+    def _do_update(self):
+        try:
+            qty = int(self.qty_entry.get().strip() or 0)
+        except ValueError:
+            qty = 0
+            
+        data = {
+            "name": self.name_entry.get().strip(),
+            "category": self.cat_menu.get(),
+            "value": self.value_entry.get().strip(),
+            "package": self.pkg_entry.get().strip(),
+            "quantity": qty,
+            "location": self.loc_entry.get().strip(),
+            "notes": self.notes_entry.get().strip(),
+        }
+        if not data["name"]:
+            return
+        
+        inventory.update_component(self.conn, self.component_data['id'], data)
+        self.on_update()
+        self.destroy()
+
+    def _do_delete(self):
+        confirm = messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete '{self.component_data['name']}'?")
+        if confirm:
+            inventory.delete_component(self.conn, self.component_data['id'])
+            self.on_update()
+            self.destroy()
+
+class InventoryApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("Component Inventory")
-        self.geometry("780x520")
-        self.minsize(600, 400)
+
+        self.title("Component Inventory Pro")
+        self.geometry("1100x650")
+        self.minsize(900, 550)
 
         self.conn = inventory.init_db()
         self.session_count = 0
         self.last_category = inventory.CATEGORIES[0]
         self.last_location = ""
 
-        self._build_ui()
+        # set grid layout 1x2
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        self._build_sidebar()
+        self._build_main_content()
+        
+        self.select_frame_by_name("add")
         self._bind_shortcuts()
-        self.show_tab("add")
 
-    # ── UI construction ──────────────────────────────────────────────
+    def _build_sidebar(self):
+        # Create navigation frame
+        self.navigation_frame = ctk.CTkFrame(self, corner_radius=0)
+        self.navigation_frame.grid(row=0, column=0, sticky="nsew")
+        self.navigation_frame.grid_rowconfigure(4, weight=1)
 
-    def _build_ui(self):
-        # Tab buttons
-        tab_bar = ttk.Frame(self)
-        tab_bar.pack(fill="x", padx=8, pady=(8, 0))
+        self.navigation_frame_label = ctk.CTkLabel(self.navigation_frame, text="  Inventory Pro", 
+                                                 compound="left", font=ctk.CTkFont(size=20, weight="bold"))
+        self.navigation_frame_label.grid(row=0, column=0, padx=20, pady=20)
 
-        self.tab_buttons = {}
-        for label in ("Add", "Inventory", "Stock"):
-            btn = ttk.Button(tab_bar, text=label,
-                             command=lambda l=label: self.show_tab(l.lower()))
-            btn.pack(side="left", padx=(0, 4))
-            self.tab_buttons[label.lower()] = btn
+        self.add_btn_nav = ctk.CTkButton(self.navigation_frame, corner_radius=0, height=40, border_spacing=10, text="Add Component",
+                                           fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"),
+                                           anchor="w", command=self.add_button_event)
+        self.add_btn_nav.grid(row=1, column=0, sticky="ew")
 
-        # Content container
-        self.content = ttk.Frame(self)
-        self.content.pack(fill="both", expand=True, padx=8, pady=4)
+        self.inv_btn_nav = ctk.CTkButton(self.navigation_frame, corner_radius=0, height=40, border_spacing=10, text="Inventory",
+                                              fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"),
+                                              anchor="w", command=self.inv_button_event)
+        self.inv_btn_nav.grid(row=2, column=0, sticky="ew")
 
-        # Status bar
-        self.status_var = tk.StringVar(value="Ready")
-        status_bar = ttk.Label(self, textvariable=self.status_var, relief="sunken",
-                               anchor="w", padding=(6, 2))
-        status_bar.pack(fill="x", side="bottom", padx=8, pady=(0, 8))
+        self.stock_btn_nav = ctk.CTkButton(self.navigation_frame, corner_radius=0, height=40, border_spacing=10, text="Stock Summary",
+                                              fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"),
+                                              anchor="w", command=self.stock_button_event)
+        self.stock_btn_nav.grid(row=3, column=0, sticky="ew")
 
-        # Build each tab (hidden initially)
-        self.tabs = {}
-        self._build_add_tab()
-        self._build_inventory_tab()
-        self._build_stock_tab()
+        self.appearance_mode_menu = ctk.CTkOptionMenu(self.navigation_frame, values=["Light", "Dark", "System"],
+                                                       command=self.change_appearance_mode_event)
+        self.appearance_mode_menu.grid(row=5, column=0, padx=20, pady=20, sticky="s")
+        self.appearance_mode_menu.set("Dark")
 
-    def _build_add_tab(self):
-        frame = ttk.Frame(self.content)
-        self.tabs["add"] = frame
+    def _build_main_content(self):
+        # Create Add Frame
+        self.add_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.add_frame.grid_columnconfigure(0, weight=1)
+        self._build_add_content()
 
-        # Form grid
-        form = ttk.LabelFrame(frame, text="Add Component", padding=12)
-        form.pack(fill="both", expand=True, pady=4)
+        # Create Inventory Frame
+        self.inventory_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.inventory_frame.grid_columnconfigure(0, weight=1)
+        self.inventory_frame.grid_rowconfigure(1, weight=1)
+        self._build_inventory_content()
 
-        row = 0
+        # Create Stock Frame
+        self.stock_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.stock_frame.grid_columnconfigure(0, weight=1)
+        self.stock_frame.grid_rowconfigure(2, weight=1)
+        self._build_stock_content()
+
+    def _build_add_content(self):
+        # Title
+        label = ctk.CTkLabel(self.add_frame, text="Add New Component", font=ctk.CTkFont(size=24, weight="bold"))
+        label.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="w")
+
+        # Form Container
+        self.form_container = ctk.CTkFrame(self.add_frame)
+        self.form_container.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
+        self.form_container.grid_columnconfigure(1, weight=1)
+
         # Name
-        ttk.Label(form, text="Name:").grid(row=row, column=0, sticky="e", padx=(0, 8), pady=4)
-        self.add_name = ttk.Entry(form, width=40)
-        self.add_name.grid(row=row, column=1, sticky="ew", pady=4)
+        ctk.CTkLabel(self.form_container, text="Name:").grid(row=0, column=0, padx=20, pady=15, sticky="e")
+        self.add_name = ctk.CTkEntry(self.form_container, placeholder_text="e.g. 10k resistor, NE555...", width=400)
+        self.add_name.grid(row=0, column=1, padx=20, pady=15, sticky="w")
 
         # Category
-        row += 1
-        ttk.Label(form, text="Category:").grid(row=row, column=0, sticky="e", padx=(0, 8), pady=4)
-        self.add_category = ttk.Combobox(form, values=inventory.CATEGORIES, state="readonly", width=37)
-        self.add_category.grid(row=row, column=1, sticky="ew", pady=4)
+        ctk.CTkLabel(self.form_container, text="Category:").grid(row=1, column=0, padx=20, pady=15, sticky="e")
+        self.add_category = ctk.CTkOptionMenu(self.form_container, values=inventory.CATEGORIES, command=self._on_category_change)
+        self.add_category.grid(row=1, column=1, padx=20, pady=15, sticky="w")
         self.add_category.set(self.last_category)
-        self.add_category.bind("<<ComboboxSelected>>", self._on_category_change)
 
-        # Value (adaptive label)
-        row += 1
-        self.value_label_var = tk.StringVar(value="Value:")
-        self.value_label = ttk.Label(form, textvariable=self.value_label_var)
-        self.value_label.grid(row=row, column=0, sticky="e", padx=(0, 8), pady=4)
-        self.add_value = ttk.Entry(form, width=40)
-        self.add_value.grid(row=row, column=1, sticky="ew", pady=4)
+        # Value
+        self.value_label = ctk.CTkLabel(self.form_container, text="Value:")
+        self.value_label.grid(row=2, column=0, padx=20, pady=15, sticky="e")
+        self.add_value = ctk.CTkEntry(self.form_container, placeholder_text="Value", width=400)
+        self.add_value.grid(row=2, column=1, padx=20, pady=15, sticky="w")
 
-        # Package (hideable)
-        row += 1
-        self.pkg_label = ttk.Label(form, text="Package:")
-        self.pkg_label.grid(row=row, column=0, sticky="e", padx=(0, 8), pady=4)
-        self.add_package = ttk.Entry(form, width=40)
-        self.add_package.grid(row=row, column=1, sticky="ew", pady=4)
-        self.pkg_row = row
+        # Package
+        self.pkg_label = ctk.CTkLabel(self.form_container, text="Package:")
+        self.pkg_label.grid(row=3, column=0, padx=20, pady=15, sticky="e")
+        self.add_package = ctk.CTkEntry(self.form_container, placeholder_text="Package", width=400)
+        self.add_package.grid(row=3, column=1, padx=20, pady=15, sticky="w")
 
-        # Quantity
-        row += 1
-        ttk.Label(form, text="Quantity:").grid(row=row, column=0, sticky="e", padx=(0, 8), pady=4)
-        self.add_qty = ttk.Entry(form, width=10)
-        self.add_qty.grid(row=row, column=1, sticky="w", pady=4)
+        # Qty and Location side by side
+        ql_frame = ctk.CTkFrame(self.form_container, fg_color="transparent")
+        ql_frame.grid(row=4, column=1, padx=20, pady=15, sticky="w")
+        
+        ctk.CTkLabel(ql_frame, text="Quantity:").grid(row=0, column=0, padx=(0, 10), pady=0)
+        self.add_qty = ctk.CTkEntry(ql_frame, width=80)
+        self.add_qty.grid(row=0, column=1, padx=(0, 20), pady=0)
         self.add_qty.insert(0, "1")
 
-        # Location
-        row += 1
-        ttk.Label(form, text="Location:").grid(row=row, column=0, sticky="e", padx=(0, 8), pady=4)
-        self.add_location = ttk.Entry(form, width=20)
-        self.add_location.grid(row=row, column=1, sticky="w", pady=4)
+        ctk.CTkLabel(ql_frame, text="Location:").grid(row=0, column=2, padx=(0, 10), pady=0)
+        self.add_location = ctk.CTkEntry(ql_frame, width=120, placeholder_text="e.g. A1, Bin 4")
+        self.add_location.grid(row=0, column=3, pady=0)
 
         # Notes
-        row += 1
-        ttk.Label(form, text="Notes:").grid(row=row, column=0, sticky="e", padx=(0, 8), pady=4)
-        self.add_notes = ttk.Entry(form, width=40)
-        self.add_notes.grid(row=row, column=1, sticky="ew", pady=4)
+        ctk.CTkLabel(self.form_container, text="Notes:").grid(row=5, column=0, padx=20, pady=15, sticky="e")
+        self.add_notes = ctk.CTkEntry(self.form_container, placeholder_text="Optional notes", width=400)
+        self.add_notes.grid(row=5, column=1, padx=20, pady=15, sticky="w")
 
-        # Save button
-        row += 1
-        self.save_btn = ttk.Button(form, text="Save & Next  (Enter)", command=self._save_component)
-        self.save_btn.grid(row=row, column=0, columnspan=2, pady=(12, 4))
+        # Buttons
+        btn_frame = ctk.CTkFrame(self.form_container, fg_color="transparent")
+        btn_frame.grid(row=6, column=1, padx=20, pady=25, sticky="w")
 
-        form.columnconfigure(1, weight=1)
+        self.save_btn = ctk.CTkButton(btn_frame, text="Save Component", command=self._save_component, font=ctk.CTkFont(weight="bold"), height=35)
+        self.save_btn.grid(row=0, column=0, padx=(0, 10))
 
-        # Apply initial adaptive fields
+        self.clear_btn = ctk.CTkButton(btn_frame, text="Clear Form", fg_color="transparent", border_width=1, command=self._clear_form, height=35)
+        self.clear_btn.grid(row=0, column=1)
+
+        # Status Label in Add Tab
+        self.add_status_label = ctk.CTkLabel(self.add_frame, text="Ready", text_color="gray")
+        self.add_status_label.grid(row=2, column=0, padx=25, pady=10, sticky="w")
+
         self._update_adaptive_fields()
 
-    def _build_inventory_tab(self):
-        frame = ttk.Frame(self.content)
-        self.tabs["inventory"] = frame
+    def _build_inventory_content(self):
+        # Header Tools
+        header = ctk.CTkFrame(self.inventory_frame, fg_color="transparent")
+        header.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="ew")
+        header.grid_columnconfigure(1, weight=1)
 
-        # Search bar
-        search_frame = ttk.Frame(frame)
-        search_frame.pack(fill="x", pady=(4, 4))
-
-        ttk.Label(search_frame, text="Search:").pack(side="left", padx=(0, 4))
-        self.search_var = tk.StringVar()
+        ctk.CTkLabel(header, text="Inventory List", font=ctk.CTkFont(size=24, weight="bold")).grid(row=0, column=0, sticky="w")
+        
+        search_box = ctk.CTkFrame(header)
+        search_box.grid(row=0, column=2, sticky="e")
+        
+        self.search_var = ctk.StringVar()
         self.search_var.trace_add("write", lambda *_: self._refresh_inventory())
-        search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=30)
-        search_entry.pack(side="left", padx=(0, 8))
+        self.search_entry = ctk.CTkEntry(search_box, placeholder_text="Search components...", width=300, textvariable=self.search_var)
+        self.search_entry.grid(row=0, column=0, padx=10, pady=10)
 
-        ttk.Label(search_frame, text="Category:").pack(side="left", padx=(0, 4))
-        self.filter_category = ttk.Combobox(search_frame,
-                                            values=["All"] + inventory.CATEGORIES,
-                                            state="readonly", width=14)
+        self.filter_category = ctk.CTkOptionMenu(search_box, values=["All"] + inventory.CATEGORIES, command=lambda _: self._refresh_inventory())
+        self.filter_category.grid(row=0, column=1, padx=10, pady=10)
         self.filter_category.set("All")
-        self.filter_category.bind("<<ComboboxSelected>>", lambda *_: self._refresh_inventory())
-        self.filter_category.pack(side="left")
 
-        # Treeview
+        # Treeview Styles
+        tree_container = ctk.CTkFrame(self.inventory_frame)
+        tree_container.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
+        tree_container.grid_columnconfigure(0, weight=1)
+        tree_container.grid_rowconfigure(0, weight=1)
+
+        style = ttk.Style()
+        style.theme_use("default")
+        style.configure("Treeview", 
+                        background="#2b2b2b", 
+                        foreground="white", 
+                        rowheight=30, 
+                        fieldbackground="#2b2b2b",
+                        borderwidth=0)
+        style.map("Treeview", background=[('selected', '#1f538d')])
+        style.configure("Treeview.Heading", background="#333333", foreground="white", relief="flat", font=('Arial', 10, 'bold'))
+        style.map("Treeview.Heading", background=[('active', '#3f3f3f')])
+
         cols = ("id", "name", "category", "value", "package", "qty", "location", "notes")
-        self.inv_tree = ttk.Treeview(frame, columns=cols, show="headings", selectmode="browse")
-
-        col_widths = {"id": 40, "name": 140, "category": 80, "value": 100,
-                      "package": 80, "qty": 45, "location": 60, "notes": 120}
+        self.inv_tree = ttk.Treeview(tree_container, columns=cols, show="headings", style="Treeview")
+        
+        col_widths = {"id": 50, "name": 200, "category": 100, "value": 120,
+                      "package": 100, "qty": 60, "location": 80, "notes": 250}
         for col in cols:
             self.inv_tree.heading(col, text=col.capitalize() if col != "qty" else "Qty")
-            self.inv_tree.column(col, width=col_widths.get(col, 80), minwidth=30)
+            self.inv_tree.column(col, width=col_widths.get(col, 100), anchor="center" if col in ("id", "qty") else "w")
 
-        scrollbar = ttk.Scrollbar(frame, orient="vertical", command=self.inv_tree.yview)
+        scrollbar = ctk.CTkScrollbar(tree_container, orientation="vertical", command=self.inv_tree.yview)
         self.inv_tree.configure(yscrollcommand=scrollbar.set)
 
-        self.inv_tree.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        self.inv_tree.grid(row=0, column=0, sticky="nsew")
+        scrollbar.grid(row=0, column=1, sticky="ns")
 
         self.inv_tree.bind("<Double-1>", self._on_tree_double_click)
 
-    def _build_stock_tab(self):
-        frame = ttk.Frame(self.content)
-        self.tabs["stock"] = frame
+    def _build_stock_content(self):
+        # Header Tools
+        header = ctk.CTkFrame(self.stock_frame, fg_color="transparent")
+        header.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="ew")
+        header.grid_columnconfigure(1, weight=1)
 
-        # Stock treeview
+        ctk.CTkLabel(header, text="Stock Summary", font=ctk.CTkFont(size=24, weight="bold")).grid(row=0, column=0, sticky="w")
+        
+        self.export_btn = ctk.CTkButton(header, text="Export CSV", command=self._export_csv, fg_color="#333333", border_width=1, height=35)
+        self.export_btn.grid(row=0, column=2, sticky="e")
+
+        # Dashboard View (Cards)
+        self.stats_frame = ctk.CTkFrame(self.stock_frame, fg_color="transparent")
+        self.stats_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
+        # Layout metrics will be added here dynamically in _refresh_stock
+
+        # Detailed Table
+        self.stock_tree_container = ctk.CTkFrame(self.stock_frame)
+        self.stock_tree_container.grid(row=2, column=0, padx=20, pady=10, sticky="nsew")
+        self.stock_tree_container.grid_columnconfigure(0, weight=1)
+        self.stock_tree_container.grid_rowconfigure(0, weight=1)
+        
         cols = ("category", "items", "total_qty")
-        self.stock_tree = ttk.Treeview(frame, columns=cols, show="headings", selectmode="none")
+        self.stock_tree = ttk.Treeview(self.stock_tree_container, columns=cols, show="headings", style="Treeview")
         self.stock_tree.heading("category", text="Category")
-        self.stock_tree.heading("items", text="Items")
-        self.stock_tree.heading("total_qty", text="Total Qty")
-        self.stock_tree.column("category", width=160)
-        self.stock_tree.column("items", width=80, anchor="e")
-        self.stock_tree.column("total_qty", width=100, anchor="e")
-        self.stock_tree.pack(fill="both", expand=True, pady=(4, 4))
+        self.stock_tree.heading("items", text="Unique Items")
+        self.stock_tree.heading("total_qty", text="Total Stock")
+        for col in cols:
+            self.stock_tree.column(col, anchor="center")
+        
+        self.stock_tree.grid(row=0, column=0, sticky="nsew")
+        
+        scrollbar = ctk.CTkScrollbar(self.stock_tree_container, orientation="vertical", command=self.stock_tree.yview)
+        self.stock_tree.configure(yscrollcommand=scrollbar.set)
+        scrollbar.grid(row=0, column=1, sticky="ns")
 
-        # Export button
-        ttk.Button(frame, text="Export to CSV  (Ctrl+E)", command=self._export_csv).pack(pady=(4, 4))
+    # ── Sidebar Events ────────────────────────────────────────────────
 
-    # ── Tab switching ────────────────────────────────────────────────
+    def select_frame_by_name(self, name):
+        # set button color for selected button
+        self.add_btn_nav.configure(fg_color=("gray75", "gray25") if name == "add" else "transparent")
+        self.inv_btn_nav.configure(fg_color=("gray75", "gray25") if name == "inventory" else "transparent")
+        self.stock_btn_nav.configure(fg_color=("gray75", "gray25") if name == "stock" else "transparent")
 
-    def show_tab(self, name):
-        for tab_frame in self.tabs.values():
-            tab_frame.pack_forget()
-        self.tabs[name].pack(fill="both", expand=True)
-
+        # show selected frame
         if name == "add":
+            self.add_frame.grid(row=0, column=1, sticky="nsew")
             self.add_name.focus_set()
-        elif name == "inventory":
+        else:
+            self.add_frame.grid_forget()
+        
+        if name == "inventory":
+            self.inventory_frame.grid(row=0, column=1, sticky="nsew")
             self._refresh_inventory()
-        elif name == "stock":
+        else:
+            self.inventory_frame.grid_forget()
+        
+        if name == "stock":
+            self.stock_frame.grid(row=0, column=1, sticky="nsew")
             self._refresh_stock()
+        else:
+            self.stock_frame.grid_forget()
 
-    # ── Add tab logic ────────────────────────────────────────────────
+    def add_button_event(self):
+        self.select_frame_by_name("add")
 
-    def _on_category_change(self, event=None):
+    def inv_button_event(self):
+        self.select_frame_by_name("inventory")
+
+    def stock_button_event(self):
+        self.select_frame_by_name("stock")
+
+    def change_appearance_mode_event(self, new_appearance_mode):
+        ctk.set_appearance_mode(new_appearance_mode)
+
+    # ── Add Tab Logic ────────────────────────────────────────────────
+
+    def _on_category_change(self, choice):
         self._update_adaptive_fields()
 
     def _update_adaptive_fields(self):
         cat = self.add_category.get()
         label_text, show_pkg = FIELD_CONFIG.get(cat, ("Description", False))
-        self.value_label_var.set(label_text + ":")
+        self.value_label.configure(text=label_text + ":")
 
         if show_pkg:
             self.pkg_label.grid()
@@ -230,14 +436,14 @@ class InventoryApp(tk.Tk):
         name = self.add_name.get().strip()
         if not name:
             self.add_name.focus_set()
-            self.status_var.set("Name is required")
+            self.add_status_label.configure(text="Name is required", text_color="red")
             return
 
         category = self.add_category.get()
         location = self.add_location.get().strip()
         if not location:
             self.add_location.focus_set()
-            self.status_var.set("Location is required")
+            self.add_status_label.configure(text="Location is required", text_color="red")
             return
 
         qty_str = self.add_qty.get().strip() or "1"
@@ -261,11 +467,9 @@ class InventoryApp(tk.Tk):
         self.last_category = category
         self.last_location = location
 
-        val_str = f" {data['value']}" if data["value"] else ""
-        pkg_str = f" [{data['package']}]" if data["package"] else ""
-        self.status_var.set(
-            f"Saved #{cid}: {name}{val_str}{pkg_str} x{qty} @ {location}  "
-            f"({self.session_count} added this session)"
+        self.add_status_label.configure(
+            text=f"Saved #{cid}: {name} (Total this session: {self.session_count})",
+            text_color="green"
         )
 
         # Clear form, keep sticky defaults
@@ -275,7 +479,6 @@ class InventoryApp(tk.Tk):
         self.add_qty.delete(0, "end")
         self.add_qty.insert(0, "1")
         self.add_notes.delete(0, "end")
-        # Keep category and location as sticky defaults
         self.add_name.focus_set()
 
     def _clear_form(self, event=None):
@@ -287,9 +490,9 @@ class InventoryApp(tk.Tk):
         self.add_location.delete(0, "end")
         self.add_notes.delete(0, "end")
         self.add_name.focus_set()
-        self.status_var.set("Form cleared")
+        self.add_status_label.configure(text="Form cleared", text_color="gray")
 
-    # ── Inventory tab logic ──────────────────────────────────────────
+    # ── Inventory Logic ──────────────────────────────────────────────
 
     def _refresh_inventory(self):
         for item in self.inv_tree.get_children():
@@ -306,7 +509,6 @@ class InventoryApp(tk.Tk):
             cur = self.conn.execute("SELECT * FROM components ORDER BY category, name")
             rows = [inventory._row_to_dict(r, cur) for r in cur.fetchall()]
 
-        # Apply category filter to search results too
         if query and cat_filter != "All":
             rows = [r for r in rows if r["category"].lower() == cat_filter.lower()]
 
@@ -323,40 +525,22 @@ class InventoryApp(tk.Tk):
         if not sel:
             return
         values = self.inv_tree.item(sel[0], "values")
-        comp_id = int(values[0])
-        comp_name = values[1]
-        current_qty = values[5]
+        
+        # Map values back to dict for the dialog
+        comp_data = {
+            "id": int(values[0]),
+            "name": values[1],
+            "category": values[2],
+            "value": values[3],
+            "package": values[4],
+            "quantity": int(values[5]),
+            "location": values[6],
+            "notes": values[7]
+        }
+        
+        EditDialog(self, comp_data, self._refresh_inventory)
 
-        dialog = tk.Toplevel(self)
-        dialog.title(f"Update Quantity — {comp_name}")
-        dialog.geometry("300x120")
-        dialog.transient(self)
-        dialog.grab_set()
-
-        ttk.Label(dialog, text=f"Component: {comp_name}").pack(pady=(12, 4))
-        qty_frame = ttk.Frame(dialog)
-        qty_frame.pack(pady=4)
-        ttk.Label(qty_frame, text="New quantity:").pack(side="left", padx=(0, 4))
-        qty_entry = ttk.Entry(qty_frame, width=10)
-        qty_entry.pack(side="left")
-        qty_entry.insert(0, str(current_qty))
-        qty_entry.select_range(0, "end")
-        qty_entry.focus_set()
-
-        def do_update(e=None):
-            try:
-                new_qty = int(qty_entry.get())
-            except ValueError:
-                return
-            inventory.update_quantity(self.conn, comp_id, new_qty)
-            self.status_var.set(f"Updated #{comp_id} ({comp_name}) quantity to {new_qty}")
-            dialog.destroy()
-            self._refresh_inventory()
-
-        qty_entry.bind("<Return>", do_update)
-        ttk.Button(dialog, text="Update", command=do_update).pack(pady=8)
-
-    # ── Stock tab logic ──────────────────────────────────────────────
+    # ── Stock Logic ──────────────────────────────────────────────────
 
     def _refresh_stock(self):
         for item in self.stock_tree.get_children():
@@ -369,7 +553,23 @@ class InventoryApp(tk.Tk):
             self.stock_tree.insert("", "end", values=(cat, items, qty))
             total_items += items
             total_qty += qty
-        self.stock_tree.insert("", "end", values=("TOTAL", total_items, total_qty))
+        
+        # Update Dashboard Stats
+        for widget in self.stats_frame.winfo_children():
+            widget.destroy()
+
+        metrics = [
+            ("Total Unique Components", total_items, "#1f538d"),
+            ("Total Stock Volume", total_qty, "#2fa572"),
+            ("Top Categories", len(stock), "#8d6e63")
+        ]
+
+        for i, (label, val, color) in enumerate(metrics):
+            card = ctk.CTkFrame(self.stats_frame, width=220, height=80, border_width=1, border_color=color)
+            card.grid(row=0, column=i, padx=10, pady=5)
+            card.grid_propagate(False)
+            ctk.CTkLabel(card, text=label, font=ctk.CTkFont(size=11)).pack(pady=(10, 0))
+            ctk.CTkLabel(card, text=str(val), font=ctk.CTkFont(size=20, weight="bold"), text_color=color).pack()
 
     def _export_csv(self, event=None):
         filepath = filedialog.asksaveasfilename(
@@ -382,35 +582,26 @@ class InventoryApp(tk.Tk):
         output = inventory.export_csv(self.conn)
         with open(filepath, "w", newline="") as f:
             f.write(output)
-        self.status_var.set(f"Exported to {filepath}")
 
-    # ── Keyboard shortcuts ───────────────────────────────────────────
+    # ── Shortcuts ───────────────────────────────────────────────────
 
     def _bind_shortcuts(self):
+        self.bind("<Control-Key-1>", lambda e: self.select_frame_by_name("add"))
+        self.bind("<Control-Key-2>", lambda e: self.select_frame_by_name("inventory"))
+        self.bind("<Control-Key-3>", lambda e: self.select_frame_by_name("stock"))
         self.bind("<Return>", self._on_enter)
-        self.bind("<Escape>", self._clear_form)
-        self.bind("<Control-Key-1>", lambda e: self.show_tab("add"))
-        self.bind("<Control-Key-2>", lambda e: self.show_tab("inventory"))
-        self.bind("<Control-Key-3>", lambda e: self.show_tab("stock"))
-        self.bind("<Control-e>", self._export_csv)
-        self.bind("<Control-E>", self._export_csv)
 
     def _on_enter(self, event):
-        # Only trigger save if we're on the add tab and focus is in a form widget
+        # Trigger save if we're in the add frame
         focused = self.focus_get()
-        add_widgets = (self.add_name, self.add_value, self.add_package,
-                       self.add_qty, self.add_location, self.add_notes,
-                       self.add_category, self.save_btn)
-        if focused in add_widgets:
+        if focused in (self.add_name, self.add_value, self.add_package, self.add_qty, self.add_location, self.add_notes):
             self._save_component()
             return "break"
 
-    # ── Cleanup ──────────────────────────────────────────────────────
-
     def destroy(self):
-        self.conn.close()
+        if hasattr(self, 'conn'):
+            self.conn.close()
         super().destroy()
-
 
 if __name__ == "__main__":
     app = InventoryApp()

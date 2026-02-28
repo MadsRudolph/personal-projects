@@ -1,3 +1,93 @@
+# Component Inventory CLI — Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** Build a single-file Python CLI tool for cataloging THT electronic components with fast interactive add mode and search/query capabilities.
+
+**Architecture:** Single `inventory.py` file using stdlib + sqlite3. SQLite DB (`inventory.db`) auto-created alongside the script. CLI dispatch via `sys.argv`. All logic in module-level functions.
+
+**Tech Stack:** Python 3, sqlite3, csv, datetime, os, sys (stdlib only)
+
+---
+
+### Task 1: Database layer — schema and insert
+
+**Files:**
+- Create: `inventory.py`
+- Create: `test_inventory.py`
+
+**Step 1: Write failing tests for DB init and insert**
+
+```python
+# test_inventory.py
+import os
+import sqlite3
+import tempfile
+import unittest
+
+# We'll import from inventory.py
+import inventory
+
+
+class TestDatabase(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.db_path = os.path.join(self.tmp, "test.db")
+        self.conn = inventory.init_db(self.db_path)
+
+    def tearDown(self):
+        self.conn.close()
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
+
+    def test_init_db_creates_table(self):
+        cur = self.conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='components'"
+        )
+        self.assertIsNotNone(cur.fetchone())
+
+    def test_insert_component(self):
+        cid = inventory.insert_component(self.conn, {
+            "name": "10k resistor",
+            "category": "resistor",
+            "value": "10k",
+            "package": "axial",
+            "quantity": 5,
+            "location": "A1",
+            "notes": "",
+        })
+        self.assertIsInstance(cid, int)
+        row = self.conn.execute("SELECT * FROM components WHERE id=?", (cid,)).fetchone()
+        self.assertEqual(row[1], "10k resistor")  # name
+        self.assertEqual(row[5], 5)                # quantity
+
+    def test_insert_component_minimal(self):
+        cid = inventory.insert_component(self.conn, {
+            "name": "JST 2-pin",
+            "category": "connector",
+            "value": "",
+            "package": "",
+            "quantity": 1,
+            "location": "B2",
+            "notes": "",
+        })
+        row = self.conn.execute("SELECT * FROM components WHERE id=?", (cid,)).fetchone()
+        self.assertEqual(row[1], "JST 2-pin")
+
+
+if __name__ == "__main__":
+    unittest.main()
+```
+
+**Step 2: Run tests to verify they fail**
+
+Run: `python -m pytest test_inventory.py -v`
+Expected: ImportError or AttributeError — functions don't exist yet
+
+**Step 3: Implement init_db and insert_component**
+
+```python
+# inventory.py — initial scaffold
 import csv
 import io
 import os
@@ -35,7 +125,9 @@ def init_db(db_path=None):
     """)
     conn.commit()
     return conn
+```
 
+```python
 def insert_component(conn, data):
     now = datetime.now().isoformat(timespec="seconds")
     cur = conn.execute(
@@ -55,8 +147,109 @@ def insert_component(conn, data):
     )
     conn.commit()
     return cur.lastrowid
+```
 
+**Step 4: Run tests to verify they pass**
 
+Run: `python -m pytest test_inventory.py -v`
+Expected: 3 tests PASS
+
+**Step 5: Commit**
+
+```
+git add inventory.py test_inventory.py
+git commit -m "feat: database layer with init and insert"
+```
+
+---
+
+### Task 2: Database layer — search, list, stock, update, export
+
+**Files:**
+- Modify: `test_inventory.py`
+- Modify: `inventory.py`
+
+**Step 1: Write failing tests for query functions**
+
+Add to `test_inventory.py` inside `TestDatabase`:
+
+```python
+    def _seed(self):
+        """Insert a few test components."""
+        items = [
+            {"name": "10k resistor", "category": "resistor", "value": "10k", "package": "axial", "quantity": 50, "location": "A1", "notes": "1/4W"},
+            {"name": "100nF capacitor", "category": "capacitor", "value": "100nF", "package": "ceramic disc", "quantity": 20, "location": "A2", "notes": ""},
+            {"name": "1N4148 diode", "category": "diode", "value": "1N4148", "package": "DO-35", "quantity": 30, "location": "A3", "notes": ""},
+            {"name": "ATmega328P", "category": "IC", "value": "ATmega328P", "package": "DIP-28", "quantity": 3, "location": "B1", "notes": "Arduino compatible"},
+        ]
+        for item in items:
+            inventory.insert_component(self.conn, item)
+
+    def test_search_by_value(self):
+        self._seed()
+        results = inventory.search_components(self.conn, "10k")
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["name"], "10k resistor")
+
+    def test_search_by_notes(self):
+        self._seed()
+        results = inventory.search_components(self.conn, "Arduino")
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["name"], "ATmega328P")
+
+    def test_search_no_results(self):
+        self._seed()
+        results = inventory.search_components(self.conn, "nonexistent_xyz")
+        self.assertEqual(len(results), 0)
+
+    def test_list_by_category(self):
+        self._seed()
+        results = inventory.list_by_category(self.conn, "resistor")
+        self.assertEqual(len(results), 1)
+
+    def test_list_by_category_case_insensitive(self):
+        self._seed()
+        results = inventory.list_by_category(self.conn, "Resistor")
+        self.assertEqual(len(results), 1)
+
+    def test_get_stock(self):
+        self._seed()
+        stock = inventory.get_stock(self.conn)
+        # stock is list of (category, count, total_qty)
+        categories = {row[0] for row in stock}
+        self.assertIn("resistor", categories)
+        self.assertIn("IC", categories)
+
+    def test_update_quantity(self):
+        self._seed()
+        ok = inventory.update_quantity(self.conn, 1, 42)
+        self.assertTrue(ok)
+        row = self.conn.execute("SELECT quantity FROM components WHERE id=1").fetchone()
+        self.assertEqual(row[0], 42)
+
+    def test_update_quantity_nonexistent(self):
+        ok = inventory.update_quantity(self.conn, 9999, 1)
+        self.assertFalse(ok)
+
+    def test_export_csv(self):
+        self._seed()
+        output = inventory.export_csv(self.conn)
+        self.assertIn("10k resistor", output)
+        self.assertIn("ATmega328P", output)
+        lines = output.strip().split("\n")
+        self.assertEqual(len(lines), 5)  # header + 4 rows
+```
+
+**Step 2: Run tests to verify they fail**
+
+Run: `python -m pytest test_inventory.py -v`
+Expected: FAIL — functions not defined
+
+**Step 3: Implement query functions**
+
+Add to `inventory.py`:
+
+```python
 def _row_to_dict(row, cursor):
     cols = [d[0] for d in cursor.description]
     return dict(zip(cols, row))
@@ -100,36 +293,6 @@ def update_quantity(conn, component_id, new_qty):
     return cur.rowcount > 0
 
 
-def delete_component(conn, component_id):
-    cur = conn.execute("DELETE FROM components WHERE id=?", (component_id,))
-    conn.commit()
-    return cur.rowcount > 0
-
-
-def update_component(conn, component_id, data):
-    now = datetime.now().isoformat(timespec="seconds")
-    fields = []
-    values = []
-    
-    # Map possible data keys to column names
-    for key in ["name", "category", "value", "package", "quantity", "location", "notes"]:
-        if key in data:
-            fields.append(f"{key}=?")
-            values.append(data[key])
-    
-    if not fields:
-        return False
-        
-    fields.append("updated_at=?")
-    values.append(now)
-    values.append(component_id)
-    
-    sql = f"UPDATE components SET {', '.join(fields)} WHERE id=?"
-    cur = conn.execute(sql, tuple(values))
-    conn.commit()
-    return cur.rowcount > 0
-
-
 def export_csv(conn):
     cur = conn.execute("SELECT * FROM components ORDER BY category, name")
     rows = cur.fetchall()
@@ -139,13 +302,77 @@ def export_csv(conn):
     writer.writerow(cols)
     writer.writerows(rows)
     return output.getvalue()
+```
 
+**Step 4: Run tests to verify they pass**
 
+Run: `python -m pytest test_inventory.py -v`
+Expected: All tests PASS
+
+**Step 5: Commit**
+
+```
+git add inventory.py test_inventory.py
+git commit -m "feat: search, list, stock, update, and export functions"
+```
+
+---
+
+### Task 3: Table formatting
+
+**Files:**
+- Modify: `test_inventory.py`
+- Modify: `inventory.py`
+
+**Step 1: Write failing test for table formatter**
+
+Add new test class to `test_inventory.py`:
+
+```python
+class TestFormatting(unittest.TestCase):
+    def test_format_table_basic(self):
+        rows = [
+            {"id": 1, "name": "10k resistor", "category": "resistor", "value": "10k", "quantity": 5, "location": "A1"},
+            {"id": 2, "name": "100nF cap", "category": "capacitor", "value": "100nF", "quantity": 20, "location": "A2"},
+        ]
+        output = inventory.format_table(rows)
+        self.assertIn("10k resistor", output)
+        self.assertIn("100nF cap", output)
+        # Should have header line + separator + 2 data lines minimum
+        lines = output.strip().split("\n")
+        self.assertGreaterEqual(len(lines), 4)
+
+    def test_format_table_empty(self):
+        output = inventory.format_table([])
+        self.assertIn("No components found", output)
+
+    def test_format_stock(self):
+        stock_rows = [
+            ("capacitor", 3, 45),
+            ("resistor", 5, 100),
+        ]
+        output = inventory.format_stock(stock_rows)
+        self.assertIn("resistor", output)
+        self.assertIn("capacitor", output)
+        self.assertIn("145", output)  # total qty
+```
+
+**Step 2: Run tests to verify they fail**
+
+Run: `python -m pytest test_inventory.py::TestFormatting -v`
+Expected: FAIL
+
+**Step 3: Implement formatters**
+
+Add to `inventory.py`:
+
+```python
 DISPLAY_COLS = ["id", "name", "category", "value", "package", "qty", "location", "notes"]
 
 def format_table(rows):
     if not rows:
         return "  No components found."
+    # Map quantity -> qty for display
     display_rows = []
     for r in rows:
         display_rows.append({
@@ -158,9 +385,11 @@ def format_table(rows):
             "location": r.get("location") or "",
             "notes": r.get("notes") or "",
         })
+    # Calculate column widths
     widths = {}
     for col in DISPLAY_COLS:
         widths[col] = max(len(col), max(len(str(r[col])) for r in display_rows))
+    # Build output
     lines = []
     header = "  ".join(str(col).ljust(widths[col]) for col in DISPLAY_COLS)
     lines.append(header)
@@ -186,8 +415,32 @@ def format_stock(stock_rows):
     lines.append("  " + "-" * 33)
     lines.append(f"  {'TOTAL':<15} {total_items:>6} {total_qty:>10}")
     return "\n".join(lines)
+```
 
+**Step 4: Run tests to verify they pass**
 
+Run: `python -m pytest test_inventory.py -v`
+Expected: All PASS
+
+**Step 5: Commit**
+
+```
+git add inventory.py test_inventory.py
+git commit -m "feat: table and stock summary formatters"
+```
+
+---
+
+### Task 4: Add mode — interactive loop with adaptive prompts
+
+**Files:**
+- Modify: `inventory.py`
+
+**Step 1: Implement category field mapping and help text**
+
+Add to `inventory.py`:
+
+```python
 CATEGORY_FIELDS = {
     "resistor":   [("value", "Value (e.g. 10k, 4.7k)"), ("package", "Package (e.g. axial, 0805)")],
     "capacitor":  [("value", "Value (e.g. 100nF, 10uF)"), ("package", "Package (e.g. ceramic disc, electrolytic)")],
@@ -220,8 +473,13 @@ CHEATSHEET = """
     - Press Enter to accept [default] values
     - Type 'q' or 'quit' at the name prompt to exit
 """.format(", ".join(CATEGORIES))
+```
 
+**Step 2: Implement the add mode loop**
 
+Add to `inventory.py`:
+
+```python
 def prompt(label, default="", required=False):
     """Prompt for input with optional default. Returns stripped string."""
     if default:
@@ -248,7 +506,7 @@ def prompt_category(default=""):
         print(f"    {i:2}. {cat}{marker}")
     while True:
         if default:
-            raw = input(f"  Choose [{CATEGORIES.index(default) + 1}]: ").strip()
+            raw = input(f"  Choose [{ CATEGORIES.index(default) + 1}]: ").strip()
         else:
             raw = input("  Choose: ").strip()
         if not raw and default:
@@ -318,8 +576,32 @@ def add_mode(conn):
         print(f"  -> #{cid}: {name}{val_str}{pkg_str} x{data['quantity']} @ {data['location']}  ({count} added)\n")
 
     print(f"\n  Session complete: {count} components added.")
+```
 
+**Step 3: Verify add mode works manually**
 
+Run: `python inventory.py`
+Enter a test component manually, then type `q` to exit. Verify it prompts correctly and saves.
+
+**Step 4: Commit**
+
+```
+git add inventory.py
+git commit -m "feat: interactive add mode with adaptive prompts and smart defaults"
+```
+
+---
+
+### Task 5: CLI dispatch — main function and all commands
+
+**Files:**
+- Modify: `inventory.py`
+
+**Step 1: Implement main() with argument routing**
+
+Add to `inventory.py`:
+
+```python
 def cmd_search(conn, query):
     results = search_components(conn, query)
     print(f"\n  Search results for '{query}':\n")
@@ -407,3 +689,88 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
+
+**Step 2: Manual integration test**
+
+Run each command to verify:
+```
+python inventory.py                  # add mode, add 2 items, quit
+python inventory.py search 10k      # should find the resistor
+python inventory.py list resistor   # should list resistors
+python inventory.py stock           # should show summary
+python inventory.py update 1 quantity 42  # should update
+python inventory.py export          # should create CSV
+```
+
+**Step 3: Commit**
+
+```
+git add inventory.py
+git commit -m "feat: CLI dispatch with all commands"
+```
+
+---
+
+### Task 6: README
+
+**Files:**
+- Create: `README.md`
+
+**Step 1: Write README**
+
+```markdown
+# Component Inventory
+
+Lightweight CLI tool for cataloging THT electronic components. Python 3 + SQLite, no dependencies.
+
+## Quick Start
+
+```bash
+python inventory.py          # Start adding components
+python inventory.py search 10k
+python inventory.py list resistors
+python inventory.py stock
+python inventory.py update 1 quantity 42
+python inventory.py export
+```
+
+## Add Mode
+
+Run `python inventory.py` to enter interactive add mode. The tool will prompt for each field, with smart defaults that carry forward between entries:
+
+- **Category** pre-fills with the last-used category
+- **Location** pre-fills with the last-used compartment
+- **Quantity** defaults to 1
+- **Fields adapt** to the component category (resistors prompt for value, connectors prompt for description, etc.)
+
+Type `q` at the name prompt to exit.
+
+## Data
+
+The database is stored as `inventory.db` in the same directory as the script. Use `export` to create CSV backups.
+```
+
+**Step 2: Commit**
+
+```
+git add README.md
+git commit -m "docs: add README with usage examples"
+```
+
+---
+
+### Task 7: Final test run and cleanup
+
+**Step 1: Run all tests**
+
+Run: `python -m pytest test_inventory.py -v`
+Expected: All PASS
+
+**Step 2: Delete test DB and CSV files if any**
+
+```bash
+rm -f inventory.db inventory_export_*.csv
+```
+
+**Step 3: Final commit if any cleanup needed**
