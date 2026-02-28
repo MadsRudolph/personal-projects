@@ -110,3 +110,50 @@ def export_csv(conn):
     writer.writerow(cols)
     writer.writerows(rows)
     return output.getvalue()
+
+
+DISPLAY_COLS = ["id", "name", "category", "value", "package", "qty", "location", "notes"]
+
+def format_table(rows):
+    if not rows:
+        return "  No components found."
+    display_rows = []
+    for r in rows:
+        display_rows.append({
+            "id": r["id"],
+            "name": r["name"],
+            "category": r["category"],
+            "value": r.get("value") or "",
+            "package": r.get("package") or "",
+            "qty": r["quantity"],
+            "location": r.get("location") or "",
+            "notes": r.get("notes") or "",
+        })
+    widths = {}
+    for col in DISPLAY_COLS:
+        widths[col] = max(len(col), max(len(str(r[col])) for r in display_rows))
+    lines = []
+    header = "  ".join(str(col).ljust(widths[col]) for col in DISPLAY_COLS)
+    lines.append(header)
+    lines.append("-" * len(header))
+    for r in display_rows:
+        line = "  ".join(str(r[col]).ljust(widths[col]) for col in DISPLAY_COLS)
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def format_stock(stock_rows):
+    if not stock_rows:
+        return "  Inventory is empty."
+    lines = []
+    lines.append(f"  {'Category':<15} {'Items':>6} {'Total Qty':>10}")
+    lines.append("  " + "-" * 33)
+    total_items = 0
+    total_qty = 0
+    for cat, items, qty in stock_rows:
+        lines.append(f"  {cat:<15} {items:>6} {qty:>10}")
+        total_items += items
+        total_qty += qty
+    lines.append("  " + "-" * 33)
+    lines.append(f"  {'TOTAL':<15} {total_items:>6} {total_qty:>10}")
+    return "\n".join(lines)

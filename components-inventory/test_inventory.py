@@ -118,5 +118,32 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(len(lines), 5)  # header + 4 rows
 
 
+class TestFormatting(unittest.TestCase):
+    def test_format_table_basic(self):
+        rows = [
+            {"id": 1, "name": "10k resistor", "category": "resistor", "value": "10k", "quantity": 5, "location": "A1"},
+            {"id": 2, "name": "100nF cap", "category": "capacitor", "value": "100nF", "quantity": 20, "location": "A2"},
+        ]
+        output = inventory.format_table(rows)
+        self.assertIn("10k resistor", output)
+        self.assertIn("100nF cap", output)
+        lines = output.strip().split("\n")
+        self.assertGreaterEqual(len(lines), 4)
+
+    def test_format_table_empty(self):
+        output = inventory.format_table([])
+        self.assertIn("No components found", output)
+
+    def test_format_stock(self):
+        stock_rows = [
+            ("capacitor", 3, 45),
+            ("resistor", 5, 100),
+        ]
+        output = inventory.format_stock(stock_rows)
+        self.assertIn("resistor", output)
+        self.assertIn("capacitor", output)
+        self.assertIn("145", output)
+
+
 if __name__ == "__main__":
     unittest.main()
