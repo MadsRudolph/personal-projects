@@ -1,96 +1,183 @@
 #include <avr/io.h>
 #include <util/delay.h>
-#include <stdbool.h>
 #include "uart.h"
 #include "spi.h"
 #include "mfrc522.h"
 
+// Print chip type and cloneability based on SAK byte
+static void print_chip_info(uint8_t sak) {
+    uart_puts("Chip Type: ");
+
+    if (sak & 0x04) {
+        // Cascade bit set -- should not reach here after full resolution
+        uart_puts("(incomplete UID, cascade error)\r\n");
+        return;
+    }
+
+    switch (sak) {
+    case 0x08:
+        uart_puts("MIFARE Classic 1K\r\n");
+        uart_puts("Cloneable with RC522: YES\r\n");
+        break;
+    case 0x18:
+        uart_puts("MIFARE Classic 4K\r\n");
+        uart_puts("Cloneable with RC522: YES\r\n");
+        break;
+    case 0x09:
+        uart_puts("MIFARE Mini\r\n");
+        uart_puts("Cloneable with RC522: YES\r\n");
+        break;
+    case 0x20:
+        uart_puts("MIFARE DESFire or MIFARE Plus\r\n");
+        uart_puts("ISO 14443-4: YES\r\n");
+        uart_puts("Cloneable with RC522: NO\r\n");
+        uart_puts("Note: AES-128 encryption. Need PN532 or Proxmark3.\r\n");
+        break;
+    case 0x00:
+        uart_puts("MIFARE Ultralight or NTAG\r\n");
+        uart_puts("Cloneable with RC522: PARTIAL (no crypto)\r\n");
+        break;
+    case 0x01:
+        uart_puts("TNP3xxx (NFC Forum Type 2)\r\n");
+        uart_puts("Cloneable with RC522: NO\r\n");
+        break;
+    case 0x10:
+        uart_puts("MIFARE Plus (SL2)\r\n");
+        uart_puts("Cloneable with RC522: NO\r\n");
+        break;
+    case 0x11:
+        uart_puts("MIFARE Plus (SL3)\r\n");
+        uart_puts("Cloneable with RC522: NO\r\n");
+        break;
+    default:
+        uart_puts("Unknown (SAK=0x");
+        uart_put_hex(sak);
+        uart_puts(")\r\n");
+        uart_puts("Cloneable with RC522: UNKNOWN\r\n");
+        break;
+    }
+}
+
 int main(void) {
     uint8_t status;
-    uint8_t tag_type[2];
-    uint8_t uid[5];            // Current card UID + BCC
-    uint8_t saved_uid[4];      // Buffer for the UID we want to clone
-    bool has_saved_uid = false;
-    uint8_t i;
+    uint8_t atqa[2];
+    uint8_t uid_cl1[5];  // 4 UID bytes + BCC from CL1
+    uint8_t uid_cl2[5];  // 4 UID bytes + BCC from CL2
+    uint8_t full_uid[10];
+    uint8_t uid_len;
+    uint8_t sak;
 
-    // Init peripherals
     spi_init();
     uart_init(9600);
     mfrc522_init();
 
-    // Setup LEDs for feedback (Optional: PC0 = Success, PC1 = Error)
-    DDRC |= (1 << PC0) | (1 << PC1);
+    // LED pins: PC0 = detection indicator
+    DDRC |= (1 << PC0);
 
-    uart_puts("\r\n--- RFID Cloner: Bare Metal AVR ---\r\n");
-    uart_puts("Ready. Scan a source card to copy its UID.\r\n");
+    uart_puts("\r\n--- RFID Tag Analyzer ---\r\n");
+    uart_puts("Present a tag to scan...\r\n\r\n");
 
     while (1) {
-        // Look for cards in the field
-        status = mfrc522_request(PICC_REQIDL, tag_type);
+        // Step 1: REQA -- detect card, get ATQA
+        status = mfrc522_request(PICC_REQIDL, atqa);
+        if (status != MI_OK) {
+            _delay_ms(200);
+            continue;
+        }
 
-        if (status == MI_OK) {
-            // Card detected, retrieve its UID
-            status = mfrc522_anticoll(uid);
+        // Step 2: Anti-collision CL1 -- get first 4 UID bytes + BCC
+        status = mfrc522_anticoll(PICC_ANTICOLL1, uid_cl1);
+        if (status != MI_OK) {
+            _delay_ms(200);
+            continue;
+        }
 
-            if (status == MI_OK) {
-                if (!has_saved_uid) {
-                    // MODE 1: SAVE - Capture the source UID
-                    for (i = 0; i < 4; i++) {
-                        saved_uid[i] = uid[i];
-                    }
-                    has_saved_uid = true;
+        // Step 3: SELECT CL1 -- activate card, get SAK
+        status = mfrc522_select(PICC_ANTICOLL1, uid_cl1, &sak);
+        if (status != MI_OK) {
+            uart_puts("SELECT CL1 failed\r\n");
+            _delay_ms(500);
+            continue;
+        }
 
-                    uart_puts("UID Saved: ");
-                    for (i = 0; i < 4; i++) {
-                        uart_put_hex(saved_uid[i]);
-                        if (i < 3) uart_putc(':');
-                    }
-                    uart_puts("\r\nNow present a 'Magic' tag to write.\r\n");
-                    
-                    // Visual feedback: Short blink
-                    PORTC |= (1 << PC0);
-                    _delay_ms(200);
-                    PORTC &= ~(1 << PC0);
-                } 
-                else {
-                    // MODE 2: WRITE - Attempt to clone to the new tag
-                    uart_puts("Writing to Block 0...\r\n");
+        // Step 4: Check if cascade needed (SAK bit 2)
+        uid_len = 4;
+        if (sak & 0x04) {
+            // CL1 UID starts with cascade tag (0x88) -- real UID bytes are [1..3]
+            full_uid[0] = uid_cl1[1];
+            full_uid[1] = uid_cl1[2];
+            full_uid[2] = uid_cl1[3];
 
-                    // Prepare Block 0 data: [UID (4 bytes), BCC (1 byte), SAK, etc.]
-                    uint8_t block0_data[16] = {0};
-                    for (i = 0; i < 4; i++) {
-                        block0_data[i] = saved_uid[i];
-                    }
-                    // Calculate BCC (XOR checksum of the 4 UID bytes)
-                    block0_data[4] = saved_uid[0] ^ saved_uid[1] ^ saved_uid[2] ^ saved_uid[3];
+            // Anti-collision CL2
+            status = mfrc522_anticoll(PICC_ANTICOLL2, uid_cl2);
+            if (status != MI_OK) {
+                uart_puts("ANTICOLL CL2 failed\r\n");
+                _delay_ms(500);
+                continue;
+            }
 
-                    // Attempt write to Block 0 (Targeting "Magic" Gen1 tags)
-                    status = mfrc522_write_block(0, block0_data);
+            // SELECT CL2
+            status = mfrc522_select(PICC_ANTICOLL2, uid_cl2, &sak);
+            if (status != MI_OK) {
+                uart_puts("SELECT CL2 failed\r\n");
+                _delay_ms(500);
+                continue;
+            }
 
-                    if (status == MI_OK) {
-                        uart_puts("SUCCESS: Card Cloned!\r\n");
-                        has_saved_uid = false; // Reset for next pair
-                        
-                        // Long blink for success
-                        PORTC |= (1 << PC0);
-                        _delay_ms(1000);
-                        PORTC &= ~(1 << PC0);
-                    } else {
-                        uart_puts("ERROR: Write failed. Use a UID-changeable tag.\r\n");
-                        
-                        // Error blink
-                        PORTC |= (1 << PC1);
-                        _delay_ms(500);
-                        PORTC &= ~(1 << PC1);
-                    }
-                }
-                
-                // Halt the card to prevent constant re-reading while held at the reader
+            full_uid[3] = uid_cl2[0];
+            full_uid[4] = uid_cl2[1];
+            full_uid[5] = uid_cl2[2];
+            full_uid[6] = uid_cl2[3];
+            uid_len = 7;
+
+            // Check for triple cascade (10-byte UID, very rare)
+            if (sak & 0x04) {
+                uart_puts("Triple-size UID (10 bytes) -- not supported yet\r\n");
                 mfrc522_halt();
+                _delay_ms(1000);
+                continue;
+            }
+        } else {
+            // Simple 4-byte UID
+            for (uint8_t i = 0; i < 4; i++) {
+                full_uid[i] = uid_cl1[i];
             }
         }
 
-        _delay_ms(300); // Poll delay
+        // LED blink: tag detected
+        PORTC |= (1 << PC0);
+
+        // Print diagnostic report
+        uart_puts("=== Tag Detected ===\r\n");
+
+        uart_puts("ATQA: ");
+        uart_put_hex(atqa[0]);
+        uart_putc(' ');
+        uart_put_hex(atqa[1]);
+        uart_puts("\r\n");
+
+        uart_puts("UID:  ");
+        for (uint8_t i = 0; i < uid_len; i++) {
+            uart_put_hex(full_uid[i]);
+            if (i < uid_len - 1) uart_putc(':');
+        }
+        uart_puts(" (");
+        uart_putc('0' + uid_len);  // works for 4, 7
+        uart_puts(" bytes)\r\n");
+
+        uart_puts("SAK:  0x");
+        uart_put_hex(sak);
+        uart_puts("\r\n");
+
+        print_chip_info(sak);
+
+        uart_puts("====================\r\n\r\n");
+
+        PORTC &= ~(1 << PC0);
+
+        // Halt card, wait before next scan
+        mfrc522_halt();
+        _delay_ms(2000);
     }
 
     return 0;
