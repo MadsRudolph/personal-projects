@@ -48,6 +48,15 @@ class App(ctk.CTk):
         )
         self.connect_btn.pack(side="left", padx=5)
 
+        ctk.CTkButton(
+            frame,
+            text="Reset",
+            fg_color="#da3633",
+            hover_color="#b62324",
+            width=70,
+            command=self._reset_device,
+        ).pack(side="left", padx=5)
+
         self.status_label = ctk.CTkLabel(
             frame, text="Disconnected", text_color="red"
         )
@@ -172,9 +181,16 @@ class App(ctk.CTk):
         frame = ctk.CTkFrame(self)
         frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
+        log_header = ctk.CTkFrame(frame, fg_color="transparent")
+        log_header.pack(fill="x", padx=10, pady=(5, 0))
+
         ctk.CTkLabel(
-            frame, text="Scan Log", font=ctk.CTkFont(weight="bold")
-        ).pack(anchor="w", padx=10, pady=(5, 0))
+            log_header, text="Scan Log", font=ctk.CTkFont(weight="bold")
+        ).pack(side="left")
+
+        ctk.CTkButton(
+            log_header, text="Clear", width=60, command=self._clear_log
+        ).pack(side="right")
 
         self.log_text = ctk.CTkTextbox(
             frame, font=ctk.CTkFont(family="Consolas", size=12), height=120
@@ -236,6 +252,29 @@ class App(ctk.CTk):
                 self.status_label.configure(
                     text=f"Error: {e}", text_color="red"
                 )
+
+    def _reset_device(self):
+        """Toggle DTR to hardware-reset the ATmega328P."""
+        if not self.serial.is_connected:
+            return
+        import time
+        self.serial.ser.dtr = False
+        time.sleep(0.1)
+        self.serial.ser.dtr = True
+        self._write_pending = []
+        self._writing = False
+        self.progress_label.configure(text="Reset!")
+        # Drain the queue
+        while not self.serial.queue.empty():
+            self.serial.queue.get_nowait()
+
+    def _clear_log(self):
+        self.log_text.configure(state="normal")
+        self.log_text.delete("1.0", "end")
+        header = f"{'Time':<10} | {'UID':<22} | {'Chip Type':<30} | SAK\n"
+        self.log_text.insert("end", header)
+        self.log_text.insert("end", "-" * 78 + "\n")
+        self.log_text.configure(state="disabled")
 
     def _send(self, cmd):
         self.serial.send_command(cmd)
