@@ -141,7 +141,7 @@ static uint8_t reselect_card(uint8_t *uid) {
 // Returns MI_OK on success, MI_ERR on failure.
 static uint8_t manual_auth(uint8_t block, uint8_t *key, uint8_t *uid,
                            uint8_t *nt_out, crypto1_state *cs_out,
-                           uint16_t max_retries) {
+                           uint8_t auth_type, uint16_t max_retries) {
     uint8_t cmd[2];
     uint8_t nt[4];
     uint8_t response[8];
@@ -164,7 +164,7 @@ static uint8_t manual_auth(uint8_t block, uint8_t *key, uint8_t *uid,
 
         // Step 1: Send AUTH command, receive plaintext nonce
         // Use hardware CRC: send 2 bytes, MFRC522 appends CRC
-        cmd[0] = PICC_AUTHKA;
+        cmd[0] = auth_type;
         cmd[1] = block;
 
         // Need CRC on TX, no CRC on RX for this step
@@ -729,9 +729,13 @@ static void do_nested_collect(void) {
     uint8_t nt_known[4];
     crypto1_state cs;
 
-    // Step 1: Manual auth to known sector
+    // Step 1: Manual auth to known sector (try Key A, then Key B)
     uint8_t status = manual_auth(nested_known_block, nested_key, uid,
-                                 nt_known, &cs, 500);
+                                 nt_known, &cs, PICC_AUTHKA, 250);
+    if (status != MI_OK) {
+        status = manual_auth(nested_known_block, nested_key, uid,
+                             nt_known, &cs, PICC_AUTHKB, 250);
+    }
     if (status != MI_OK) {
         uart_puts("NESTED:FAIL:AUTH\r\n");
         return;
