@@ -71,3 +71,31 @@ def test_mfkey32_recover_insufficient_data():
     """mfkey32_recover returns empty with fewer than 2 exchanges."""
     keys = mfkey32_recover(0xDEADBEEF, [{"nt": 1, "nr": 2, "ar": 3}])
     assert keys == []
+
+
+def test_calibrate_nested_distance():
+    """Calibration finds correct PRNG distance using known key."""
+    from key_recovery import calibrate_nested_distance
+
+    uid = 0xE413B3DA
+    known_key = bytes.fromhex("FFFFFFFFFFFF")
+    nt_known = 0x01020304
+    dist = 160
+
+    # Generate synthetic encrypted nonce
+    nt_target_plain = prng_successor(nt_known, dist)
+    c = Crypto1(known_key)
+    ks32 = c.crypto1_word(uid ^ nt_target_plain, 0)
+    nt_target_enc = nt_target_plain ^ ks32
+
+    result = calibrate_nested_distance(uid, nt_known, nt_target_enc, known_key)
+    assert result == dist
+
+
+def test_calibrate_nested_distance_not_found():
+    """Calibration returns None when no valid distance exists."""
+    from key_recovery import calibrate_nested_distance
+
+    result = calibrate_nested_distance(0xDEADBEEF, 0x11111111, 0x22222222,
+                                       bytes.fromhex("FFFFFFFFFFFF"))
+    assert result is None
