@@ -994,6 +994,30 @@ int main(void) {
                 } else if (line_pos < sizeof(line_buf) - 1) {
                     line_buf[line_pos++] = c;
                 }
+            } else if (scan_mode == MODE_NESTED_CONV) {
+                // In conversational mode: buffer into conv_buf
+                if (c == '\r' || c == '\n') {
+                    if (conv_buf_pos > 0) {
+                        conv_buf[conv_buf_pos] = '\0';
+                        if (conv_buf[0] == 'N' && conv_buf[1] == 'A' &&
+                            conv_buf[2] == ':' && conv_buf_pos >= 18) {
+                            cmd_na(conv_buf + 3);
+                        } else if (conv_buf[0] == 'N' && conv_buf[1] == 'P' &&
+                                   conv_buf[2] == ':' && conv_buf_pos >= 5) {
+                            cmd_np(conv_buf + 3);
+                        } else if (conv_buf[0] == 'N' && conv_buf[1] == 'H') {
+                            cmd_nh();
+                        } else if (conv_buf[0] == 'N' && conv_buf[1] == 'X') {
+                            cmd_nx();
+                            scan_mode = MODE_IDLE;
+                        } else {
+                            uart_puts("ERR:UNKNOWN_CMD\r\n");
+                        }
+                        conv_buf_pos = 0;
+                    }
+                } else if (conv_buf_pos < sizeof(conv_buf) - 1) {
+                    conv_buf[conv_buf_pos++] = c;
+                }
             } else {
                 // Normal command mode (single char commands)
                 switch (c) {
@@ -1124,32 +1148,7 @@ int main(void) {
         }
 
         if (scan_mode == MODE_NESTED_CONV) {
-            if (uart_available()) {
-                char c = uart_getc();
-                if (c == '\r' || c == '\n') {
-                    if (conv_buf_pos > 0) {
-                        conv_buf[conv_buf_pos] = '\0';
-                        // Parse and dispatch command
-                        if (conv_buf[0] == 'N' && conv_buf[1] == 'A' &&
-                            conv_buf[2] == ':' && conv_buf_pos >= 18) {
-                            cmd_na(conv_buf + 3);
-                        } else if (conv_buf[0] == 'N' && conv_buf[1] == 'P' &&
-                                   conv_buf[2] == ':' && conv_buf_pos >= 5) {
-                            cmd_np(conv_buf + 3);
-                        } else if (conv_buf[0] == 'N' && conv_buf[1] == 'H') {
-                            cmd_nh();
-                        } else if (conv_buf[0] == 'N' && conv_buf[1] == 'X') {
-                            cmd_nx();
-                            scan_mode = MODE_IDLE;
-                        } else {
-                            uart_puts("ERR:UNKNOWN_CMD\r\n");
-                        }
-                        conv_buf_pos = 0;
-                    }
-                } else if (conv_buf_pos < sizeof(conv_buf) - 1) {
-                    conv_buf[conv_buf_pos++] = c;
-                }
-            }
+            // UART reading handled in early check above; just idle here
             _delay_ms(1);
             continue;
         }
