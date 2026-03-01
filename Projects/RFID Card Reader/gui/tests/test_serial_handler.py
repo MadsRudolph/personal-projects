@@ -148,3 +148,56 @@ def test_parse_nested_fail():
 def test_parse_nested_done():
     result = SerialHandler.parse_line("NESTED:DONE")
     assert result == {"type": "NESTED", "subtype": "DONE"}
+
+
+# ── Conversational Nested Protocol ──
+
+def test_parse_na_ok():
+    msg = SerialHandler.parse_line("NA:OK:E413B3DA:A9770B9F")
+    assert msg == {
+        "type": "NA", "subtype": "OK",
+        "uid": "E413B3DA", "nt": "A9770B9F",
+    }
+
+
+def test_parse_na_fail():
+    msg = SerialHandler.parse_line("NA:FAIL")
+    assert msg == {"type": "NA", "subtype": "FAIL"}
+
+
+def test_parse_na_err():
+    msg = SerialHandler.parse_line("NA:ERR:PARSE")
+    assert msg == {"type": "NA", "subtype": "ERR", "reason": "PARSE"}
+
+
+def test_parse_np_nt():
+    msg = SerialHandler.parse_line("NP:NT:01020304:AABBCCDD")
+    assert msg == {
+        "type": "NP", "subtype": "NT",
+        "nt_known": "01020304", "nt_target": "AABBCCDD",
+    }
+
+
+def test_parse_np_retry():
+    msg = SerialHandler.parse_line("NP:RETRY")
+    assert msg == {"type": "NP", "subtype": "RETRY"}
+
+
+def test_parse_np_err():
+    msg = SerialHandler.parse_line("NP:ERR:NOAUTH")
+    assert msg == {"type": "NP", "subtype": "ERR", "reason": "NOAUTH"}
+
+
+def test_parse_nh_ok():
+    msg = SerialHandler.parse_line("NH:OK")
+    assert msg == {"type": "NH", "subtype": "OK"}
+
+
+def test_parse_nx_ok():
+    msg = SerialHandler.parse_line("NX:OK")
+    assert msg == {"type": "NX", "subtype": "OK"}
+
+
+def test_parse_conv_start():
+    msg = SerialHandler.parse_line("OK:CONV_START")
+    assert msg == {"type": "OK", "message": "CONV_START"}
