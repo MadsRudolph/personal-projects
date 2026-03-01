@@ -194,3 +194,52 @@ def test_stop_sends_nx():
     orch.stop()
     assert orch.state == "idle"
     assert any("NX" in cmd for cmd in serial.commands)
+
+
+# ── Integration: Calibration Flow ──
+
+def _make_calibration_nonce(uid_wire, nt_known_wire, known_key, dist):
+    """Generate a wire-order encrypted nonce for calibration testing."""
+    from crypto1 import Crypto1, prng_successor
+    from key_recovery import _bswap32
+    uid_le = _bswap32(uid_wire)
+    nt_known_le = _bswap32(nt_known_wire)
+    nt_pred = prng_successor(nt_known_le, dist)
+    c = Crypto1(known_key)
+    ks32 = c.crypto1_word(uid_le ^ nt_pred, 0)
+    nt_enc_le = nt_pred ^ ks32
+    return _bswap32(nt_enc_le)
+
+
+def test_full_calibration_flow():
+    """Full calibration: auth -> probe -> distance computed."""
+    serial = FakeSerial()
+    orch = SnowballOrchestrator(serial, uid=0xE413B3DA)
+    known_key = bytes.fromhex("FFFFFFFFFFFF")
+    # Set up two known sectors
+    orch.known_keys = {
+        0: (known_key, "B"),
+        1: (known_key, "B"),
+    }
+    orch.target_queue = list(range(2, 16))
+    orch.stats.start_time = 1.0
+    orch.state = "starting"
+
+    orch.feed({"type": "OK", "message": "CONV_START"})
+    assert orch.state == "calibrating"
+
+    # Simulate 3 calibration nonce pairs
+    dist = 160
+    for i in range(3):
+        nt_known = 0x01020304 + i
+        nt_enc = _make_calibration_nonce(0xE413B3DA, nt_known, known_key, dist)
+        # Feed NA:OK then NP:NT
+        orch.feed({"type": "NA", "subtype": "OK",
+                   "uid": "E413B3DA", "nt": f"{nt_known:08X}"})
+        orch.feed({"type": "NP", "subtype": "NT",
+                   "nt_known": f"{nt_known:08X}",
+                   "nt_target": f"{nt_enc:08X}"})
+
+    # After 3 nonce pairs, should have calibrated and moved to collecting
+    assert orch.state == "collecting"
+    assert orch.calibrated_distance == dist
