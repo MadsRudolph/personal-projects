@@ -41,6 +41,12 @@ class SerialHandler:
             if self.ser and self.ser.is_open:
                 self.ser.write(cmd.encode())
 
+    def send_conv_command(self, cmd):
+        """Send a newline-terminated command for conversational nested mode."""
+        with self._lock:
+            if self.ser and self.ser.is_open:
+                self.ser.write((cmd + "\n").encode())
+
     @property
     def is_connected(self):
         return self.ser is not None and self.ser.is_open
@@ -132,6 +138,32 @@ class SerialHandler:
                 return {"type": "NESTED", "subtype": "FAIL", "reason": parts[1]}
             elif subtype == "DONE":
                 return {"type": "NESTED", "subtype": "DONE"}
+        elif line.startswith("NA:"):
+            parts = line[3:].split(":")
+            if parts[0] == "OK" and len(parts) >= 3:
+                return {
+                    "type": "NA", "subtype": "OK",
+                    "uid": parts[1], "nt": parts[2],
+                }
+            elif parts[0] == "FAIL":
+                return {"type": "NA", "subtype": "FAIL"}
+            elif parts[0] == "ERR" and len(parts) >= 2:
+                return {"type": "NA", "subtype": "ERR", "reason": parts[1]}
+        elif line.startswith("NP:"):
+            parts = line[3:].split(":")
+            if parts[0] == "NT" and len(parts) >= 3:
+                return {
+                    "type": "NP", "subtype": "NT",
+                    "nt_known": parts[1], "nt_target": parts[2],
+                }
+            elif parts[0] == "RETRY":
+                return {"type": "NP", "subtype": "RETRY"}
+            elif parts[0] == "ERR" and len(parts) >= 2:
+                return {"type": "NP", "subtype": "ERR", "reason": parts[1]}
+        elif line.startswith("NH:"):
+            return {"type": "NH", "subtype": line[3:]}
+        elif line.startswith("NX:"):
+            return {"type": "NX", "subtype": line[3:]}
         elif line.startswith(("OK:", "ERR:", "INFO:")):
             prefix_end = line.index(":")
             return {
