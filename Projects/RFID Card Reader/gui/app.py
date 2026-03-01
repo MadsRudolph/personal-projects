@@ -300,55 +300,141 @@ class App(ctk.CTk):
     def _build_attacks_page(self):
         p = self.pages["attacks"]
         p.grid_columnconfigure(0, weight=1)
+        p.grid_rowconfigure(4, weight=1)
 
-        info = ctk.CTkFrame(p, fg_color="#2b2b2b")
-        info.grid(row=0, column=0, sticky="ew", pady=(0, 20), padx=2)
+        # ── Snowball Attack Section ──
+        snow_frame = ctk.CTkFrame(p, fg_color="#1a1a2e", border_width=2,
+                                   border_color="#0d9488", corner_radius=10)
+        snow_frame.grid(row=0, column=0, sticky="ew", pady=(0, 10), padx=2)
+        snow_frame.grid_columnconfigure(0, weight=1)
+
         ctk.CTkLabel(
-            info, text="Mifare Classic Vulnerability Scanner", 
-            font=ctk.CTkFont(size=16, weight="bold")
-        ).pack(pady=10)
+            snow_frame, text="Snowball Attack",
+            font=ctk.CTkFont(size=18, weight="bold"),
+        ).grid(row=0, column=0, pady=(10, 5), padx=10, sticky="w")
+
         ctk.CTkLabel(
-            info, text="These tools use known weaknesses like Darkside and Nested attacks\nto recover keys from Mifare Classic tags.",
-            justify="center"
-        ).pack(pady=(0, 15))
+            snow_frame,
+            text="Autonomously crack all sectors using cascading key recovery",
+            text_color="gray60",
+        ).grid(row=1, column=0, padx=10, sticky="w")
 
-        ctrls = ctk.CTkFrame(p)
-        ctrls.grid(row=1, column=0, sticky="ew", pady=10)
+        # Sector Map Grid (4 cols x 4 rows = 16 sectors)
+        self._sector_frames = {}
+        self._sector_labels = {}
+        self._sector_key_labels = {}
+        map_frame = ctk.CTkFrame(snow_frame, fg_color="transparent")
+        map_frame.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
+        for col in range(4):
+            map_frame.grid_columnconfigure(col, weight=1)
 
-        # Darkside attack
-        self.crack_btn = ctk.CTkButton(
-            ctrls, text="Start Darkside Attack", fg_color="#8b5cf6", hover_color="#7c3aed",
-            width=200, height=45, command=self._start_crack
+        for sector in range(16):
+            row_idx = sector // 4
+            col_idx = sector % 4
+            sf = ctk.CTkFrame(map_frame, width=100, height=60,
+                              fg_color="#2b2b2b", corner_radius=8,
+                              border_width=1, border_color="#444444")
+            sf.grid(row=row_idx, column=col_idx, padx=4, pady=4, sticky="nsew")
+            sf.grid_propagate(False)
+
+            lbl = ctk.CTkLabel(sf, text=f"S{sector:02d}",
+                               font=ctk.CTkFont(size=13, weight="bold"))
+            lbl.place(relx=0.5, rely=0.3, anchor="center")
+
+            key_lbl = ctk.CTkLabel(sf, text="??????",
+                                   font=ctk.CTkFont(family="Consolas", size=9),
+                                   text_color="gray50")
+            key_lbl.place(relx=0.5, rely=0.7, anchor="center")
+
+            self._sector_frames[sector] = sf
+            self._sector_labels[sector] = lbl
+            self._sector_key_labels[sector] = key_lbl
+
+        # Stats row
+        stats_frame = ctk.CTkFrame(snow_frame, fg_color="transparent")
+        stats_frame.grid(row=3, column=0, padx=10, pady=(0, 5), sticky="ew")
+
+        self._snow_status_label = ctk.CTkLabel(
+            stats_frame, text="Ready", font=ctk.CTkFont(size=12))
+        self._snow_status_label.pack(side="left", padx=10)
+
+        self._snow_progress_label = ctk.CTkLabel(
+            stats_frame, text="0/16 sectors",
+            font=ctk.CTkFont(size=12, weight="bold"))
+        self._snow_progress_label.pack(side="right", padx=10)
+
+        self._snow_time_label = ctk.CTkLabel(
+            stats_frame, text="", font=ctk.CTkFont(size=11),
+            text_color="gray60")
+        self._snow_time_label.pack(side="right", padx=10)
+
+        # Buttons row
+        btn_frame = ctk.CTkFrame(snow_frame, fg_color="transparent")
+        btn_frame.grid(row=4, column=0, padx=10, pady=(0, 10), sticky="ew")
+
+        self.snowball_btn = ctk.CTkButton(
+            btn_frame, text="Start Snowball Attack",
+            fg_color="#0d9488", hover_color="#0f766e",
+            width=220, height=45,
+            font=ctk.CTkFont(size=14, weight="bold"),
+            command=self._start_snowball,
         )
-        self.crack_btn.pack(pady=(20, 10))
+        self.snowball_btn.pack(side="left", padx=5)
 
-        # Nested attack
-        nested_row = ctk.CTkFrame(ctrls, fg_color="transparent")
-        nested_row.pack(pady=(5, 10))
+        self.snow_stop_btn = ctk.CTkButton(
+            btn_frame, text="Abort", fg_color="#da3633",
+            hover_color="#b62324", width=100, height=45,
+            command=self._stop_snowball,
+        )
+        self.snow_stop_btn.pack(side="left", padx=5)
 
-        ctk.CTkLabel(nested_row, text="Target sector:").pack(side="left", padx=(0, 8))
+        # ── Manual Attacks Section ──
+        manual_frame = ctk.CTkFrame(p, fg_color="#2b2b2b")
+        manual_frame.grid(row=1, column=0, sticky="ew", pady=10, padx=2)
+
+        ctk.CTkLabel(
+            manual_frame, text="Manual Attacks",
+            font=ctk.CTkFont(size=14, weight="bold"),
+        ).pack(pady=(10, 5))
+
+        man_btns = ctk.CTkFrame(manual_frame, fg_color="transparent")
+        man_btns.pack(pady=(0, 10))
+
+        self.crack_btn = ctk.CTkButton(
+            man_btns, text="Darkside Attack", fg_color="#8b5cf6",
+            hover_color="#7c3aed", width=160, height=35,
+            command=self._start_crack,
+        )
+        self.crack_btn.pack(side="left", padx=5)
+
+        nested_row = ctk.CTkFrame(man_btns, fg_color="transparent")
+        nested_row.pack(side="left", padx=10)
+        ctk.CTkLabel(nested_row, text="Sector:").pack(side="left", padx=(0, 4))
         self._nested_sector_var = ctk.StringVar(value="5")
         self._nested_sector_menu = ctk.CTkOptionMenu(
             nested_row, variable=self._nested_sector_var,
             values=[str(s) for s in range(5, 16)],
-            width=70, height=30,
+            width=60, height=30,
         )
-        self._nested_sector_menu.pack(side="left", padx=(0, 10))
-
+        self._nested_sector_menu.pack(side="left", padx=(0, 4))
         self.nested_btn = ctk.CTkButton(
-            nested_row, text="Start Nested Attack", fg_color="#0d9488", hover_color="#0f766e",
-            width=200, height=45, command=self._start_nested
+            nested_row, text="Nested Attack", fg_color="#0d9488",
+            hover_color="#0f766e", width=140, height=35,
+            command=self._start_nested,
         )
         self.nested_btn.pack(side="left")
 
-        self.stop_attack_btn = ctk.CTkButton(
-            ctrls, text="Abort Attack", fg_color="#da3633", hover_color="#b62324",
-            width=150, command=self._global_stop
-        )
-        self.stop_attack_btn.pack(pady=(5, 20))
+        self.attack_label = ctk.CTkLabel(p, text="", font=ctk.CTkFont(size=14))
+        self.attack_label.grid(row=2, column=0, pady=5)
 
-        self.attack_label = ctk.CTkLabel(p, text="Ready", font=ctk.CTkFont(size=14))
-        self.attack_label.grid(row=2, column=0, pady=10)
+        # ── Attack Event Log ──
+        ctk.CTkLabel(p, text="Attack Log",
+                     font=ctk.CTkFont(size=12, weight="bold")).grid(
+            row=3, column=0, sticky="w", pady=(5, 2))
+        self.attack_log = ctk.CTkTextbox(
+            p, font=ctk.CTkFont(family="Consolas", size=11), height=150)
+        self.attack_log.grid(row=4, column=0, sticky="nsew")
+        self.attack_log.configure(state="disabled")
 
     def _start_crack(self):
         if not self.serial.is_connected:
@@ -381,19 +467,150 @@ class App(ctk.CTk):
             known_key=bytes.fromhex("FFFFFFFFFFFF"),
         )
 
+    def _start_snowball(self):
+        if not self.serial.is_connected:
+            self._log("Snowball failed: not connected", "ERROR")
+            return
+        if not self._last_tag_uid:
+            self._log("Snowball failed: scan a tag first", "ERROR")
+            return
+        if not self._guard.start("snowball"):
+            self._log("Operation in progress, please wait", "WARN")
+            return
+
+        from snowball import SnowballOrchestrator
+        uid_int = int(self._last_tag_uid, 16)
+        self.snowball = SnowballOrchestrator(self.serial, uid=uid_int)
+        self.snowball.start(
+            seed_sector=0,
+            seed_key=bytes.fromhex("FFFFFFFFFFFF"),
+            seed_key_type="B",
+        )
+        self._log(f"Snowball attack started (UID={self._last_tag_uid})")
+        self._snow_status_label.configure(text="Starting...")
+        # Reset sector map
+        for s in range(16):
+            self._sector_frames[s].configure(border_color="#444444",
+                                              fg_color="#2b2b2b")
+            self._sector_key_labels[s].configure(text="??????",
+                                                  text_color="gray50")
+        # Mark sector 0 as known
+        self._sector_frames[0].configure(fg_color="#0d3320",
+                                          border_color="#2ea043")
+        self._sector_key_labels[0].configure(text="FFFFFFFFFFFF",
+                                              text_color="#2ea043")
+
+    def _stop_snowball(self):
+        if hasattr(self, 'snowball') and self.snowball.state not in ("idle", "done"):
+            self.snowball.stop()
+            self._guard.finish()
+            self._snow_status_label.configure(text="Stopped")
+            self._log("Snowball attack stopped by user", "WARN")
+
+    def _process_snowball_events(self):
+        """Process events from the snowball orchestrator and update GUI."""
+        while not self.snowball.result_queue.empty():
+            result = self.snowball.result_queue.get_nowait()
+            event = result.get("event", "")
+
+            if event == "snowball_started":
+                n = result["total_unknown"]
+                self._snow_progress_label.configure(text=f"1/{n + 1} sectors")
+                self._attack_log(f"Snowball started: {n} sectors to crack")
+
+            elif event == "sector_calibrating":
+                src, tgt = result["source"], result["target"]
+                self._snow_status_label.configure(
+                    text=f"Calibrating (S{src:02d} -> S{tgt:02d})")
+                self._sector_frames[tgt].configure(
+                    border_color="#d29922", fg_color="#2b2200")
+                self._attack_log(f"Calibrating: S{src:02d} -> S{tgt:02d}")
+
+            elif event == "sector_calibrated":
+                d = result["distance"]
+                self._attack_log(
+                    f"PRNG distance: {d} ({result['samples']} samples)")
+
+            elif event == "sector_collecting":
+                tgt = result["target"]
+                n = result["nonce_count"]
+                self._snow_status_label.configure(
+                    text=f"Collecting S{tgt:02d}: {n} nonces")
+                self._sector_frames[tgt].configure(
+                    border_color="#d29922", fg_color="#2b2200")
+
+            elif event == "sector_recovering":
+                tgt = result["target"]
+                self._snow_status_label.configure(
+                    text=f"Recovering S{tgt:02d}...")
+                self._attack_log(
+                    f"Recovering S{tgt:02d} ({result['nonce_count']} nonces)")
+
+            elif event == "sector_cracked":
+                s = result["sector"]
+                key = result["key"]
+                t = result["time_taken"]
+                cracked = self.snowball.stats.sectors_cracked
+                self._sector_frames[s].configure(
+                    fg_color="#0d3320", border_color="#2ea043")
+                self._sector_key_labels[s].configure(
+                    text=key, text_color="#2ea043")
+                self._snow_progress_label.configure(
+                    text=f"{cracked + 1}/16 sectors")
+                self._snow_status_label.configure(text=f"Cracked S{s:02d}!")
+                self._attack_log(f"CRACKED S{s:02d}: {key} ({t:.1f}s)")
+
+            elif event == "sector_failed":
+                s = result["sector"]
+                reason = result["reason"]
+                self._sector_frames[s].configure(
+                    fg_color="#3b1111", border_color="#da3633")
+                self._sector_key_labels[s].configure(
+                    text="FAILED", text_color="#da3633")
+                self._attack_log(f"FAILED S{s:02d}: {reason}")
+
+            elif event == "snowball_complete":
+                self._guard.finish()
+                n = result["total_cracked"]
+                t = result["total_time"]
+                self._snow_status_label.configure(text="Complete!")
+                self._snow_progress_label.configure(
+                    text=f"{n + 1}/16 sectors")
+                elapsed = f"{t:.0f}s" if t < 60 else f"{t/60:.1f}m"
+                self._snow_time_label.configure(text=f"Total: {elapsed}")
+                self._attack_log(f"COMPLETE: {n} sectors cracked in {elapsed}")
+                self._log(f"Snowball complete: {n} sectors, {elapsed}")
+
+            elif event == "snowball_stopped":
+                self._guard.finish()
+                self._attack_log("Snowball stopped by user")
+
+    def _attack_log(self, text):
+        """Write to the attack event log."""
+        ts = datetime.now().strftime("%H:%M:%S")
+        self.attack_log.configure(state="normal")
+        self.attack_log.insert("end", f"[{ts}] {text}\n")
+        self.attack_log.see("end")
+        self.attack_log.configure(state="disabled")
+
     def _global_stop(self):
         """Global halt for all active processes."""
         # Stop scanning
         self._send("P")
+        # Stop snowball if active
+        if hasattr(self, 'snowball') and self.snowball.state not in ("idle", "done"):
+            self.snowball.stop()
+            self._snow_status_label.configure(text="Stopped")
         # Stop attacks
         if self.attack.state != "idle":
             self.attack.stop()
-            self._guard.finish()
             self.attack_label.configure(text="Stopped")
+        if self._guard.is_busy:
+            self._guard.finish()
             self._log("Global STOP triggered: halting all processes", "WARN")
         else:
             self._log("Stop signal sent", "INFO")
-        
+
         self.progress_label.configure(text="Stopped")
         self.progress_bar.set(0)
 
@@ -487,6 +704,8 @@ class App(ctk.CTk):
         self._writing = False
         self._guard.finish()
         self.attack.stop()
+        if hasattr(self, 'snowball') and self.snowball.state not in ("idle", "done"):
+            self.snowball.state = "idle"
         self.attack_label.configure(text="")
         self.progress_label.configure(text="Reset!")
         # Drain both queues
@@ -594,6 +813,16 @@ class App(ctk.CTk):
                 self._update_tag_display(msg)
                 self._add_log_entry(msg)
             elif isinstance(msg, dict):
+                # Route to snowball orchestrator if active
+                if (hasattr(self, 'snowball') and
+                        self.snowball.state not in ("idle", "done") and
+                        msg.get("type") in ("NA", "NP", "NH", "NX", "OK")):
+                    self.snowball.feed(msg)
+                    self._process_snowball_events()
+                    if msg.get("type") in ("NA", "NP", "NH", "NX"):
+                        continue  # consumed by snowball
+                    # OK messages may also need default handling below
+
                 if msg.get("type") in ("DARK", "NESTED"):
                     self.attack.feed(msg)
                     while not self.attack.result_queue.empty():
@@ -699,7 +928,7 @@ class App(ctk.CTk):
                 elif msg["type"] == "INFO":
                     self._log(f"Firmware: {msg['message']}")
         
-        attack_ops = ("cracking", "nested_attack")
+        attack_ops = ("cracking", "nested_attack", "snowball")
         op_timeout = 300 if self._guard.operation in attack_ops else 30
         if self._guard.check_timeout(timeout=op_timeout):
             self.progress_label.configure(text="Timeout")
