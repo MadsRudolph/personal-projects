@@ -444,7 +444,7 @@ class ComponentBrowser(ctk.CTkFrame):
         if total > self._display_limit:
             self._more_btn = ctk.CTkButton(self.chip_frame, text=f"Load more ({total - self._display_limit} remaining)",
                                            fg_color="gray25", hover_color=THEME["accent_glow"],
-                                           font=ctk.CTkFont(size=10), height=28,
+                                           font=ctk.CTkFont(size=10), width=400, height=28,
                                            command=self._load_more)
 
         # Update count badge
@@ -469,13 +469,14 @@ class ComponentBrowser(ctk.CTkFrame):
             if x + chip_w + pad > canvas_width:
                 x = pad
                 y += chip_h + pad
-            widget.place(x=x, y=y, width=chip_w, height=chip_h)
+            widget.place(x=x, y=y)
             x += chip_w + pad
 
         # Place "Load more" button full-width below chips
         total_height = y + chip_h + pad if self._chip_widgets else 0
         if getattr(self, '_more_btn', None):
-            self._more_btn.place(x=pad, y=total_height + pad, width=canvas_width - 2 * pad, height=28)
+            self._more_btn.configure(width=canvas_width - 2 * pad)
+            self._more_btn.place(x=pad, y=total_height + pad)
             total_height += 28 + 2 * pad
 
         # Set chip_frame size so scrollregion updates
@@ -498,6 +499,7 @@ class ComponentBrowser(ctk.CTkFrame):
             label = label[:11] + "\u2026"
 
         chip = ctk.CTkButton(self.chip_frame, text=label,
+                             width=95, height=32,
                              fg_color=THEME["bg_light"], hover_color=THEME["accent_glow"],
                              font=ctk.CTkFont(size=10), corner_radius=6,
                              text_color=THEME["text_main"],
