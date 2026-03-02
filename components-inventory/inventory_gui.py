@@ -507,7 +507,8 @@ class InventoryApp(ctk.CTk):
         self.session_count = 0
         self.last_category = "resistor"
         self.suggestion_items = []
-        
+        self._browser_filling = False
+
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
         
@@ -836,6 +837,7 @@ class InventoryApp(ctk.CTk):
     def _clear_form(self):
         for e in [self.add_name, self.add_value, self.add_package, self.add_notes]: e.delete(0, "end")
         self.add_qty.delete(0, "end"); self.add_qty.insert(0, "1")
+        self._refresh_browser()
 
     def _open_resistor_helper(self):
         ResistorHelper(self, self._on_resistor_selected)
