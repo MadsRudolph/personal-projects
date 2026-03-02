@@ -573,8 +573,10 @@ class InventoryApp(ctk.CTk):
         self.add_category.grid(row=1, column=1, padx=20, pady=15, sticky="w")
         self.add_category.set(self.last_category)
         
+        self.value_var = ctk.StringVar()
+        self.value_var.trace_add("write", self._on_value_typing)
         ctk.CTkLabel(self.form, text="Value:", text_color=THEME["text_dim"]).grid(row=2, column=0, padx=(20, 0), sticky="e")
-        self.add_value = ctk.CTkEntry(self.form, placeholder_text="e.g. 10k, 100nF", width=400)
+        self.add_value = ctk.CTkEntry(self.form, placeholder_text="e.g. 10k, 100nF", width=400, textvariable=self.value_var)
         self.add_value.grid(row=2, column=1, padx=20, pady=15, sticky="w")
         
         ctk.CTkLabel(self.form, text="Package:", text_color=THEME["text_dim"]).grid(row=3, column=0, padx=(20, 0), sticky="e")
@@ -600,6 +602,14 @@ class InventoryApp(ctk.CTk):
         ctk.CTkLabel(sidebar, text="Recent", font=ctk.CTkFont(weight="bold")).pack(pady=10)
         self.recent_list = tk.Listbox(sidebar, bg="#2b2b2b", fg="white", borderwidth=0)
         self.recent_list.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # --- Component Browser Panel (bottom) ---
+        self.browser = ComponentBrowser(self.add_frame, self.shop_data, self.conn,
+                                        on_chip_click=self._on_browser_chip_click)
+        self.browser.grid(row=2, column=0, columnspan=2, padx=20, pady=(5, 15), sticky="nsew")
+        self.browser.bind("<<SourceChanged>>", lambda e: self._refresh_browser())
+        self.add_frame.grid_rowconfigure(2, weight=2)
+        self.add_frame.grid_rowconfigure(1, weight=3)
 
     def _setup_inventory_tab(self):
         # Header Tools
@@ -751,7 +761,9 @@ class InventoryApp(ctk.CTk):
 
     def select_frame_by_name(self, name):
         for f in [self.add_frame, self.inventory_frame, self.stock_frame, self.dashboard_frame]: f.grid_forget()
-        if name == "add": self.add_frame.grid(row=0, column=1, sticky="nsew")
+        if name == "add":
+            self.add_frame.grid(row=0, column=1, sticky="nsew")
+            self._refresh_browser()
         elif name == "inventory": 
             self.inventory_frame.grid(row=0, column=1, sticky="nsew")
             self._refresh_inventory()
@@ -765,6 +777,7 @@ class InventoryApp(ctk.CTk):
     def _on_quick_cat_select(self, cat):
         self.add_category.set(cat)
         for c, b in self.cat_buttons.items(): b.configure(fg_color=THEME["accent"] if c == cat else "gray25")
+        self._refresh_browser()
         self.add_name.focus_set()
 
     def _on_name_typing(self, *args):
@@ -905,7 +918,45 @@ class InventoryApp(ctk.CTk):
         self.bind("<Control-Key-2>", lambda e: self.select_frame_by_name("inventory"))
         self.bind("<Control-Key-3>", lambda e: self.select_frame_by_name("stock"))
 
-    def _on_category_change(self, choice): pass
+    def _on_category_change(self, choice):
+        self._refresh_browser()
+
+    def _on_value_typing(self, *args):
+        if not getattr(self, '_browser_filling', False):
+            self._refresh_browser()
+
+    def _refresh_browser(self):
+        if hasattr(self, 'browser'):
+            category = self.add_category.get()
+            value_filter = self.value_var.get().strip() if hasattr(self, 'value_var') else ""
+            self.browser.update_chips(category, value_filter)
+
+    def _on_browser_chip_click(self, item, source):
+        self._browser_filling = True
+        try:
+            if source == "shop":
+                name = f"{item.get('part_number', '')} {item.get('subcategory', '')}".strip()
+                self.name_var.set(name)
+                shop_cat = item.get("category", "").lower()
+                app_cat = SHOP_TO_APP_CATEGORY.get(shop_cat, "other")
+                self.add_category.set(app_cat)
+                self.add_value.delete(0, "end")
+                self.add_value.insert(0, item.get("value", ""))
+                self.add_notes.delete(0, "end")
+                self.add_notes.insert(0, item.get("description", ""))
+            else:
+                self.name_var.set(item.get("name", ""))
+                self.add_category.set(item.get("category", "other"))
+                self.add_value.delete(0, "end")
+                self.add_value.insert(0, item.get("value", "") or "")
+                self.add_package.delete(0, "end")
+                self.add_package.insert(0, item.get("package", "") or "")
+                self.add_notes.delete(0, "end")
+                self.add_notes.insert(0, item.get("notes", "") or "")
+            self.add_qty.focus_set()
+            self.add_qty.select_range(0, "end")
+        finally:
+            self._browser_filling = False
 
 if __name__ == "__main__":
     app = InventoryApp()
