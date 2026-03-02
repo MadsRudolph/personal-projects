@@ -4,6 +4,23 @@ A collection of hardware projects focusing on audio, electronics, and 3D printin
 
 ## 🎯 Active Projects
 
+### 🧰 [Component Inventory Pro](components-inventory/)
+
+Desktop app for cataloging THT electronic components with a built-in DTU shop browser. Track your parts, visualize resistor color bands, browse 1,400+ shop items, and see what you already own.
+
+**Status:** 🟢 Working
+
+**Key Features:**
+- **Dashboard** with donut chart and stats
+- **Inventory** with search, category filter, and visual resistor color bands
+- **DTU Shop Browser** — browse/search/filter shop components, ownership cross-referencing
+- **AI Export** — markdown summary for LLM-assisted project planning
+- **Windows exe** — standalone build via PyInstaller
+
+**Tech:** Python 3, customtkinter, SQLite, Pillow
+
+---
+
 ### 🔊 [Illuminate 7Mk2 - 3D-Printed Speaker Build](Projects/Illuminate%207Mk2/Illuminate%207Mk2%20-%20Speaker%20Build.md)
 
 Building a pair of audiophile-grade 3D-printed bookshelf speakers from scratch.
@@ -98,27 +115,19 @@ Bare-metal RFID card reader using MFRC522 and Arduino Uno. Reads 13.56 MHz MIFAR
 ## 📂 Repository Structure
 
 ```
-Projects/
+├── components-inventory/              # Component Inventory Pro app
+│   ├── inventory_gui.py              # GUI (customtkinter)
+│   ├── inventory.py                  # Data layer & CLI
+│   ├── dist/InventoryPro.exe         # Windows executable
+│   └── test_browser_data.py          # Tests
 ├── Projects/
 │   ├── Illuminate 7Mk2/              # Speaker build project
-│   │   ├── Illuminate 7Mk2 - Speaker Build.md
-│   │   ├── Parts List - Illuminate 7Mk2.md
-│   │   ├── Build Log - Illuminate 7Mk2.md
-│   │   └── Amplifier - Fosi Audio V3.md
 │   ├── Pi Zero PWM Filter/           # PWM audio filter project
-│   │   ├── Pi Zero 2W PWM Audio Filter.md
-│   │   └── Build Guide - 3rd Order PWM Filter.md
 │   ├── ESP32 IR Blaster/             # Smart home IR controller
-│   │   ├── ESP32 IR Blaster - Smart Home.md
-│   │   └── Learning Remote Codes - ESP32 IR Blaster.md
 │   └── RFID Card Reader/            # Bare-metal RFID reader
-│       ├── RFID Card Reader.md
-│       └── src/                     # Bare-metal C source (SPI, UART, MFRC522)
 ├── Resources/
 │   ├── Illuminate 7Mk2/              # Speaker resources
-│   │   └── *.pdf
 │   └── Pi Zero PWM Filter/           # PWM filter resources
-│       └── images/
 ├── ir-remote-wizard/                  # HAOS add-on (git submodule)
 ├── Notes/                            # Quick reference notes
 └── Home.md                           # Vault index
@@ -129,6 +138,7 @@ Projects/
 ## 🛠️ Tech Stack
 
 - **Documentation:** Obsidian (markdown-based)
+- **Desktop Apps:** Python 3, customtkinter, SQLite, Pillow, PyInstaller
 - **3D Modeling/Printing:** PLA filament, support-free design
 - **Electronics:** Analog filters, crossover networks, IR circuits
 - **Audio:** Dayton Audio drivers, Fosi Audio amplification, PWM filtering
@@ -152,7 +162,7 @@ These projects combine my academic knowledge with hands-on building experience.
 
 ## 🏷️ Topics
 
-`audio` `speakers` `diy` `3d-printing` `electroacoustics` `electronics` `amplifiers` `class-d` `power-electronics` `raspberry-pi` `spotify` `esp32` `esphome` `home-assistant` `smart-home` `ir-remote` `rfid` `avr` `bare-metal` `obsidian`
+`audio` `speakers` `diy` `3d-printing` `electroacoustics` `electronics` `amplifiers` `class-d` `power-electronics` `raspberry-pi` `spotify` `esp32` `esphome` `home-assistant` `smart-home` `ir-remote` `rfid` `avr` `bare-metal` `obsidian` `python` `customtkinter` `sqlite` `inventory`
 
 ---
 
@@ -198,4 +208,4 @@ Alternatively, all files are standard markdown and can be viewed directly on Git
 
 ---
 
-**Last Updated:** 2026-02-28
+**Last Updated:** 2026-03-02
