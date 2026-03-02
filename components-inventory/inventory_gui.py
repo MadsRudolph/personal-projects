@@ -319,6 +319,183 @@ class ResistorHelper(ctk.CTkToplevel):
             self.on_select(self.match_data[sel[0]])
             self.destroy()
 
+SHOP_TO_APP_CATEGORY = {
+    "resistor": "resistor", "capacitor": "capacitor", "inductor": "inductor",
+    "diode": "diode", "transistor": "transistor", "ic": "IC", "connector": "connector",
+    "led": "LED", "crystal": "crystal", "switch": "switch",
+    "encoder": "other", "hardware": "other", "ir": "other",
+    "optocoupler": "other", "photodiode": "other", "sensor": "other",
+}
+
+CHIPS_PER_PAGE = 100
+
+class ComponentBrowser(ctk.CTkFrame):
+    """Chip-grid browser for shop data and inventory components."""
+
+    def __init__(self, parent, shop_data, conn, on_chip_click):
+        super().__init__(parent, fg_color=THEME["bg_mid"], corner_radius=15)
+        self.shop_data = shop_data
+        self.conn = conn
+        self.on_chip_click = on_chip_click
+        self.source = "shop"
+        self._items = []
+        self._display_limit = CHIPS_PER_PAGE
+        self._chip_widgets = []
+
+        # --- Header row ---
+        header = ctk.CTkFrame(self, fg_color="transparent")
+        header.pack(fill="x", padx=15, pady=(10, 5))
+
+        ctk.CTkLabel(header, text="Component Browser",
+                     font=ctk.CTkFont(size=14, weight="bold"),
+                     text_color=THEME["accent_glow"]).pack(side="left")
+
+        self.count_label = ctk.CTkLabel(header, text="0 items",
+                                        font=ctk.CTkFont(size=11),
+                                        text_color=THEME["text_dim"])
+        self.count_label.pack(side="right", padx=(10, 0))
+
+        self.inv_btn = ctk.CTkButton(header, text="My Inventory", width=100,
+                                     fg_color="gray25", hover_color=THEME["accent_glow"],
+                                     font=ctk.CTkFont(size=11),
+                                     command=lambda: self._set_source("inventory"))
+        self.inv_btn.pack(side="right", padx=2)
+
+        self.shop_btn = ctk.CTkButton(header, text="Shop", width=70,
+                                      fg_color=THEME["accent"], hover_color=THEME["accent_glow"],
+                                      font=ctk.CTkFont(size=11),
+                                      command=lambda: self._set_source("shop"))
+        self.shop_btn.pack(side="right", padx=2)
+
+        # --- Scrollable chip area using tk.Canvas ---
+        self.canvas = tk.Canvas(self, bg=THEME["bg_mid"], highlightthickness=0, bd=0)
+        self.canvas.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+
+        self.chip_frame = ctk.CTkFrame(self.canvas, fg_color=THEME["bg_mid"])
+        self._canvas_window = self.canvas.create_window((0, 0), window=self.chip_frame, anchor="nw")
+
+        self.chip_frame.bind("<Configure>", self._on_chip_frame_configure)
+        self.canvas.bind("<Configure>", self._on_canvas_configure)
+
+        # Mousewheel scrolling only when mouse is over the browser
+        self.canvas.bind("<Enter>", self._bind_mousewheel)
+        self.canvas.bind("<Leave>", self._unbind_mousewheel)
+
+    def _bind_mousewheel(self, event):
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+
+    def _unbind_mousewheel(self, event):
+        self.canvas.unbind_all("<MouseWheel>")
+
+    def _on_mousewheel(self, event):
+        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _on_chip_frame_configure(self, event):
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def _on_canvas_configure(self, event):
+        self._layout_chips()
+
+    def _set_source(self, source):
+        self.source = source
+        if source == "shop":
+            self.shop_btn.configure(fg_color=THEME["accent"])
+            self.inv_btn.configure(fg_color="gray25")
+        else:
+            self.shop_btn.configure(fg_color="gray25")
+            self.inv_btn.configure(fg_color=THEME["accent"])
+        self.event_generate("<<SourceChanged>>")
+
+    def update_chips(self, category, value_filter=""):
+        """Fetch data from selected source and render chips."""
+        self._display_limit = CHIPS_PER_PAGE
+        if self.source == "shop":
+            self._items = self.shop_data.browse(category, value_filter or None)
+        else:
+            self._items = inventory.browse_inventory(self.conn, category, value_filter or None)
+        self._render_chips()
+
+    def _render_chips(self):
+        # Clear existing chips
+        for w in self._chip_widgets:
+            try:
+                w.destroy()
+            except Exception:
+                pass
+        self._chip_widgets = []
+
+        total = len(self._items)
+        show = self._items[:self._display_limit]
+
+        for item in show:
+            chip = self._create_chip(item)
+            self._chip_widgets.append(chip)
+
+        # "Load more" button if truncated
+        if total > self._display_limit:
+            more_btn = ctk.CTkButton(self.chip_frame, text=f"Load more ({total - self._display_limit} remaining)",
+                                     fg_color="gray25", hover_color=THEME["accent_glow"],
+                                     font=ctk.CTkFont(size=10), height=28,
+                                     command=self._load_more)
+            self._chip_widgets.append(more_btn)
+
+        # Update count badge
+        showing = min(self._display_limit, total)
+        self.count_label.configure(text=f"{showing}/{total} items" if total > showing else f"{total} items")
+
+        self._layout_chips()
+
+    def _layout_chips(self):
+        """Flow-layout chips into rows based on canvas width."""
+        canvas_width = self.canvas.winfo_width()
+        if canvas_width < 10:
+            canvas_width = 600  # reasonable default before first render
+
+        chip_w = 95
+        chip_h = 32
+        pad = 4
+        x = pad
+        y = pad
+
+        for widget in self._chip_widgets:
+            if x + chip_w + pad > canvas_width:
+                x = pad
+                y += chip_h + pad
+            widget.place(x=x, y=y, width=chip_w, height=chip_h)
+            x += chip_w + pad
+
+        # Set chip_frame size so scrollregion updates
+        total_height = y + chip_h + pad if self._chip_widgets else 0
+        self.chip_frame.configure(width=canvas_width, height=max(total_height, 40))
+
+    def _create_chip(self, item):
+        """Create a single chip button for an item."""
+        if self.source == "shop":
+            # For passives use value, for actives use part_number
+            cat = item.get("category", "").lower()
+            if cat in ("resistor", "capacitor", "inductor", "crystal"):
+                label = item.get("value", "") or item.get("part_number", "")
+            else:
+                label = item.get("part_number", "") or item.get("value", "")
+        else:
+            label = item.get("value", "") or item.get("name", "")
+
+        # Truncate to 12 chars with ellipsis
+        if len(label) > 12:
+            label = label[:11] + "\u2026"
+
+        chip = ctk.CTkButton(self.chip_frame, text=label,
+                             fg_color=THEME["bg_light"], hover_color=THEME["accent_glow"],
+                             font=ctk.CTkFont(size=10), corner_radius=6,
+                             text_color=THEME["text_main"],
+                             command=lambda i=item: self.on_chip_click(i, self.source))
+        return chip
+
+    def _load_more(self):
+        self._display_limit += CHIPS_PER_PAGE
+        self._render_chips()
+
+
 class InventoryApp(ctk.CTk):
     def __init__(self):
         super().__init__()
