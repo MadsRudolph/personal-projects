@@ -394,7 +394,9 @@ class ComponentBrowser(ctk.CTkFrame):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def _on_canvas_configure(self, event):
-        self._layout_chips()
+        if hasattr(self, '_layout_after_id'):
+            self.after_cancel(self._layout_after_id)
+        self._layout_after_id = self.after(50, self._layout_chips)
 
     def _set_source(self, source):
         self.source = source
@@ -416,13 +418,19 @@ class ComponentBrowser(ctk.CTkFrame):
         self._render_chips()
 
     def _render_chips(self):
-        # Clear existing chips
+        # Clear existing chips and load-more button
         for w in self._chip_widgets:
             try:
                 w.destroy()
             except Exception:
                 pass
         self._chip_widgets = []
+        if getattr(self, '_more_btn', None):
+            try:
+                self._more_btn.destroy()
+            except Exception:
+                pass
+            self._more_btn = None
 
         total = len(self._items)
         show = self._items[:self._display_limit]
@@ -431,13 +439,13 @@ class ComponentBrowser(ctk.CTkFrame):
             chip = self._create_chip(item)
             self._chip_widgets.append(chip)
 
-        # "Load more" button if truncated
+        # "Load more" button if truncated (stored separately, not in chip flow)
+        self._more_btn = None
         if total > self._display_limit:
-            more_btn = ctk.CTkButton(self.chip_frame, text=f"Load more ({total - self._display_limit} remaining)",
-                                     fg_color="gray25", hover_color=THEME["accent_glow"],
-                                     font=ctk.CTkFont(size=10), height=28,
-                                     command=self._load_more)
-            self._chip_widgets.append(more_btn)
+            self._more_btn = ctk.CTkButton(self.chip_frame, text=f"Load more ({total - self._display_limit} remaining)",
+                                           fg_color="gray25", hover_color=THEME["accent_glow"],
+                                           font=ctk.CTkFont(size=10), height=28,
+                                           command=self._load_more)
 
         # Update count badge
         showing = min(self._display_limit, total)
@@ -464,8 +472,13 @@ class ComponentBrowser(ctk.CTkFrame):
             widget.place(x=x, y=y, width=chip_w, height=chip_h)
             x += chip_w + pad
 
-        # Set chip_frame size so scrollregion updates
+        # Place "Load more" button full-width below chips
         total_height = y + chip_h + pad if self._chip_widgets else 0
+        if getattr(self, '_more_btn', None):
+            self._more_btn.place(x=pad, y=total_height + pad, width=canvas_width - 2 * pad, height=28)
+            total_height += 28 + 2 * pad
+
+        # Set chip_frame size so scrollregion updates
         self.chip_frame.configure(width=canvas_width, height=max(total_height, 40))
 
     def _create_chip(self, item):
@@ -921,7 +934,8 @@ class InventoryApp(ctk.CTk):
         self.bind("<Control-Key-3>", lambda e: self.select_frame_by_name("stock"))
 
     def _on_category_change(self, choice):
-        self._refresh_browser()
+        if not getattr(self, '_browser_filling', False):
+            self._refresh_browser()
 
     def _on_value_typing(self, *args):
         if not getattr(self, '_browser_filling', False):
