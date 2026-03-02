@@ -135,10 +135,7 @@ def get_resistor_colors(value):
         if d1_4 in digit_to_color and d2_4 in digit_to_color and round(mult4_val, 4) in mult_to_color:
             res4 = [digit_to_color[d1_4], digit_to_color[d2_4], mult_to_color[round(mult4_val, 4)], "gold"]
             
-        # Decision: If the value is a standard E24 (10, 22, 47 etc), prefer 4-band
-        # Otherwise if it fits 5-band perfectly, use that.
-        if res4 and (value % mult4_val == 0):
-            return res4
+        # Prefer 5-band (1% tolerance) over 4-band (5% tolerance)
         return res5 or res4
     except:
         pass
@@ -269,6 +266,21 @@ def list_by_category(conn, category):
     return [_row_to_dict(r, cur) for r in cur.fetchall()]
 
 
+def browse_inventory(conn, category, value_filter=None):
+    """Return inventory items by category with optional value filter."""
+    if value_filter:
+        sql = """SELECT * FROM components
+                 WHERE LOWER(category) = LOWER(?)
+                 AND (value LIKE ? OR name LIKE ?)
+                 ORDER BY name"""
+        pattern = f"%{value_filter}%"
+        cur = conn.execute(sql, (category, pattern, pattern))
+    else:
+        sql = "SELECT * FROM components WHERE LOWER(category) = LOWER(?) ORDER BY name"
+        cur = conn.execute(sql, (category,))
+    return [_row_to_dict(r, cur) for r in cur.fetchall()]
+
+
 def get_stock(conn):
     sql = """
         SELECT category, COUNT(*) as items, SUM(quantity) as total_qty
@@ -348,6 +360,48 @@ def export_csv(conn):
         
     return output.getvalue()
 
+
+def export_ai_markdown(conn):
+    """Generate a clean markdown summary of the inventory for AI assistants."""
+    lines = []
+    lines.append("# My Component Inventory")
+    lines.append("")
+    lines.append("This is a list of electronic components I have available.")
+    lines.append("Use this when designing circuits or suggesting parts for projects.")
+    lines.append("")
+
+    # Stock summary
+    stock = get_stock(conn)
+    total_items = sum(r[1] for r in stock)
+    total_qty = sum(r[2] for r in stock)
+    lines.append(f"**Total:** {total_items} unique components, {total_qty} total pieces")
+    lines.append("")
+
+    # Group by category
+    for cat in CATEGORIES:
+        items = list_by_category(conn, cat)
+        if not items:
+            continue
+
+        heading = cat if cat in ("IC", "LED") else cat.capitalize()
+        lines.append(f"## {heading}")
+        lines.append("")
+        lines.append("| Value | Package | Qty | Name | Notes |")
+        lines.append("|-------|---------|-----|------|-------|")
+
+        for item in items:
+            val = item.get("value", "") or ""
+            pkg = item.get("package", "") or ""
+            qty = item.get("quantity", 0)
+            name = item.get("name", "") or ""
+            notes = item.get("notes", "") or ""
+            lines.append(f"| {val} | {pkg} | {qty} | {name} | {notes} |")
+
+        lines.append("")
+
+    return "\n".join(lines)
+
+
 class ShopData:
     """Helper to load and search the master shop CSV."""
     def __init__(self, csv_path=SHOP_CSV_PATH):
@@ -393,6 +447,22 @@ class ShopData:
             elif cat_filter:
                 results.append(item)
             
+            if limit is not None and len(results) >= limit:
+                break
+        return results
+
+    def browse(self, category, value_filter=None, limit=None):
+        """Return all items in a category, optionally filtered by value substring."""
+        cat = category.lower()
+        results = []
+        for item in self.items:
+            if item["category"] != cat:
+                continue
+            if value_filter:
+                combined = f"{item['value']} {item['part_number']} {item['subcategory']}".lower()
+                if value_filter.lower() not in combined:
+                    continue
+            results.append(item)
             if limit is not None and len(results) >= limit:
                 break
         return results
