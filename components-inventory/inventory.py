@@ -269,6 +269,21 @@ def list_by_category(conn, category):
     return [_row_to_dict(r, cur) for r in cur.fetchall()]
 
 
+def browse_inventory(conn, category, value_filter=None):
+    """Return inventory items by category with optional value filter."""
+    if value_filter:
+        sql = """SELECT * FROM components
+                 WHERE LOWER(category) = LOWER(?)
+                 AND (value LIKE ? OR name LIKE ?)
+                 ORDER BY name"""
+        pattern = f"%{value_filter}%"
+        cur = conn.execute(sql, (category, pattern, pattern))
+    else:
+        sql = "SELECT * FROM components WHERE LOWER(category) = LOWER(?) ORDER BY name"
+        cur = conn.execute(sql, (category,))
+    return [_row_to_dict(r, cur) for r in cur.fetchall()]
+
+
 def get_stock(conn):
     sql = """
         SELECT category, COUNT(*) as items, SUM(quantity) as total_qty
@@ -393,6 +408,22 @@ class ShopData:
             elif cat_filter:
                 results.append(item)
             
+            if limit is not None and len(results) >= limit:
+                break
+        return results
+
+    def browse(self, category, value_filter=None, limit=None):
+        """Return all items in a category, optionally filtered by value substring."""
+        cat = category.lower()
+        results = []
+        for item in self.items:
+            if item["category"] != cat:
+                continue
+            if value_filter:
+                combined = f"{item['value']} {item['part_number']} {item['subcategory']}".lower()
+                if value_filter.lower() not in combined:
+                    continue
+            results.append(item)
             if limit is not None and len(results) >= limit:
                 break
         return results
