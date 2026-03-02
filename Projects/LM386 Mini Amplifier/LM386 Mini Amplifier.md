@@ -7,7 +7,7 @@ tags:
   - amplifier
 status: Planning
 started: 2026-02-28
-updated: 2026-02-28
+updated: 2026-03-02
 aliases:
   - LM386 Amp
   - Mini Speaker Amp
@@ -55,7 +55,7 @@ links:
 | 2 | -INPUT | GND (bottom of volume pot) |
 | 3 | +INPUT | Audio in via C1 + VR1 wiper |
 | 4 | GND | Ground bus |
-| 5 | VOUT | Speaker via C2 (220µF) |
+| 5 | VOUT | Speaker via C2 (2×100µF) |
 | 6 | Vs | +9V with C4 bypass (100nF) |
 | 7 | BYPASS | C5 (10µF) to GND |
 | 8 | GAIN | NC (gain = 20) |
@@ -84,8 +84,8 @@ links:
 >       [C1]              ┌────┴────────┐
 >       10µF              │             │
 >       (+)→              │           [C3]
->         │              [C2]         47nF
->         │             220µF           │
+>         │              [C2]        100nF
+>         │           2×100µF           │
 >    ┌────┘              (+)          [R1]
 >    │                    │            10Ω
 >  ──┤wiper               │             │
@@ -103,6 +103,8 @@ links:
 >
 > **Signal path:** Audio in → C1 (DC block) → VR1 wiper (volume) → Pin 3 (+IN) → LM386 → Pin 5 (VOUT) → C2 (DC block) → Speaker
 >
+> **Zobel note:** C3 is 100nF (substitution for 47nF — not in stock). Crossover shifts from 339 kHz to 159 kHz. Still well above audio, slightly more conservative against oscillation.
+>
 > **Zobel network:** C3 + R1 in series from pin 5 to GND — prevents high-frequency oscillation with inductive speaker loads.
 >
 > **Bypass (Pin 7):** Improves power supply rejection from ~10 dB to ~50 dB at 1 kHz (datasheet Figure 6-2). Strongly recommended even though listed as optional in many guides.
@@ -117,8 +119,8 @@ links:
 |-----|-----|-----------|-------|-------|
 | U1 | 1 | LM386N-1 | — | DIP-8. Use socket. |
 | C1 | 1 | Electrolytic cap | 10 µF 25V | Input DC blocking. + toward audio source. |
-| C2 | 1 | Electrolytic cap | 220 µF 25V | Output DC blocking. **+ toward pin 5.** |
-| C3 | 1 | Film or ceramic cap | 47 nF (0.047 µF) | Zobel network |
+| C2 | 2 | Electrolytic cap | 100 µF (×2 parallel = 200 µF) | Output DC blocking. **+ toward pin 5.** Substitution — no 220µF in stock. |
+| C3 | 1 | Ceramic or film cap | 100 nF | Zobel network. Substitution — no 47nF in stock. |
 | C4 | 1 | Ceramic cap | 100 nF | Vs bypass — close to pin 6 |
 | C5 | 1 | Electrolytic cap | 10 µF 25V | Pin 7 bypass. + toward pin 7. |
 | R1 | 1 | Resistor | 10 Ω | Zobel network |
@@ -132,28 +134,25 @@ links:
 
 ## Design Notes
 
-### Output Coupling Cap (C2) — Why 220µF?
+### Output Coupling Cap (C2) — 2×100µF Parallel
 
 The output cap + speaker impedance form a high-pass filter. The cutoff must be well below the audio band:
 
-```
-f_c = 1 / (2π × R_load × C2)
-```
+$$f_c = \frac{1}{2\pi \cdot R_{load} \cdot C_2}$$
 
 | C2 Value | Cutoff (-3dB) | Result |
 |----------|---------------|--------|
 | 10 µF | **1990 Hz** | No bass — unusable |
 | 100 µF | 199 Hz | Marginal — weak bass |
-| **220 µF** | **90 Hz** | Good for small speaker |
+| **200 µF (2×100µF)** | **~100 Hz** | **This build** — close to datasheet 250µF |
+| 220 µF | 90 Hz | Datasheet closest standard value |
 | 470 µF | 42 Hz | Overkill for 8Ω 1.5W driver |
 
-The datasheet uses 250µF. 220µF is the closest common value and gives a -3dB point of ~90 Hz — appropriate for a small speaker that can't reproduce much below 100 Hz anyway.
+No 220µF in stock. Two 100µF electrolytic caps in parallel give 200µF — cutoff at ~100 Hz, close to the original 90 Hz target. For a small speaker that rolls off naturally around 100–150 Hz, this is perfectly adequate.
 
 ### Input Coupling Cap (C1)
 
-```
-f_c = 1 / (2π × R_in × C1) = 1 / (2π × 10kΩ × 10µF) ≈ 1.6 Hz
-```
+$$f_c = \frac{1}{2\pi \cdot R_{in} \cdot C_1} = \frac{1}{2\pi \cdot 10\,\text{k}\Omega \cdot 10\,\mu\text{F}} \approx 1.6\,\text{Hz}$$
 
 Well below the audio band — no signal loss.
 
@@ -161,10 +160,9 @@ Well below the audio band — no signal loss.
 
 With the internal output transistors having ~1V saturation on each rail:
 
-```
-V_peak ≈ Vs/2 - V_sat ≈ 4.5 - 1.0 = 3.5V
-P_max  ≈ V_peak² / (2 × R_L) = 12.25 / 16 ≈ 0.77W (theoretical)
-```
+$$V_{peak} \approx \frac{V_s}{2} - V_{sat} \approx 4.5 - 1.0 = 3.5\,\text{V}$$
+
+$$P_{max} \approx \frac{V_{peak}^2}{2 \cdot R_L} = \frac{12.25}{16} \approx 0.77\,\text{W} \quad \text{(theoretical)}$$
 
 Actual output is ~325 mW typical at 10% THD per datasheet (Vs = 9V, R_L = 8Ω). Well within the 1.5W speaker rating.
 
@@ -206,9 +204,9 @@ Plenty of thermal margin — no heatsink needed.
    - Pot wiper to pin 3 (+INPUT).
    - Pin 2 (-INPUT) to ground rail.
 7. **Output stage:**
-   - C2 (220µF, **+ toward pin 5**) from pin 5 to speaker positive terminal.
+   - C2 (2×100µF in parallel, **+ toward pin 5**) from pin 5 to speaker positive terminal. Wire both caps between the same two points — pin 5 row and speaker positive row.
    - Speaker negative to ground rail.
-   - Zobel: C3 (47nF) in series with R1 (10Ω) from pin 5 to ground rail. Keep leads short.
+   - Zobel: C3 (100nF) in series with R1 (10Ω) from pin 5 to ground rail. Keep leads short.
 8. **Gain pins** — leave pins 1 and 8 unconnected (gain = 20).
 
 ### Layout Tips
@@ -232,7 +230,7 @@ Plenty of thermal margin — no heatsink needed.
 4. **Audio test** — connect phone or audio source via 3.5mm cable. Start with VR1 fully counter-clockwise (min volume), slowly increase. Should hear clean audio through speaker.
 5. **If oscillation occurs:**
    - Verify C4 (100nF) is present and directly at pin 6
-   - Verify Zobel (C3 + R1) is connected from pin 5 to ground
+   - Verify Zobel (C3 100nF + R1 10Ω) is connected from pin 5 to ground
    - Add C5 on pin 7 if not already present
    - Shorten ground wires, especially from pin 4
    - Separate input and output wiring
@@ -255,7 +253,7 @@ Plenty of thermal margin — no heatsink needed.
 ## Build Phases
 
 - [x] **Research** — IC selection, datasheet review, circuit design
-- [ ] **Components** — Gather parts from stock
+- [x] **Components** — All parts confirmed in stock (2 substitutions: C2 2×100µF, C3 100nF)
 - [ ] **Breadboard prototype** — Test circuit, verify no oscillation
 - [ ] **Protoboard build** — Solder final circuit
 - [ ] **Enclosure** — 3D print or project box
