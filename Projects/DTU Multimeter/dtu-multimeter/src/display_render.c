@@ -245,7 +245,6 @@ void render_scope(void)
     display_str_P(0, 0, PSTR("SCOPE"));
 
     /* Timebase info */
-    char buf[16];
     display_str_P(42, 0, PSTR("AUTO"));
 
     /* Waveform area (y=10-49) rendered by scope module */

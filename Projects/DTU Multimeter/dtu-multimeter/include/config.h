@@ -20,7 +20,9 @@
  *  Target: ATmega2560 (Arduino Mega 2560), 16 MHz
  * ═══════════════════════════════════════════════════════════════════ */
 
+#ifndef F_CPU
 #define F_CPU 16000000UL
+#endif
 
 /** @defgroup adc_spi MCP3208 SPI ADC
  *  @brief 12-bit SPI ADC pin definitions and channel assignments.

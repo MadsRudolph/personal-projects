@@ -95,7 +95,7 @@ static uint16_t dc_offset = 0;                  /* For AC coupling   */
 
 /* ─── PROGMEM float read helper ──────────────────────────────────── */
 
-static float pgm_read_float_near(const float *addr)
+static float read_pgm_float(const float *addr)
 {
     float val;
     memcpy_P(&val, addr, sizeof(float));
@@ -269,14 +269,13 @@ void scope_capture(void)
     /* ── Step 3: Wait for trigger ─────────────────────────────────── */
 
     uint8_t  triggered    = 0;
-    uint16_t trig_pos     = 0;     /* Index in scope_buf where trigger found */
     uint16_t prev_sample  = scope_buf[SCOPE_PRETRIG - 1];
     uint32_t trig_timeout = millis() + 500;  /* 500 ms auto-trigger timeout */
 
     if (scope_trig_mode == TRIG_NONE) {
         /* Free-run: no triggering, start post-trigger immediately    */
         triggered = 1;
-        trig_pos  = SCOPE_PRETRIG;
+
     } else {
         /* Scan for edge crossing trigger level in incoming samples   */
         while (!triggered) {
@@ -296,7 +295,7 @@ void scope_capture(void)
                 /* Rising edge: previous below level, current at or above */
                 if (prev_sample < scope_trig_level && s >= scope_trig_level) {
                     triggered = 1;
-                    trig_pos  = SCOPE_PRETRIG;
+            
                 }
             }
             if (!triggered &&
@@ -304,7 +303,7 @@ void scope_capture(void)
                 /* Falling edge: previous above level, current at or below */
                 if (prev_sample > scope_trig_level && s <= scope_trig_level) {
                     triggered = 1;
-                    trig_pos  = SCOPE_PRETRIG;
+            
                 }
             }
 
@@ -314,7 +313,7 @@ void scope_capture(void)
             if (!triggered && (scope_trig_mode == TRIG_AUTO || scope_trig_mode == TRIG_SINGLE)) {
                 if (millis() > trig_timeout) {
                     triggered = 1;
-                    trig_pos  = SCOPE_PRETRIG;
+            
                 }
             }
         }
@@ -414,7 +413,7 @@ void scope_auto_measure(scope_meas_t *m)
         above_count++;
 
     /* Sample period from timebase table */
-    float t_sample = pgm_read_float_near(&tb_period_us[scope_timebase]);
+    float t_sample = read_pgm_float(&tb_period_us[scope_timebase]);
     float total_time_s = t_sample * (float)SCOPE_BUF_SIZE / 1e6f;
 
     /* Frequency: rising crossings / total time */
@@ -445,13 +444,6 @@ static inline void fb_set_pixel(uint8_t *fb, uint8_t x, uint8_t y)
     if (x >= OLED_WIDTH || y >= OLED_HEIGHT)
         return;
     fb[x + (y / 8) * OLED_WIDTH] |= (1 << (y & 7));
-}
-
-static void fb_draw_char(uint8_t *fb, uint8_t x, uint8_t y, char c)
-{
-    /* Delegate to display module — we just set pixels for waveform   */
-    (void)fb; (void)x; (void)y; (void)c;
-    /* Text rendering uses display_char() on the shared framebuffer   */
 }
 
 void scope_render_oled(uint8_t *fb)

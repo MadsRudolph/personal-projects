@@ -28,6 +28,7 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include <avr/wdt.h>
+#include <string.h>
 
 /* ─── LED and Buzzer helpers ─────────────────────────────────────── */
 
@@ -145,10 +146,6 @@ static void handle_select_button(void)
     lpf_enabled = !lpf_enabled;
 }
 
-/* ─── Hold value for REL capture ─────────────────────────────────── */
-
-static uint8_t rel_needs_capture = 0;
-
 /* ═══════════════════════════════════════════════════════════════════
  *  Main
  * ═══════════════════════════════════════════════════════════════════ */
@@ -160,6 +157,8 @@ int main(void)
 
     /* ─── Initialize peripherals ────────────────────────────────── */
     uart_init();
+    sei();   /* Enable interrupts early so UART TX ISR can drain the buffer */
+
     uart_puts_P(PSTR("\r\n=== DTU Digital Multimeter v1.0 ===\r\n"));
     uart_puts_P(PSTR("Initializing...\r\n"));
 
@@ -175,9 +174,6 @@ int main(void)
     scope_init();
     measure_init();
     logging_init();
-
-    /* Enable global interrupts */
-    sei();
 
     /* Splash screen */
     render_splash();

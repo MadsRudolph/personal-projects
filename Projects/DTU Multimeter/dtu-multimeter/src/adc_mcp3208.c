@@ -30,7 +30,7 @@ void adc_init(void)
 
 uint16_t adc_read_raw(uint8_t channel)
 {
-    uint8_t byte1, byte2, byte3;
+    uint8_t byte2, byte3;
 
     ADC_CS_LOW();
     _delay_us(1);                         /* t_SUCS settling time   */
@@ -43,7 +43,7 @@ uint16_t adc_read_raw(uint8_t channel)
      *  SGL=1 for single-ended → leading nibble = 0x06
      *  D2 is the MSB of the 3-bit channel number.
      */
-    byte1 = spi_transfer(0x06 | (channel >> 2));
+    (void)spi_transfer(0x06 | (channel >> 2));  /* byte1: start + channel MSB */
     byte2 = spi_transfer((channel & 0x03) << 6);
     byte3 = spi_transfer(0x00);
 

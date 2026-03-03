@@ -86,7 +86,7 @@ static float apply_lpf(float val)
 
 /* ─── PROGMEM float read helper ──────────────────────────────────── */
 
-static float pgm_read_float_near(const float *addr)
+static float read_pgm_float(const float *addr)
 {
     float val;
     memcpy_P(&val, addr, sizeof(float));
@@ -198,7 +198,7 @@ void meas_resistance(meas_result_t *r)
 
     uint16_t raw = adc_read_oversample(ADC_CH_RESIST);
     float v = adc_to_voltage_os(raw);
-    float ref = pgm_read_float_near(&rref[res_range]);
+    float ref = read_pgm_float(&rref[res_range]);
 
     /* R_unknown = R_ref * V_adc / (V_REF - V_adc) */
     float denom = V_REF - v;
@@ -276,7 +276,7 @@ void meas_conductance(meas_result_t *r)
 
     uint16_t raw = adc_read_oversample(ADC_CH_RESIST);
     float v = adc_to_voltage_os(raw);
-    float ref = pgm_read_float_near(&rref[N_RES_RANGES - 1]);
+    float ref = read_pgm_float(&rref[N_RES_RANGES - 1]);
 
     float denom = V_REF - v;
     float resistance;
@@ -306,7 +306,7 @@ void meas_continuity(meas_result_t *r)
     /* Single fast read — no oversampling for speed */
     uint16_t raw = adc_read_raw(ADC_CH_RESIST);
     float v = adc_to_voltage(raw);
-    float ref = pgm_read_float_near(&rref[0]);
+    float ref = read_pgm_float(&rref[0]);
 
     float denom = V_REF - v;
     if (denom < 0.001f) {
@@ -349,7 +349,7 @@ void meas_diode(meas_result_t *r)
 
 void meas_capacitance(meas_result_t *r)
 {
-    float r_charge = pgm_read_float_near(&cap_r[cap_range]);
+    float r_charge = read_pgm_float(&cap_r[cap_range]);
 
     /* Step 1: Fully discharge */
     cap_discharge();
@@ -426,7 +426,7 @@ void meas_capacitance(meas_result_t *r)
 
 void meas_inductance(meas_result_t *r)
 {
-    float r_series = pgm_read_float_near(&ind_r[ind_range]);
+    float r_series = read_pgm_float(&ind_r[ind_range]);
     uint8_t mux_ch = pgm_read_byte(&ind_mux[ind_range]);
 
     /* Select series resistor via mux */
@@ -534,7 +534,7 @@ void meas_dc_current(meas_result_t *r)
 
     uint16_t raw = adc_read_oversample(ADC_CH_CURRENT);
     float v = adc_to_voltage_os(raw);
-    float shunt = pgm_read_float_near(&ishunt[cur_range]);
+    float shunt = read_pgm_float(&ishunt[cur_range]);
 
     /* Gain is 10x for lowest shunt (0.1 Ohm), 1x otherwise */
     float gain = (cur_range == N_CUR_RANGES - 1) ? CUR_GAIN_HI : CUR_GAIN_LO;
@@ -584,7 +584,7 @@ void meas_ac_current(meas_result_t *r)
     trms_result_t trms;
     trms_measure(ADC_CH_CURRENT, &trms);
 
-    float shunt = pgm_read_float_near(&ishunt[cur_range]);
+    float shunt = read_pgm_float(&ishunt[cur_range]);
     float gain = (cur_range == N_CUR_RANGES - 1) ? CUR_GAIN_HI : CUR_GAIN_LO;
 
     float ac_current = trms.ac / (shunt * gain);
@@ -607,7 +607,7 @@ void meas_dcac_current(meas_result_t *r)
     trms_result_t trms;
     trms_measure(ADC_CH_CURRENT, &trms);
 
-    float shunt = pgm_read_float_near(&ishunt[cur_range]);
+    float shunt = read_pgm_float(&ishunt[cur_range]);
     float gain = (cur_range == N_CUR_RANGES - 1) ? CUR_GAIN_HI : CUR_GAIN_LO;
 
     float rms_current = trms.rms / (shunt * gain);
@@ -747,7 +747,7 @@ void meas_dbm(meas_result_t *r)
     float vrms = trms.ac;
     if (vrms < 1e-6f) vrms = 1e-6f;
 
-    float z = pgm_read_float_near(&dbm_z[dbm_impedance_idx]);
+    float z = read_pgm_float(&dbm_z[dbm_impedance_idx]);
     float power = (vrms * vrms) / z;
 
     r->primary   = apply_lpf(10.0f * log10f(power / 0.001f));
