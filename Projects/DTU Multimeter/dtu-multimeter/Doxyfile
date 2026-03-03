@@ -1,0 +1,66 @@
+# Doxyfile — DTU Digital Multimeter
+# Generate with: doxygen Doxyfile
+
+PROJECT_NAME           = "DTU Digital Multimeter"
+PROJECT_NUMBER         = "1.0"
+PROJECT_BRIEF          = "Fluke 289-class auto-ranging multimeter — ATmega2560 bare-metal AVR C"
+
+OUTPUT_DIRECTORY       = docs/doxygen
+INPUT                  = docs/mainpage.dox include src
+FILE_PATTERNS          = *.dox *.h *.c
+RECURSIVE              = NO
+
+# Extract everything
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+EXTRACT_PRIVATE        = NO
+
+# Source browsing
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = NO
+
+# Output formats
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+# Optimization for C
+OPTIMIZE_OUTPUT_FOR_C  = YES
+
+# HTML: sidebar tree navigation, search bar, collapsible sections
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+SEARCHENGINE           = YES
+HTML_COLORSTYLE        = DARK
+HTML_DYNAMIC_SECTIONS  = YES
+
+# Sort members alphabetically for easy scanning
+SORT_MEMBER_DOCS       = YES
+SORT_BRIEF_DOCS        = YES
+SORT_GROUP_NAMES       = NO
+
+# Show the full file path in headers so readers know where to find things
+SHOW_FILES             = YES
+SHOW_NAMESPACES        = NO
+
+# Diagrams
+HAVE_DOT               = NO
+CLASS_GRAPH            = NO
+
+# Preprocessing
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+PREDEFINED             = PROGMEM= \
+                         __attribute__(x)= \
+                         F_CPU=16000000UL
+
+# Warnings
+WARN_IF_UNDOCUMENTED   = YES
+WARN_NO_PARAMDOC       = YES
+
+# Misc
+QUIET                  = YES
+TAB_SIZE               = 4
+MARKDOWN_SUPPORT       = YES
+AUTOLINK_SUPPORT       = YES

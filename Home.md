@@ -5,7 +5,7 @@ tags:
   - Index
   - Home
   - Projects
-updated: 2026-02-18
+updated: 2026-03-03
 ---
 
 # Personal Projects
@@ -35,6 +35,11 @@ updated: 2026-02-18
   - **Platform:** ESP32 + ESPHome
   - **Integration:** Home Assistant
 
+- [[DTU Multimeter/DTU Multimeter - Digital Multimeter|DTU Digital Multimeter]] - Fluke 289-class auto-ranging multimeter on ATmega2560
+  - **Status:** In Development
+  - **Platform:** ATmega2560 (bare-metal AVR C, PlatformIO)
+  - **Features:** 22 modes, OLED display, oscilloscope, data logging
+
 ---
 
 ## 📂 Vault Structure
@@ -50,12 +55,16 @@ Projects/
 │   ├── Pi Zero PWM Filter/        # PWM audio filter project
 │   │   ├── Pi Zero 2W PWM Audio Filter.md
 │   │   └── Build Guide - 3rd Order PWM Filter.md
-│   └── ESP32 IR Blaster/          # WiFi IR blaster project
-│       ├── ESP32 IR Blaster - Smart Home.md
-│       ├── Setup Guide - ESP32 IR Blaster.md
-│       ├── Learning Remote Codes - ESP32 IR Blaster.md
-│       ├── IR Remote Wizard - Auto-Discovery Add-on.md
-│       └── ir-blaster.yaml
+│   ├── ESP32 IR Blaster/          # WiFi IR blaster project
+│   │   ├── ESP32 IR Blaster - Smart Home.md
+│   │   ├── Setup Guide - ESP32 IR Blaster.md
+│   │   ├── Learning Remote Codes - ESP32 IR Blaster.md
+│   │   ├── IR Remote Wizard - Auto-Discovery Add-on.md
+│   │   └── ir-blaster.yaml
+│   └── DTU Multimeter/            # Digital multimeter project
+│       ├── DTU Multimeter - Digital Multimeter.md
+│       ├── Build Guide - DTU Multimeter.md
+│       └── dtu-multimeter/        # PlatformIO firmware
 ├── Resources/
 │   ├── Illuminate 7Mk2/           # Speaker resources
 │   │   └── *.pdf
@@ -82,6 +91,10 @@ Projects/
 - `#esp32` - ESP32 microcontroller projects
 - `#home-assistant` - Home Assistant integrations
 - `#smart-home` - Smart home / IoT projects
+- `#avr` - AVR microcontroller projects
+- `#embedded` - Embedded systems / bare-metal firmware
+- `#dtu` - DTU university projects
+- `#atmega2560` - ATmega2560 / Arduino Mega projects
 
 ---
 
@@ -111,6 +124,7 @@ Projects/
 - [[Illuminate 7Mk2/Illuminate 7Mk2 - Speaker Build|Speaker Build Project]]
 - [[Pi Zero PWM Filter/Pi Zero 2W PWM Audio Filter|Pi Zero PWM Audio]]
 - [[ESP32 IR Blaster/ESP32 IR Blaster - Smart Home|ESP32 IR Blaster]]
+- [[DTU Multimeter/DTU Multimeter - Digital Multimeter|DTU Digital Multimeter]]
 
 ### Resources
 - [PrintYourSpeakers.com](https://www.printyourspeakers.com)
@@ -121,4 +135,4 @@ Projects/
 
 ## 📝 Notes
 
-Last updated: 2026-02-18
+Last updated: 2026-03-03

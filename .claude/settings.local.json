@@ -34,7 +34,12 @@
       "Bash(# Quick:*)",
       "Bash(git diff:*)",
       "Bash(git status:*)",
-      "Bash(git -C /c/Users/Mads2/Documents/Projects/ir-remote-wizard show HEAD:ir-remote-wizard/app/esphome_client.py)"
+      "Bash(git -C /c/Users/Mads2/Documents/Projects/ir-remote-wizard show HEAD:ir-remote-wizard/app/esphome_client.py)",
+      "Bash(git stash pop)",
+      "Bash(git add README.md .claude/settings.local.json)",
+      "Bash(git checkout ir-remote-wizard)",
+      "Bash(git submodule update ir-remote-wizard)",
+      "Bash(git add .claude/settings.local.json)"
     ]
   }
 }

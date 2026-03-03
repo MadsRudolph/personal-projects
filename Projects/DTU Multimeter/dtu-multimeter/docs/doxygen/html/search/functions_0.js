@@ -1,0 +1,13 @@
+var searchData=
+[
+  ['adc_5finit_0',['adc_init',['../group__grp__adc.html#ga2b815e6730e8723a6d1d06d9ef8f31c0',1,'adc_init(void):&#160;adc_mcp3208.c'],['../group__grp__adc.html#ga2b815e6730e8723a6d1d06d9ef8f31c0',1,'adc_init(void):&#160;adc_mcp3208.c']]],
+  ['adc_5fread_5foversample_1',['adc_read_oversample',['../group__grp__adc.html#gac3fea590e636def55deffe8c3eb5eb4a',1,'adc_read_oversample(uint8_t channel):&#160;adc_mcp3208.c'],['../group__grp__adc.html#gac3fea590e636def55deffe8c3eb5eb4a',1,'adc_read_oversample(uint8_t channel):&#160;adc_mcp3208.c']]],
+  ['adc_5fread_5fraw_2',['adc_read_raw',['../group__grp__adc.html#gacdd0d15989f15f44f971391b6dae0d26',1,'adc_read_raw(uint8_t channel):&#160;adc_mcp3208.c'],['../group__grp__adc.html#gacdd0d15989f15f44f971391b6dae0d26',1,'adc_read_raw(uint8_t channel):&#160;adc_mcp3208.c']]],
+  ['adc_5fto_5fvoltage_3',['adc_to_voltage',['../group__grp__adc.html#ga51d3f15d115dae69cd02f7746e407cc3',1,'adc_to_voltage(uint16_t raw12):&#160;adc_mcp3208.c'],['../group__grp__adc.html#ga51d3f15d115dae69cd02f7746e407cc3',1,'adc_to_voltage(uint16_t raw12):&#160;adc_mcp3208.c']]],
+  ['adc_5fto_5fvoltage_5fos_4',['adc_to_voltage_os',['../group__grp__adc.html#ga82ae9577d0021f54a79cba846d5a8cd4',1,'adc_to_voltage_os(uint16_t raw15):&#160;adc_mcp3208.c'],['../group__grp__adc.html#ga82ae9577d0021f54a79cba846d5a8cd4',1,'adc_to_voltage_os(uint16_t raw15):&#160;adc_mcp3208.c']]],
+  ['apply_5flpf_5',['apply_lpf',['../measure_8c.html#ae9f8b9893c1fde1bf0f78c67a4906092',1,'measure.c']]],
+  ['autorange_5fcheck_6',['autorange_check',['../group__grp__autorange.html#gadffea92d87a32a312917e29ee5c1eed6',1,'autorange_check(uint16_t raw12):&#160;autorange.c'],['../group__grp__autorange.html#gadffea92d87a32a312917e29ee5c1eed6',1,'autorange_check(uint16_t raw12):&#160;autorange.c']]],
+  ['autorange_5fclamp_7',['autorange_clamp',['../group__grp__autorange.html#ga79511ca34f2346d65514a717ec6c8f2b',1,'autorange_clamp(uint8_t range, int8_t delta, uint8_t max_range):&#160;autorange.c'],['../group__grp__autorange.html#ga79511ca34f2346d65514a717ec6c8f2b',1,'autorange_clamp(uint8_t range, int8_t delta, uint8_t max_range):&#160;autorange.c']]],
+  ['autorange_5fsettle_5fstart_8',['autorange_settle_start',['../group__grp__autorange.html#gaae4dd3a6a2ac8aa2ef56fe52aa1bbc1b',1,'autorange_settle_start(void):&#160;autorange.c'],['../group__grp__autorange.html#gaae4dd3a6a2ac8aa2ef56fe52aa1bbc1b',1,'autorange_settle_start(void):&#160;autorange.c']]],
+  ['autorange_5fsettling_9',['autorange_settling',['../group__grp__autorange.html#gabf7d6cea9c37f651990f10ec743cc4aa',1,'autorange_settling(void):&#160;autorange.c'],['../group__grp__autorange.html#gabf7d6cea9c37f651990f10ec743cc4aa',1,'autorange_settling(void):&#160;autorange.c']]]
+];

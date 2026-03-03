@@ -112,6 +112,25 @@ Bare-metal RFID card reader using MFRC522 and Arduino Uno. Reads 13.56 MHz MIFAR
 
 ---
 
+### 🔬 [DTU Digital Multimeter](Projects/DTU%20Multimeter/DTU%20Multimeter%20-%20Digital%20Multimeter.md)
+
+Fluke 289-class auto-ranging digital multimeter — bare-metal AVR C firmware on ATmega2560.
+
+**Status:** 🟡 In Development
+
+**Key Specs:**
+- **MCU:** ATmega2560 @ 16 MHz (Arduino Mega 2560)
+- **ADC:** MCP3208 12-bit SPI (100 ksps) + 64x oversampling
+- **Display:** SSD1306 128x64 OLED (I2C)
+- **Modes:** 22 measurement modes (DC/AC V, R, I, C, L, freq, temp, scope...)
+- **Build System:** PlatformIO, pure avr-gcc (no Arduino framework)
+
+**Documentation:**
+- [📋 Main Project](Projects/DTU%20Multimeter/DTU%20Multimeter%20-%20Digital%20Multimeter.md) - Full specs, circuit design, component list
+- [🔧 Build Guide](Projects/DTU%20Multimeter/Build%20Guide%20-%20DTU%20Multimeter.md) - Assembly, flashing, calibration
+
+---
+
 ## 📂 Repository Structure
 
 ```
@@ -124,7 +143,8 @@ Bare-metal RFID card reader using MFRC522 and Arduino Uno. Reads 13.56 MHz MIFAR
 │   ├── Illuminate 7Mk2/              # Speaker build project
 │   ├── Pi Zero PWM Filter/           # PWM audio filter project
 │   ├── ESP32 IR Blaster/             # Smart home IR controller
-│   └── RFID Card Reader/            # Bare-metal RFID reader
+│   ├── RFID Card Reader/            # Bare-metal RFID reader
+│   └── DTU Multimeter/              # Digital multimeter project
 ├── Resources/
 │   ├── Illuminate 7Mk2/              # Speaker resources
 │   └── Pi Zero PWM Filter/           # PWM filter resources
@@ -140,10 +160,10 @@ Bare-metal RFID card reader using MFRC522 and Arduino Uno. Reads 13.56 MHz MIFAR
 - **Documentation:** Obsidian (markdown-based)
 - **Desktop Apps:** Python 3, customtkinter, SQLite, Pillow, PyInstaller
 - **3D Modeling/Printing:** PLA filament, support-free design
-- **Electronics:** Analog filters, crossover networks, IR circuits
+- **Electronics:** Analog filters, crossover networks, IR circuits, bare-metal AVR firmware
 - **Audio:** Dayton Audio drivers, Fosi Audio amplification, PWM filtering
 - **Smart Home:** Home Assistant, ESPHome, ESP32
-- **Embedded:** Raspberry Pi Zero 2W, ESP32, ATmega328P (bare-metal AVR)
+- **Embedded:** Raspberry Pi Zero 2W, ESP32, ATmega328P, ATmega2560, avr-gcc, PlatformIO
 - **Version Control:** Git + GitHub
 
 ---
@@ -162,7 +182,7 @@ These projects combine my academic knowledge with hands-on building experience.
 
 ## 🏷️ Topics
 
-`audio` `speakers` `diy` `3d-printing` `electroacoustics` `electronics` `amplifiers` `class-d` `power-electronics` `raspberry-pi` `spotify` `esp32` `esphome` `home-assistant` `smart-home` `ir-remote` `rfid` `avr` `bare-metal` `obsidian` `python` `customtkinter` `sqlite` `inventory`
+`audio` `speakers` `diy` `3d-printing` `electroacoustics` `electronics` `amplifiers` `class-d` `power-electronics` `raspberry-pi` `spotify` `esp32` `esphome` `home-assistant` `smart-home` `ir-remote` `rfid` `avr` `bare-metal` `embedded` `atmega2560` `multimeter` `obsidian` `python` `customtkinter` `sqlite` `inventory`
 
 ---
 
@@ -208,4 +228,4 @@ Alternatively, all files are standard markdown and can be viewed directly on Git
 
 ---
 
-**Last Updated:** 2026-03-02
+**Last Updated:** 2026-03-03

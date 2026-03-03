@@ -1,0 +1,11 @@
+var searchData=
+[
+  ['render_5fmeasurement_0',['render_measurement',['../group__grp__render.html#ga010d686c378fabec539c535b91652811',1,'render_measurement(const meas_result_t *r):&#160;display_render.c'],['../group__grp__render.html#ga010d686c378fabec539c535b91652811',1,'render_measurement(const meas_result_t *r):&#160;display_render.c']]],
+  ['render_5fscope_1',['render_scope',['../group__grp__render.html#gab92b9710b8cf751c0b81b765e30e058a',1,'render_scope(void):&#160;display_render.c'],['../group__grp__render.html#gab92b9710b8cf751c0b81b765e30e058a',1,'render_scope(void):&#160;display_render.c']]],
+  ['render_5fsplash_2',['render_splash',['../group__grp__render.html#gaf61831a0dda34fba0414f47759731df3',1,'render_splash(void):&#160;display_render.c'],['../group__grp__render.html#gaf61831a0dda34fba0414f47759731df3',1,'render_splash(void):&#160;display_render.c']]],
+  ['rtc_5fformat_5fdate_3',['rtc_format_date',['../group__grp__rtc.html#ga629cf527cb91b2cad972ef1a95dc71b9',1,'rtc_format_date(const rtc_time_t *t, char *buf):&#160;rtc_ds1307.c'],['../group__grp__rtc.html#ga629cf527cb91b2cad972ef1a95dc71b9',1,'rtc_format_date(const rtc_time_t *t, char *buf):&#160;rtc_ds1307.c']]],
+  ['rtc_5fformat_5ftime_4',['rtc_format_time',['../group__grp__rtc.html#ga47c877e1f984ce8d4f095951d1dd454d',1,'rtc_format_time(const rtc_time_t *t, char *buf):&#160;rtc_ds1307.c'],['../group__grp__rtc.html#ga47c877e1f984ce8d4f095951d1dd454d',1,'rtc_format_time(const rtc_time_t *t, char *buf):&#160;rtc_ds1307.c']]],
+  ['rtc_5finit_5',['rtc_init',['../group__grp__rtc.html#gacf9024748b942a7ae375cf75951afa9c',1,'rtc_init(void):&#160;rtc_ds1307.c'],['../group__grp__rtc.html#gacf9024748b942a7ae375cf75951afa9c',1,'rtc_init(void):&#160;rtc_ds1307.c']]],
+  ['rtc_5fread_6',['rtc_read',['../group__grp__rtc.html#gaeeda2bb82a4dca82c8a585c8993e4eba',1,'rtc_read(rtc_time_t *t):&#160;rtc_ds1307.c'],['../group__grp__rtc.html#gaeeda2bb82a4dca82c8a585c8993e4eba',1,'rtc_read(rtc_time_t *t):&#160;rtc_ds1307.c']]],
+  ['rtc_5fwrite_7',['rtc_write',['../group__grp__rtc.html#gafa9f6f24dd03364fc188f4b1aa14c586',1,'rtc_write(const rtc_time_t *t):&#160;rtc_ds1307.c'],['../group__grp__rtc.html#gafa9f6f24dd03364fc188f4b1aa14c586',1,'rtc_write(const rtc_time_t *t):&#160;rtc_ds1307.c']]]
+];

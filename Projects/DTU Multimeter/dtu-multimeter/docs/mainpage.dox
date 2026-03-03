@@ -1,0 +1,148 @@
+/**
+@mainpage DTU Digital Multimeter — Firmware Reference
+
+@section intro What Is This?
+
+This is the firmware for a **Fluke 289-class digital multimeter** built on an
+ATmega2560 (Arduino Mega 2560) using bare-metal AVR C — no Arduino framework.
+
+It supports **22 measurement modes** (voltage, current, resistance, capacitance,
+frequency, temperature, oscilloscope, and more), an **OLED display**, **data
+logging**, and a **serial command interface**.
+
+@section start Where to Start Reading
+
+If you're new to this codebase, read the files roughly in this order:
+
+| Step | File | What You'll Learn |
+|------|------|-------------------|
+| 1 | @ref config.h | All pin assignments, calibration values, and enums |
+| 2 | @ref spi.c / @ref i2c.c / @ref uart.c | How the MCU talks to peripherals (SPI, I2C, UART) |
+| 3 | @ref timer.c | System tick (millis/micros) and frequency capture |
+| 4 | @ref adc_mcp3208.c | How 12-bit ADC readings are taken over SPI |
+| 5 | @ref mux.c | Analog mux and switch control for range selection |
+| 6 | @ref measure.c | Core measurement engine — the heart of the firmware |
+| 7 | @ref autorange.c | How the meter automatically picks the right range |
+| 8 | @ref display.c / @ref display_render.c | OLED framebuffer and screen layout |
+| 9 | @ref scope.c | Oscilloscope capture and rendering |
+| 10 | @ref main.c | Super loop that ties everything together |
+
+@section arch Architecture Overview
+
+@verbatim
+  ┌─────────────────────────────────────────────────────┐
+  │                     main.c                          │
+  │           (super loop: init → poll → repeat)        │
+  └──────┬──────────┬──────────┬──────────┬─────────────┘
+         │          │          │          │
+    ┌────▼────┐ ┌───▼───┐ ┌───▼───┐ ┌────▼────┐
+    │ ui.c    │ │measure│ │display│ │logging  │
+    │ buttons │ │  .c   │ │render │ │  .c     │
+    │ serial  │ │22modes│ │  .c   │ │ EEPROM  │
+    └────┬────┘ └───┬───┘ └───┬───┘ └────┬────┘
+         │          │         │           │
+    ┌────┘    ┌─────┼─────┐   │     ┌─────┘
+    │         │     │     │   │     │
+  ┌─▼──┐ ┌───▼──┐ ┌▼───┐ ┌▼──▼┐ ┌──▼──┐  ┌───────┐
+  │uart│ │adc   │ │mux │ │disp│ │rtc  │  │scope  │
+  │ .c │ │mcp   │ │ .c │ │ .c │ │ds   │  │  .c   │
+  │    │ │3208.c│ │    │ │OLED│ │1307 │  │       │
+  └──┬─┘ └──┬───┘ └──┬─┘ └──┬─┘ └──┬──┘  └───┬───┘
+     │       │        │      │      │          │
+  ┌──▼───────▼────────▼──────▼──────▼──────────▼──┐
+  │    Hardware: SPI, I2C, GPIO, Timer, INT ADC   │
+  │              spi.c   i2c.c   timer.c          │
+  └───────────────────────────────────────────────┘
+@endverbatim
+
+@section modules Module Groups
+
+The firmware is organized into layers.  Click any group to see its functions and defines.
+
+**Hardware Drivers** (talk directly to chip registers):
+- @ref grp_spi — SPI bus (MCP3208 ADC)
+- @ref grp_i2c — I2C bus (OLED, RTC)
+- @ref grp_uart — Serial port (PC communication)
+- @ref grp_timer — System tick, microsecond timing, frequency capture
+
+**Peripheral Drivers** (control external chips):
+- @ref grp_adc — MCP3208 12-bit ADC with oversampling
+- @ref grp_mux — 74HC4067 mux, CD4053 switches, current source, cap charge
+- @ref grp_display — SSD1306 OLED framebuffer and drawing functions
+- @ref grp_rtc — DS1307 real-time clock
+
+**Application Logic** (what makes it a multimeter):
+- @ref grp_measure — 22 measurement mode implementations
+- @ref grp_autorange — Auto-ranging state machine
+- @ref grp_trms — True-RMS computation engine
+- @ref grp_scope — 1000-sample oscilloscope
+- @ref grp_ui — Buttons and serial command interface
+- @ref grp_render — Fluke-style OLED screen layout
+- @ref grp_logging — EEPROM circular buffer data logger
+
+**Configuration:**
+- @ref grp_config — All pin definitions, calibration constants, and enums
+
+@section modes Measurement Modes
+
+| # | Mode | Enum | Description |
+|---|------|------|-------------|
+| 0 | DC Voltage | M_DCV | 0–55 V via resistor divider |
+| 1 | AC Voltage | M_ACV | True-RMS, 50 Hz – 1 kHz |
+| 2 | DC+AC Voltage | M_DCACV | Combined DC and AC component |
+| 3 | mV DC | M_MV_DC | Millivolt DC (direct, no divider) |
+| 4 | mV AC | M_MV_AC | Millivolt AC True-RMS |
+| 5 | Resistance | M_RESIST | 50 Ω – 50 MΩ, 8 ranges |
+| 6 | Low-Ohm | M_LOW_OHM | Uses constant current source |
+| 7 | Conductance | M_CONDUCT | Result in nanosiemens |
+| 8 | Continuity | M_CONTIN | Beeps below 25 Ω |
+| 9 | Diode Test | M_DIODE | Forward voltage drop |
+| 10 | Capacitance | M_CAP | RC timing, 3 ranges |
+| 11 | Inductance | M_IND | RL step-response, 3 ranges |
+| 12 | DC Current | M_DCI | 500 µA – 10 A, 6 ranges |
+| 13 | AC Current | M_ACI | True-RMS current |
+| 14 | DC+AC Current | M_DCACI | Combined DC and AC |
+| 15 | Frequency | M_FREQ | Input capture on INT4 |
+| 16 | Duty Cycle | M_DUTY | High-time / period |
+| 17 | Pulse Width | M_PULSE | High-time in µs/ms |
+| 18 | Temperature | M_TEMP | LM35 sensor (°C) |
+| 19 | dBV | M_DBV | 20·log10(Vrms / 1 V) |
+| 20 | dBm | M_DBM | 10·log10(Vrms² / Z / 1 mW) |
+| 21 | Oscilloscope | M_SCOPE | 1000-sample waveform capture |
+
+@section serial Serial Commands
+
+Connect at **115200 baud, 8N1**.  Type `?` for a help listing.
+
+| Key | Action |
+|-----|--------|
+| `M` | Cycle measurement mode |
+| `R` | Toggle relative (delta) mode |
+| `H` | Toggle display hold |
+| `A` | Toggle min/max recording |
+| `L` | Toggle data logging |
+| `G` | Dump logged data as CSV |
+| `K` | Clear log buffer |
+| `+` / `-` | Range up / down (locks auto-range) |
+| `Z` | Zero (reset to auto-range) |
+| `P` | Print current reading |
+| `E` | Toggle low-pass filter |
+| `?` | Show help |
+
+@section build Building
+
+Requires [PlatformIO](https://platformio.org/):
+
+@code
+cd dtu-multimeter
+pio run              # compile
+pio run -t upload    # flash to Mega 2560
+pio device monitor   # open serial terminal
+@endcode
+
+@section calib Calibration
+
+After building, measure your board's actual 5 V rail and update `V_REF` in
+config.h.  Then measure each reference resistor with a known-good meter and
+update `RREF_0` through `RREF_7`.  See the Build Guide for a full walkthrough.
+*/

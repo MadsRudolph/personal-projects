@@ -1,0 +1,28 @@
+var searchData=
+[
+  ['uart_20buffer_20sizes_0',['UART Buffer Sizes',['../group__grp__config__uart.html',1,'']]],
+  ['uart_2ec_1',['uart.c',['../uart_8c.html',1,'']]],
+  ['uart_2eh_2',['uart.h',['../uart_8h.html',1,'']]],
+  ['uart0_20serial_20driver_3',['UART0 Serial Driver',['../group__grp__uart.html',1,'']]],
+  ['uart_5favailable_4',['uart_available',['../group__grp__uart.html#ga5db972a81be4b92b1e0528e087286d7d',1,'uart_available(void):&#160;uart.c'],['../group__grp__uart.html#ga5db972a81be4b92b1e0528e087286d7d',1,'uart_available(void):&#160;uart.c']]],
+  ['uart_5fgetc_5',['uart_getc',['../group__grp__uart.html#ga8a914fdde5cf97cfa5d7ecb1d6db5899',1,'uart_getc(void):&#160;uart.c'],['../group__grp__uart.html#ga8a914fdde5cf97cfa5d7ecb1d6db5899',1,'uart_getc(void):&#160;uart.c']]],
+  ['uart_5fgetc_5fnb_6',['uart_getc_nb',['../group__grp__uart.html#gae32fc13a77b1c321f9acb08f659f1b85',1,'uart_getc_nb(void):&#160;uart.c'],['../group__grp__uart.html#gae32fc13a77b1c321f9acb08f659f1b85',1,'uart_getc_nb(void):&#160;uart.c']]],
+  ['uart_5finit_7',['uart_init',['../group__grp__uart.html#ga0c0ca72359ddf28dcd15900dfba19343',1,'uart_init(void):&#160;uart.c'],['../group__grp__uart.html#ga0c0ca72359ddf28dcd15900dfba19343',1,'uart_init(void):&#160;uart.c']]],
+  ['uart_5fprint_5ffloat_8',['uart_print_float',['../group__grp__uart.html#gae36c1901f9dca844ebc7d0b8c38ab4b7',1,'uart_print_float(float val, uint8_t decimals):&#160;uart.c'],['../group__grp__uart.html#gae36c1901f9dca844ebc7d0b8c38ab4b7',1,'uart_print_float(float val, uint8_t decimals):&#160;uart.c']]],
+  ['uart_5fputc_9',['uart_putc',['../group__grp__uart.html#gaa599232c1438c5addd971e05e1dd46a2',1,'uart_putc(char c):&#160;uart.c'],['../group__grp__uart.html#gaa599232c1438c5addd971e05e1dd46a2',1,'uart_putc(char c):&#160;uart.c']]],
+  ['uart_5fputc_5fstream_10',['uart_putc_stream',['../uart_8c.html#afe2e8ed09a55da00356be941aac4aa99',1,'uart.c']]],
+  ['uart_5fputs_11',['uart_puts',['../group__grp__uart.html#gae52facc0a56086a365bb0018160d8d71',1,'uart_puts(const char *s):&#160;uart.c'],['../group__grp__uart.html#gae52facc0a56086a365bb0018160d8d71',1,'uart_puts(const char *s):&#160;uart.c']]],
+  ['uart_5fputs_5fp_12',['uart_puts_P',['../group__grp__uart.html#gab6f5747e5b9c8f0b79a1714cd59edb21',1,'uart_puts_P(const char *s):&#160;uart.c'],['../group__grp__uart.html#gab6f5747e5b9c8f0b79a1714cd59edb21',1,'uart_puts_P(const char *s):&#160;uart.c']]],
+  ['uart_5frx_5fbuf_13',['UART_RX_BUF',['../group__grp__config__uart.html#ga56fcac5be424ca504c004cb73ecaedf5',1,'config.h']]],
+  ['uart_5fstdout_14',['uart_stdout',['../group__grp__uart.html#ga91ee74a4d310e646e8e8c3a5f0752532',1,'uart_stdout:&#160;uart.c'],['../group__grp__uart.html#ga91ee74a4d310e646e8e8c3a5f0752532',1,'uart_stdout:&#160;uart.c']]],
+  ['uart_5ftx_5fbuf_15',['UART_TX_BUF',['../group__grp__config__uart.html#gab132c67c40ddbcd2a17fdc24f5675d69',1,'config.h']]],
+  ['ubrr_5fval_16',['UBRR_VAL',['../uart_8c.html#adf9a3c086ebe63132aedacf5d2912a4b',1,'uart.c']]],
+  ['ui_2ec_17',['ui.c',['../ui_8c.html',1,'']]],
+  ['ui_2eh_18',['ui.h',['../ui_8h.html',1,'']]],
+  ['ui_5finit_19',['ui_init',['../group__grp__ui.html#ga42bb09ef137aaeb1733173f3a88ccc85',1,'ui_init(void):&#160;ui.c'],['../group__grp__ui.html#ga42bb09ef137aaeb1733173f3a88ccc85',1,'ui_init(void):&#160;ui.c']]],
+  ['ui_5fpoll_5fbuttons_20',['ui_poll_buttons',['../group__grp__ui.html#gae32210b127d80ecd664b0ea50437f6ce',1,'ui_poll_buttons(void):&#160;ui.c'],['../group__grp__ui.html#gae32210b127d80ecd664b0ea50437f6ce',1,'ui_poll_buttons(void):&#160;ui.c']]],
+  ['ui_5fprocess_5fserial_21',['ui_process_serial',['../group__grp__ui.html#ga5602c691c317455461087328ac26f28e',1,'ui_process_serial(void):&#160;ui.c'],['../group__grp__ui.html#ga5602c691c317455461087328ac26f28e',1,'ui_process_serial(void):&#160;ui.c']]],
+  ['unit_22',['unit',['../structmeas__result__t.html#a8cee6e28d11ed2ca36fff377a88c930c',1,'meas_result_t']]],
+  ['unit_5fnone_23',['unit_none',['../logging_8c.html#a5105e206f63d869651afe38b78591d92',1,'logging.c']]],
+  ['user_20interface_24',['User Interface',['../group__grp__ui.html',1,'']]]
+];
