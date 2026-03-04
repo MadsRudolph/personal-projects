@@ -9,7 +9,7 @@ tags:
   - atmega2560
 status: In Development
 started: 2026-03-03
-updated: 2026-03-03
+updated: 2026-03-04
 parent: "[[DTU Multimeter - Digital Multimeter]]"
 ---
 
@@ -191,16 +191,16 @@ Build each step in order. Test power and connectivity at each stage before conti
 >
 > Connect reference resistors to mux channels 0-7:
 >
-> | Mux CH | Reference Resistor | Range |
-> |--------|-------------------|-------|
-> | 0 | 50 Ohm | 50 Ohm range |
-> | 1 | 499 Ohm | 500 Ohm range |
-> | 2 | 4.99 kOhm | 5k range |
-> | 3 | 48.7 kOhm | 50k range (E96) |
-> | 4 | 499 kOhm | 500k range |
-> | 5 | 4.7 MOhm | 5M range |
-> | 6 | 10 MOhm | 50M range |
-> | 7 | 10 MOhm | Conductance |
+> | Mux CH | Nominal | Measured | Range |
+> |--------|---------|----------|-------|
+> | 0 | 50 Ohm | **50.15 Ohm** | 50 Ohm range |
+> | 1 | 499 Ohm | **497.0 Ohm** | 500 Ohm range |
+> | 2 | 4.99 kOhm | **4.990 kOhm** | 5k range |
+> | 3 | 48.7 kOhm | **48.536 kOhm** | 50k range (E96) |
+> | 4 | 499 kOhm | **498.0 kOhm** | 500k range |
+> | 5 | 4.7 MOhm | **4.755 MOhm** | 5M range |
+> | 6 | 10 MOhm | **10.06 MOhm** | 50M range |
+> | 7 | 10 MOhm | **10.03 MOhm** | Conductance |
 
 ---
 
@@ -215,14 +215,14 @@ Build each step in order. Test power and connectivity at each stage before conti
 >   V_input ──────────── MCP3208 CH2  (direct, low/mV range)
 > ```
 >
-> | Component | Value | Connection |
-> |-----------|-------|------------|
-> | R_high | 1 MOhm | Input to divider node |
-> | R_low | 100 kOhm | Divider node to GND |
-> | Divider output | — | MCP3208 CH1 |
-> | Direct input | — | MCP3208 CH2 |
+> | Component | Nominal | Measured | Connection |
+> |-----------|---------|----------|------------|
+> | R_high | 1 MOhm | **1.002 MOhm** | Input to divider node |
+> | R_low | 100 kOhm | **100.0 kOhm** | Divider node to GND |
+> | Divider output | — | — | MCP3208 CH1 |
+> | Direct input | — | — | MCP3208 CH2 |
 >
-> **Divider ratio:** (1M + 100k) / 100k = **11:1** (`VDIV_RATIO` in config.h)
+> **Divider ratio:** (1.002M + 100k) / 100k = **11.02:1** (`VDIV_RATIO` in config.h)
 
 ---
 
@@ -241,14 +241,14 @@ Build each step in order. Test power and connectivity at each stage before conti
 >
 > Connect current shunt resistors to the switch channels:
 >
-> | Range | Shunt Resistor | Full-Scale Current |
-> |-------|---------------|-------------------|
-> | 0 | 10 kOhm | 500 uA |
-> | 1 | 1 kOhm | 5 mA |
-> | 2 | 100 Ohm | 50 mA |
-> | 3 | 10 Ohm | 400 mA |
-> | 4 | 1 Ohm | 5 A |
-> | 5 | 0.1 Ohm | 10 A |
+> | Range | Nominal | Measured | Full-Scale Current |
+> |-------|---------|----------|-------------------|
+> | 0 | 10 kOhm | **10.00 kOhm** | 500 uA |
+> | 1 | 1 kOhm | **998.0 Ohm** | 5 mA |
+> | 2 | 100 Ohm | **99.49 Ohm** | 50 mA |
+> | 3 | 10 Ohm | **10.04 Ohm** | 400 mA |
+> | 4 | 1 Ohm | **1.05 Ohm** | 5 A |
+> | 5 | 0.1 Ohm | **0.145 Ohm** (4-wire) | 10 A |
 >
 > Route the selected shunt output to the LM358 current amplifier input.
 
@@ -447,14 +447,14 @@ with a known-good reference meter and update the `#define` values.
 > Measure each reference resistor with a precision meter and update `config.h`:
 >
 > ```c
-> #define RREF_0   49.9f       /* Ch0: 50 Ohm range    */
-> #define RREF_1   499.0f      /* Ch1: 500 Ohm range   */
-> #define RREF_2   4990.0f     /* Ch2: 5k range        */
-> #define RREF_3   48700.0f    /* Ch3: 50k range (E96) */
-> #define RREF_4   499000.0f   /* Ch4: 500k range      */
-> #define RREF_5   4700000.0f  /* Ch5: 5M range        */
-> #define RREF_6   10000000.0f /* Ch6: 50M range       */
-> #define RREF_7   10000000.0f /* Ch7: conductance     */
+> #define RREF_0   50.15f        /* Ch0: 50 Ohm range (measured)    */
+> #define RREF_1   497.0f        /* Ch1: 500 Ohm range (measured)   */
+> #define RREF_2   4990.0f       /* Ch2: 5k range (measured)        */
+> #define RREF_3   48536.0f      /* Ch3: 50k range (measured)       */
+> #define RREF_4   498000.0f     /* Ch4: 500k range (measured)      */
+> #define RREF_5   4755000.0f    /* Ch5: 5M range (measured)        */
+> #define RREF_6   10060000.0f   /* Ch6: 50M range (measured)       */
+> #define RREF_7   10030000.0f   /* Ch7: conductance (measured)     */
 > ```
 >
 > Even 1% resistors can be off enough to matter. Measure before soldering/inserting.
@@ -466,7 +466,7 @@ with a known-good reference meter and update the `#define` values.
 > Compare the displayed reading to the actual voltage.
 >
 > ```c
-> #define VDIV_RATIO  11.0f   /* (1M + 100k) / 100k = 11:1 */
+> #define VDIV_RATIO  11.02f  /* (1.002M + 100k) / 100k = 11.02:1 (measured) */
 > ```
 >
 > Calculate actual ratio: `VDIV_RATIO = V_applied / V_at_CH1`
@@ -479,12 +479,12 @@ with a known-good reference meter and update the `#define` values.
 > Measure each current shunt resistor and update:
 >
 > ```c
-> #define ISHUNT_0  10000.0f   /* 10k   — 500 uA range */
-> #define ISHUNT_1  1000.0f    /* 1k    — 5 mA range   */
-> #define ISHUNT_2  100.0f     /* 100   — 50 mA range  */
-> #define ISHUNT_3  10.0f      /* 10    — 400 mA range */
-> #define ISHUNT_4  1.0f       /* 1     — 5 A range    */
-> #define ISHUNT_5  0.1f       /* 0.1   — 10 A range   */
+> #define ISHUNT_0  10000.0f   /* 10k   — 500 uA range (measured) */
+> #define ISHUNT_1  998.0f     /* 1k    — 5 mA range (measured)   */
+> #define ISHUNT_2  99.49f     /* 100   — 50 mA range (measured)  */
+> #define ISHUNT_3  10.04f     /* 10    — 400 mA range (measured) */
+> #define ISHUNT_4  1.05f      /* 1     — 5 A range (measured)    */
+> #define ISHUNT_5  0.145f     /* 0.1   — 10 A range (4-wire measured) */
 > ```
 >
 > Low-value shunts (1 Ohm, 0.1 Ohm) are hard to measure accurately.

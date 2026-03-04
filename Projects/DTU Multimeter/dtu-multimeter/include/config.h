@@ -193,26 +193,26 @@
 /** @name Reference resistors (74HC4067 mux channels 0-7)
  *  @brief Precision resistors used for resistance divider measurement.
  *  @{ */
-#define RREF_0        49.9f         /**< Ch0: 50 Ohm range */
-#define RREF_1        499.0f        /**< Ch1: 500 Ohm range */
-#define RREF_2        4990.0f       /**< Ch2: 5 k range */
-#define RREF_3        48700.0f      /**< Ch3: 50 k range (DTU E96 closest) */
-#define RREF_4        499000.0f     /**< Ch4: 500 k range */
-#define RREF_5        4700000.0f    /**< Ch5: 5 M range */
-#define RREF_6        10000000.0f   /**< Ch6: 50 M range */
-#define RREF_7        10000000.0f   /**< Ch7: conductance */
+#define RREF_0        50.15f        /**< Ch0: 50 Ohm range (measured) */
+#define RREF_1        497.0f        /**< Ch1: 500 Ohm range (measured) */
+#define RREF_2        4990.0f       /**< Ch2: 5 k range (measured) */
+#define RREF_3        48536.0f      /**< Ch3: 50 k range (measured) */
+#define RREF_4        498000.0f     /**< Ch4: 500 k range (measured) */
+#define RREF_5        4755000.0f    /**< Ch5: 5 M range (measured) */
+#define RREF_6        10060000.0f   /**< Ch6: 50 M range (measured) */
+#define RREF_7        10030000.0f   /**< Ch7: conductance (measured) */
 /** @} */
 
-#define VDIV_RATIO    11.0f   /**< Voltage divider ratio: (1M + 100k) / 100k = 11:1 */
+#define VDIV_RATIO    11.02f  /**< Voltage divider ratio: (1.002M + 100k) / 100k (measured) */
 
 /** @name Current shunt resistors (Ohms) — CD4053 ranges 0-5
  *  @{ */
-#define ISHUNT_0      10000.0f      /**< 10 k   -- 500 uA range */
-#define ISHUNT_1      1000.0f       /**< 1 k    -- 5 mA range */
-#define ISHUNT_2      100.0f        /**< 100    -- 50 mA range */
-#define ISHUNT_3      10.0f         /**< 10     -- 400 mA range */
-#define ISHUNT_4      1.0f          /**< 1      -- 5 A range */
-#define ISHUNT_5      0.1f          /**< 0.1    -- 10 A range */
+#define ISHUNT_0      10000.0f      /**< 10 k   -- 500 uA range (measured) */
+#define ISHUNT_1      998.0f        /**< 1 k    -- 5 mA range (measured) */
+#define ISHUNT_2      99.49f        /**< 100    -- 50 mA range (measured) */
+#define ISHUNT_3      10.04f        /**< 10     -- 400 mA range (measured) */
+#define ISHUNT_4      1.05f         /**< 1      -- 5 A range (measured) */
+#define ISHUNT_5      0.145f        /**< 0.1    -- 10 A range (measured) */
 /** @} */
 
 /** @name LM358 amplifier gains
@@ -225,9 +225,9 @@
 
 /** @name Capacitance charge resistors
  *  @{ */
-#define CAP_R0         1000000.0f   /**< 1 M  -- large caps */
-#define CAP_R1         10000.0f     /**< 10 k -- medium caps */
-#define CAP_R2         100.0f       /**< 100  -- small caps */
+#define CAP_R0         1003000.0f   /**< 1 M  -- large caps (measured) */
+#define CAP_R1         10000.0f     /**< 10 k -- medium caps (measured) */
+#define CAP_R2         99.48f       /**< 100  -- small caps (measured) */
 /** @} */
 
 /** @name Inductance series resistors (reuse mux reference channels)
