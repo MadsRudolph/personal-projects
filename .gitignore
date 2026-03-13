@@ -18,3 +18,20 @@ secrets.yaml
 # Personal workspace files (optional - uncomment if you don't want to share)
 # .obsidian/workspace.json
 # .obsidian/workspace-mobile.json
+
+# Python
+__pycache__/
+*.pyc
+
+# Claude Code
+.claude/worktrees/
+.claude/settings.local.json
+
+# KiCad backups
+*-backups/
+*.kicad_sch.bak
+*.kicad_sch.bak_*
+
+# Windows artifacts
+nul
+%temp%/

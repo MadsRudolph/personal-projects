@@ -24,7 +24,7 @@ parent: "[[DTU Multimeter - Digital Multimeter]]"
 
 ---
 
-## :toolbox: Prerequisites
+## Prerequisites
 
 ### Hardware
 
@@ -52,67 +52,9 @@ parent: "[[DTU Multimeter - Digital Multimeter]]"
 > All ICs are available from the DTU component shop. Reference resistors should be the
 > closest E96 values you can find — measure the actual values and update `config.h`.
 
-### Software
-
-| Tool | Purpose |
-|------|---------|
-| **PlatformIO** (VS Code extension or CLI) | Build toolchain for AVR |
-| **Serial terminal** (PlatformIO monitor, PuTTY, etc.) | UART communication at 115200 baud |
-| **Multimeter** (any) | Calibration reference measurements |
-
 ---
 
-## :computer: PlatformIO Setup
-
-### Install and Build
-
-1. Install PlatformIO IDE (VS Code extension) or the CLI:
-   ```
-   pip install platformio
-   ```
-
-2. Clone or copy the `dtu-multimeter/` project folder. The project structure:
-   ```
-   dtu-multimeter/
-   ├── platformio.ini
-   ├── include/
-   │   ├── config.h          ← Calibration constants live here
-   │   ├── adc_mcp3208.h
-   │   ├── display.h
-   │   ├── measure.h
-   │   └── ...
-   └── src/
-       ├── main.c
-       ├── adc_mcp3208.c
-       ├── display.c
-       ├── measure.c
-       └── ...
-   ```
-
-3. Compile to verify the toolchain:
-   ```
-   pio run
-   ```
-
-4. Connect the Arduino Mega via USB and flash:
-   ```
-   pio run -t upload
-   ```
-
-5. Open the serial terminal:
-   ```
-   pio device monitor
-   ```
-   Baud rate is **115200** (configured in `platformio.ini`).
-
-> [!important] Bare-Metal AVR
-> This project does **not** use the Arduino framework. The `platformio.ini` omits
-> `framework = arduino` intentionally. All peripheral access is via direct AVR register
-> manipulation. The AVR-GCC toolchain is pulled in by `platform = atmelavr`.
-
----
-
-## :bread: Breadboard Assembly
+## Breadboard Assembly
 
 Build each step in order. Test power and connectivity at each stage before continuing.
 
@@ -374,7 +316,7 @@ Build each step in order. Test power and connectivity at each stage before conti
 
 ---
 
-## :electric_plug: Input Terminal Wiring
+## Input Terminal Wiring
 
 The multimeter has four input terminals for external measurements:
 
@@ -399,13 +341,10 @@ The multimeter has four input terminals for external measurements:
 
 ---
 
-## :zap: First Power-Up Test
+## First Power-Up Test
 
 1. Connect the Arduino Mega to USB
-2. Open a serial terminal at **115200 baud**:
-   ```
-   pio device monitor
-   ```
+2. Open a serial terminal at **115200 baud**
 3. You should see the startup banner:
    ```
    === DTU Digital Multimeter v1.0 ===
@@ -420,11 +359,11 @@ The multimeter has four input terminals for external measurements:
 > - Check baud rate is **115200**
 > - Check the correct COM port is selected
 > - Try pressing the RESET button on the Mega
-> - Make sure the firmware was flashed successfully (`pio run -t upload`)
+> - Make sure the firmware was flashed successfully
 
 ---
 
-## :straight_ruler: Calibration Walkthrough
+## Calibration Walkthrough
 
 All calibration constants are in `include/config.h`. Measure actual component values
 with a known-good reference meter and update the `#define` values.
@@ -531,7 +470,7 @@ with a known-good reference meter and update the `#define` values.
 
 ---
 
-## :white_check_mark: Testing Checklist
+## Testing Checklist
 
 Work through each test with known reference values. Mark off as you go.
 
@@ -576,7 +515,7 @@ Work through each test with known reference values. Mark off as you go.
 
 ---
 
-## :wrench: Troubleshooting
+## Troubleshooting
 
 ### No OLED Display
 - Check I2C address is **0x3C** (some modules use 0x3D — check the PCB jumper)
@@ -594,7 +533,7 @@ Work through each test with known reference values. Mark off as you go.
 - Baud rate must be **115200** (not 9600)
 - Check the COM port is correct in your terminal
 - Try pressing RESET on the Mega
-- Re-flash: `pio run -t upload`
+- Re-flash the firmware
 
 ### Resistance Reads Wrong
 - Check the 74HC4067 mux wiring: S0-S3 (D22-D25), EN (D26)
@@ -625,7 +564,7 @@ Work through each test with known reference values. Mark off as you go.
 
 ---
 
-## :keyboard: Serial Command Reference
+## Serial Command Reference
 
 All commands are single characters sent via UART at 115200 baud. Case-insensitive.
 
@@ -647,12 +586,10 @@ All commands are single characters sent via UART at 115200 baud. Case-insensitiv
 
 ---
 
-## :link: References
+## References
 
 - [[DTU Multimeter - Digital Multimeter]] — Main project page
 - [MCP3208 Datasheet](https://www.microchip.com/en-us/product/MCP3208) — 12-bit SPI ADC
 - [ATmega2560 Datasheet](https://www.microchip.com/en-us/product/ATmega2560) — Target MCU
 - [SSD1306 Datasheet](https://cdn-shop.adafruit.com/datasheets/SSD1306.pdf) — OLED controller
-- [PlatformIO Docs](https://docs.platformio.org/en/latest/) — Build system
-
 ---

@@ -1,0 +1,9 @@
+ERC report (2026-03-12T15:01:58+0100, Encoding UTF8)
+
+***** Sheet /
+[multiple_net_names]: Both CAP_DIS and TMR_CAP are attached to the same items; CAP_DIS will be used in the netlist
+    ; warning
+    @(487.68 mm, 254.00 mm): Label 'CAP_DIS'
+    @(299.72 mm, 210.82 mm): Label 'TMR_CAP'
+
+ ** ERC messages: 1  Errors 0  Warnings 1

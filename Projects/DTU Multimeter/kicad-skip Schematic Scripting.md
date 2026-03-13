@@ -19,7 +19,7 @@ created: 2026-03-04
 
 ## Installation
 
-```bash
+```
 pip install kicad-skip sexpdata
 ```
 
