@@ -1,3 +1,6 @@
 [submodule "ir-remote-wizard"]
 	path = ir-remote-wizard
 	url = https://github.com/MadsRudolph/ir-remote-wizard.git
+[submodule "spotify-addon"]
+	path = spotify-addon
+	url = https://github.com/MadsRudolph/spotify-addon.git
