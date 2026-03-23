@@ -4,3 +4,7 @@
 [submodule "spotify-addon"]
 	path = spotify-addon
 	url = https://github.com/MadsRudolph/spotify-addon.git
+[submodule "Projects/Pi Zero Room Sensor"]
+	path = Projects/Pi Zero Room Sensor
+	url = git@github.com:MadsRudolph/pi-zero-room-sensor.git
+	branch = master
