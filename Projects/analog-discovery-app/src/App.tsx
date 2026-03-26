@@ -1,12 +1,15 @@
 import { useCallback } from 'react';
 import { useScopeState } from './hooks/useScopeState';
 import { useWebSocket } from './hooks/useWebSocket';
+import { useWaveGen } from './hooks/useWaveGen';
 import TopBar from './components/TopBar';
 import ScopeView from './components/ScopeView';
 import Measurements from './components/Measurements';
+import WaveGenDrawer from './components/WaveGenDrawer';
 
 export default function App() {
   const scope = useScopeState();
+  const { settings: waveGenSettings, update: updateWaveGen, toggleOutput } = useWaveGen();
 
   const onData = useCallback(
     (data: unknown) => {
@@ -64,6 +67,12 @@ export default function App() {
           ch2Range={scope.ch2Range}
           timePerDiv={scope.timePerDiv}
           triggerLevel={scope.triggerLevel}
+        />
+        <WaveGenDrawer
+          settings={waveGenSettings}
+          onUpdate={updateWaveGen}
+          onToggle={toggleOutput}
+          connected={scope.connected}
         />
       </div>
       <Measurements
