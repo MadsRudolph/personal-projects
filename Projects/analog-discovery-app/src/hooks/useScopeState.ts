@@ -21,6 +21,8 @@ export interface ScopeData {
   buffer_size: number;
 }
 
+export type MathMode = 'off' | 'add' | 'subtract';
+
 export interface ScopeState {
   ch1Enabled: boolean;
   ch2Enabled: boolean;
@@ -34,6 +36,8 @@ export interface ScopeState {
   running: boolean;
   connected: boolean;
   scopeData: ScopeData | null;
+  mathMode: MathMode;
+  cursorsVisible: boolean;
 }
 
 async function apiPost(path: string, body?: Record<string, unknown>) {
@@ -60,10 +64,20 @@ export function useScopeState() {
     running: false,
     connected: false,
     scopeData: null,
+    mathMode: 'off',
+    cursorsVisible: false,
   });
 
   const setScopeData = useCallback((data: ScopeData) => {
     setState((prev) => ({ ...prev, scopeData: data }));
+  }, []);
+
+  const setMathMode = useCallback((mathMode: MathMode) => {
+    setState((prev) => ({ ...prev, mathMode }));
+  }, []);
+
+  const setCursorsVisible = useCallback((cursorsVisible: boolean) => {
+    setState((prev) => ({ ...prev, cursorsVisible }));
   }, []);
 
   const connect = useCallback(async () => {
@@ -144,6 +158,8 @@ export function useScopeState() {
   return {
     ...state,
     setScopeData,
+    setMathMode,
+    setCursorsVisible,
     connect,
     disconnect,
     updateSettings,

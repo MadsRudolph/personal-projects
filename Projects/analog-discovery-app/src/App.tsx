@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useScopeState } from './hooks/useScopeState';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useWaveGen } from './hooks/useWaveGen';
@@ -6,10 +6,12 @@ import TopBar from './components/TopBar';
 import ScopeView from './components/ScopeView';
 import Measurements from './components/Measurements';
 import WaveGenDrawer from './components/WaveGenDrawer';
+import Cursors from './components/Cursors';
 
 export default function App() {
   const scope = useScopeState();
   const { settings: waveGenSettings, update: updateWaveGen, toggleOutput } = useWaveGen();
+  const [scopeSize, setScopeSize] = useState({ w: 0, h: 0 });
 
   const onData = useCallback(
     (data: unknown) => {
@@ -30,6 +32,14 @@ export default function App() {
     },
     [scope.updateSettings],
   );
+
+  const handleSizeChange = useCallback((w: number, h: number) => {
+    setScopeSize({ w, h });
+  }, []);
+
+  const handleToggleCursors = useCallback(() => {
+    scope.setCursorsVisible(!scope.cursorsVisible);
+  }, [scope.setCursorsVisible, scope.cursorsVisible]);
 
   return (
     <div
@@ -57,6 +67,10 @@ export default function App() {
         triggerMode={scope.triggerMode}
         triggerEdge={scope.triggerEdge}
         onUpdate={handleUpdate}
+        cursorsVisible={scope.cursorsVisible}
+        onToggleCursors={handleToggleCursors}
+        mathMode={scope.mathMode}
+        onSetMathMode={scope.setMathMode}
       />
       <div style={{ flex: 1, position: 'relative', display: 'flex' }}>
         <ScopeView
@@ -67,7 +81,17 @@ export default function App() {
           ch2Range={scope.ch2Range}
           timePerDiv={scope.timePerDiv}
           triggerLevel={scope.triggerLevel}
+          mathMode={scope.mathMode}
+          onSizeChange={handleSizeChange}
         />
+        {scope.cursorsVisible && (
+          <Cursors
+            width={scopeSize.w}
+            height={scopeSize.h}
+            timePerDiv={scope.timePerDiv}
+            ch1Range={scope.ch1Range}
+          />
+        )}
         <WaveGenDrawer
           settings={waveGenSettings}
           onUpdate={updateWaveGen}

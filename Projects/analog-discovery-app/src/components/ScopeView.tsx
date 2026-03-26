@@ -1,5 +1,5 @@
-import { useRef, useEffect, useCallback } from 'react';
-import type { ScopeData } from '../hooks/useScopeState';
+import { useRef, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
+import type { ScopeData, MathMode } from '../hooks/useScopeState';
 
 interface ScopeViewProps {
   data: ScopeData | null;
@@ -9,24 +9,39 @@ interface ScopeViewProps {
   ch2Range: number;
   timePerDiv: number;
   triggerLevel: number;
+  mathMode: MathMode;
+  onSizeChange?: (w: number, h: number) => void;
+}
+
+export interface ScopeViewHandle {
+  getCanvas: () => HTMLCanvasElement | null;
 }
 
 const GRID_COLS = 10;
 const GRID_ROWS = 8;
 const MINOR_DIVS = 5;
 
-export default function ScopeView({
-  data,
-  ch1Enabled,
-  ch2Enabled,
-  ch1Range,
-  ch2Range,
-  triggerLevel,
-}: ScopeViewProps) {
+const ScopeView = forwardRef<ScopeViewHandle, ScopeViewProps>(function ScopeView(
+  {
+    data,
+    ch1Enabled,
+    ch2Enabled,
+    ch1Range,
+    ch2Range,
+    triggerLevel,
+    mathMode,
+    onSizeChange,
+  },
+  ref,
+) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number>(0);
   const sizeRef = useRef({ w: 0, h: 0 });
+
+  useImperativeHandle(ref, () => ({
+    getCanvas: () => canvasRef.current,
+  }));
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -156,8 +171,20 @@ export default function ScopeView({
     if (data) {
       if (ch1Enabled && data.ch1) drawTrace(data.ch1, ch1Range, '#00e5ff');
       if (ch2Enabled && data.ch2) drawTrace(data.ch2, ch2Range, '#ff00e5');
+
+      // Math channel
+      if (mathMode !== 'off' && data.ch1 && data.ch2) {
+        const len = Math.min(data.ch1.length, data.ch2.length);
+        const mathData = new Array(len);
+        if (mathMode === 'add') {
+          for (let i = 0; i < len; i++) mathData[i] = data.ch1[i] + data.ch2[i];
+        } else {
+          for (let i = 0; i < len; i++) mathData[i] = data.ch1[i] - data.ch2[i];
+        }
+        drawTrace(mathData, ch1Range, '#ffcc00');
+      }
     }
-  }, [data, ch1Enabled, ch2Enabled, ch1Range, ch2Range, triggerLevel]);
+  }, [data, ch1Enabled, ch2Enabled, ch1Range, ch2Range, triggerLevel, mathMode]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -170,13 +197,14 @@ export default function ScopeView({
           w: entry.contentRect.width,
           h: entry.contentRect.height,
         };
+        onSizeChange?.(sizeRef.current.w, sizeRef.current.h);
         cancelAnimationFrame(animRef.current);
         animRef.current = requestAnimationFrame(draw);
       }
     });
     ro.observe(container);
     return () => ro.disconnect();
-  }, [draw]);
+  }, [draw, onSizeChange]);
 
   useEffect(() => {
     cancelAnimationFrame(animRef.current);
@@ -197,4 +225,6 @@ export default function ScopeView({
       <canvas ref={canvasRef} style={{ display: 'block' }} />
     </div>
   );
-}
+});
+
+export default ScopeView;

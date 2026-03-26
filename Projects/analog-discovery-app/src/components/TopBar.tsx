@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import type { MathMode } from '../hooks/useScopeState';
 import ScopeControls from './ScopeControls';
 
 interface TopBarProps {
@@ -17,6 +18,10 @@ interface TopBarProps {
   triggerMode: 'auto' | 'normal' | 'single';
   triggerEdge: 'rising' | 'falling';
   onUpdate: (updates: Record<string, unknown>) => void;
+  cursorsVisible: boolean;
+  onToggleCursors: () => void;
+  mathMode: MathMode;
+  onSetMathMode: (mode: MathMode) => void;
 }
 
 const actionBtn: CSSProperties = {
@@ -46,6 +51,10 @@ export default function TopBar({
   triggerMode,
   triggerEdge,
   onUpdate,
+  cursorsVisible,
+  onToggleCursors,
+  mathMode,
+  onSetMathMode,
 }: TopBarProps) {
   return (
     <div
@@ -124,6 +133,39 @@ export default function TopBar({
         triggerEdge={triggerEdge}
         onUpdate={onUpdate}
       />
+
+      {/* Separator */}
+      <div style={{ width: 1, height: 22, background: 'var(--border)', margin: '0 4px' }} />
+
+      {/* Cursors toggle */}
+      <button
+        style={{
+          ...actionBtn,
+          background: cursorsVisible ? '#ffcc00' : 'var(--bg-tertiary)',
+          color: cursorsVisible ? '#000' : 'var(--text-primary)',
+          border: '1px solid var(--border)',
+        }}
+        onClick={onToggleCursors}
+      >
+        Cursors
+      </button>
+
+      {/* Math channel */}
+      {(['add', 'subtract'] as const).map((mode) => (
+        <button
+          key={mode}
+          style={{
+            ...actionBtn,
+            background: mathMode === mode ? '#ffcc00' : 'var(--bg-tertiary)',
+            color: mathMode === mode ? '#000' : 'var(--text-primary)',
+            border: '1px solid var(--border)',
+          }}
+          onClick={() => onSetMathMode(mathMode === mode ? 'off' : mode)}
+        >
+          {mode === 'add' ? 'Ch1+Ch2' : 'Ch1\u2212Ch2'}
+        </button>
+      ))}
+
     </div>
   );
 }
