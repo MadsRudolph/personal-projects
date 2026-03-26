@@ -1,9 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useScopeState } from './hooks/useScopeState';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useWaveGen } from './hooks/useWaveGen';
+import { exportCSV, exportPNG } from './utils/export';
 import TopBar from './components/TopBar';
 import ScopeView from './components/ScopeView';
+import type { ScopeViewHandle } from './components/ScopeView';
 import Measurements from './components/Measurements';
 import WaveGenDrawer from './components/WaveGenDrawer';
 import Cursors from './components/Cursors';
@@ -11,6 +13,7 @@ import Cursors from './components/Cursors';
 export default function App() {
   const scope = useScopeState();
   const { settings: waveGenSettings, update: updateWaveGen, toggleOutput } = useWaveGen();
+  const scopeViewRef = useRef<ScopeViewHandle>(null);
   const [scopeSize, setScopeSize] = useState({ w: 0, h: 0 });
 
   const onData = useCallback(
@@ -35,6 +38,20 @@ export default function App() {
 
   const handleSizeChange = useCallback((w: number, h: number) => {
     setScopeSize({ w, h });
+  }, []);
+
+  const handleExportCSV = useCallback(() => {
+    if (!scope.scopeData) return;
+    exportCSV({
+      ch1: scope.ch1Enabled ? scope.scopeData.ch1 : null,
+      ch2: scope.ch2Enabled ? scope.scopeData.ch2 : null,
+      sample_rate: scope.scopeData.sample_rate,
+    });
+  }, [scope.scopeData, scope.ch1Enabled, scope.ch2Enabled]);
+
+  const handleExportPNG = useCallback(() => {
+    const canvas = scopeViewRef.current?.getCanvas();
+    if (canvas) exportPNG(canvas);
   }, []);
 
   const handleToggleCursors = useCallback(() => {
@@ -71,9 +88,12 @@ export default function App() {
         onToggleCursors={handleToggleCursors}
         mathMode={scope.mathMode}
         onSetMathMode={scope.setMathMode}
+        onExportCSV={handleExportCSV}
+        onExportPNG={handleExportPNG}
       />
       <div style={{ flex: 1, position: 'relative', display: 'flex' }}>
         <ScopeView
+          ref={scopeViewRef}
           data={scope.scopeData}
           ch1Enabled={scope.ch1Enabled}
           ch2Enabled={scope.ch2Enabled}

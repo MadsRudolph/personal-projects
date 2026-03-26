@@ -22,6 +22,8 @@ interface TopBarProps {
   onToggleCursors: () => void;
   mathMode: MathMode;
   onSetMathMode: (mode: MathMode) => void;
+  onExportCSV: () => void;
+  onExportPNG: () => void;
 }
 
 const actionBtn: CSSProperties = {
@@ -55,6 +57,8 @@ export default function TopBar({
   onToggleCursors,
   mathMode,
   onSetMathMode,
+  onExportCSV,
+  onExportPNG,
 }: TopBarProps) {
   return (
     <div
@@ -166,6 +170,32 @@ export default function TopBar({
         </button>
       ))}
 
+      {/* Spacer */}
+      <div style={{ flex: 1 }} />
+
+      {/* Export buttons */}
+      <button
+        style={{
+          ...actionBtn,
+          background: 'var(--bg-tertiary)',
+          color: 'var(--text-primary)',
+          border: '1px solid var(--border)',
+        }}
+        onClick={onExportCSV}
+      >
+        CSV
+      </button>
+      <button
+        style={{
+          ...actionBtn,
+          background: 'var(--bg-tertiary)',
+          color: 'var(--text-primary)',
+          border: '1px solid var(--border)',
+        }}
+        onClick={onExportPNG}
+      >
+        PNG
+      </button>
     </div>
   );
 }
