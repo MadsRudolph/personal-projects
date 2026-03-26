@@ -53,7 +53,7 @@ async function apiPost(path: string, body?: Record<string, unknown>) {
 export function useScopeState() {
   const [state, setState] = useState<ScopeState>({
     ch1Enabled: true,
-    ch2Enabled: false,
+    ch2Enabled: true,
     ch1Range: 8, // 1V/div * 8
     ch2Range: 8,
     timePerDiv: 0.001, // 1ms

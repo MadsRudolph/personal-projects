@@ -101,24 +101,48 @@ export default function ScopeControls({
       </div>
 
       {/* CH1 V/div */}
-      {ch1Enabled && (
-        <div style={groupStyle}>
-          <span style={{ ...labelStyle, color: 'var(--ch1)' }}>CH1</span>
-          <button style={btnStyle} onClick={() => onUpdate({ ch1Range: cycleStep(VOLT_STEPS, ch1VDiv, -1) * 8 })}>-</button>
-          <span style={{ ...valStyle, color: 'var(--ch1)' }}>{formatVolts(ch1VDiv)}/d</span>
-          <button style={btnStyle} onClick={() => onUpdate({ ch1Range: cycleStep(VOLT_STEPS, ch1VDiv, 1) * 8 })}>+</button>
-        </div>
-      )}
+      <div style={groupStyle}>
+        <button
+          style={{
+            ...btnStyle,
+            color: 'var(--ch1)',
+            background: ch1Enabled ? 'rgba(0, 229, 255, 0.15)' : 'var(--bg-tertiary)',
+            borderColor: ch1Enabled ? 'var(--ch1)' : 'var(--border)',
+          }}
+          onClick={() => onUpdate({ ch1Enabled: !ch1Enabled })}
+        >
+          CH1
+        </button>
+        {ch1Enabled && (
+          <>
+            <button style={btnStyle} onClick={() => onUpdate({ ch1Range: cycleStep(VOLT_STEPS, ch1VDiv, -1) * 8 })}>-</button>
+            <span style={{ ...valStyle, color: 'var(--ch1)' }}>{formatVolts(ch1VDiv)}/d</span>
+            <button style={btnStyle} onClick={() => onUpdate({ ch1Range: cycleStep(VOLT_STEPS, ch1VDiv, 1) * 8 })}>+</button>
+          </>
+        )}
+      </div>
 
       {/* CH2 V/div */}
-      {ch2Enabled && (
-        <div style={groupStyle}>
-          <span style={{ ...labelStyle, color: 'var(--ch2)' }}>CH2</span>
-          <button style={btnStyle} onClick={() => onUpdate({ ch2Range: cycleStep(VOLT_STEPS, ch2VDiv, -1) * 8 })}>-</button>
-          <span style={{ ...valStyle, color: 'var(--ch2)' }}>{formatVolts(ch2VDiv)}/d</span>
-          <button style={btnStyle} onClick={() => onUpdate({ ch2Range: cycleStep(VOLT_STEPS, ch2VDiv, 1) * 8 })}>+</button>
-        </div>
-      )}
+      <div style={groupStyle}>
+        <button
+          style={{
+            ...btnStyle,
+            color: 'var(--ch2)',
+            background: ch2Enabled ? 'rgba(255, 0, 229, 0.15)' : 'var(--bg-tertiary)',
+            borderColor: ch2Enabled ? 'var(--ch2)' : 'var(--border)',
+          }}
+          onClick={() => onUpdate({ ch2Enabled: !ch2Enabled })}
+        >
+          CH2
+        </button>
+        {ch2Enabled && (
+          <>
+            <button style={btnStyle} onClick={() => onUpdate({ ch2Range: cycleStep(VOLT_STEPS, ch2VDiv, -1) * 8 })}>-</button>
+            <span style={{ ...valStyle, color: 'var(--ch2)' }}>{formatVolts(ch2VDiv)}/d</span>
+            <button style={btnStyle} onClick={() => onUpdate({ ch2Range: cycleStep(VOLT_STEPS, ch2VDiv, 1) * 8 })}>+</button>
+          </>
+        )}
+      </div>
 
       {/* Trigger mode */}
       <div style={groupStyle}>
