@@ -10,4 +10,5 @@
   (lib (name "MCP3208-CI_P")(type "KiCad")(uri "C:/Users/Mads2/Documents/Projects/Projects/DTU Multimeter/KiCad/lib/footprints/MCP3208-CI_P.pretty")(options "")(descr ""))
   (lib (name "NE555P")(type "KiCad")(uri "C:/Users/Mads2/Documents/Projects/Projects/DTU Multimeter/KiCad/lib/footprints/NE555P.pretty")(options "")(descr ""))
   (lib (name "OLED_128X64_1.3_I2C")(type "KiCad")(uri "C:/Users/Mads2/Documents/Projects/Projects/DTU Multimeter/KiCad/lib/footprints/OLED_128X64_1.3_I2C.pretty")(options "")(descr ""))
+  (lib (name "DM-OLED096-636")(type "KiCad")(uri "C:/Users/Mads2/Documents/Projects/Projects/DTU Multimeter/KiCad/lib/footprints/DM-OLED096-636.pretty")(options "")(descr ""))
 )

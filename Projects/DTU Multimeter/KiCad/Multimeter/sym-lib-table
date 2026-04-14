@@ -10,4 +10,5 @@
   (lib (name "NE555P")(type "KiCad")(uri "C:/Users/Mads2/Documents/Projects/Projects/DTU Multimeter/KiCad/lib/symbols/NE555P.kicad_sym")(options "")(descr ""))
   (lib (name "OLED_128X64_1.3_I2C")(type "KiCad")(uri "C:/Users/Mads2/Documents/Projects/Projects/DTU Multimeter/KiCad/lib/symbols/OLED_128X64_1.3_I2C.kicad_sym")(options "")(descr ""))
   (lib (name "CD74HC4067E")(type "KiCad")(uri "C:/Users/Mads2/Documents/Projects/Projects/DTU Multimeter/KiCad/lib/symbols/CD74HC4067E.kicad_sym")(options "")(descr ""))
+  (lib (name "DM-OLED096-636")(type "KiCad")(uri "C:/Users/Mads2/Documents/Projects/Projects/DTU Multimeter/KiCad/lib/symbols/DM-OLED096-636.kicad_sym")(options "")(descr ""))
 )
