@@ -1,0 +1,96 @@
+# Plant Soil Notifier — ESP32 capacitive soil-moisture sensor
+#
+# Repurposes the freed-up Plant Watering Tower ESP32. Reads one capacitive soil
+# moisture sensor, exposes the moisture % to Home Assistant, and trips a "Needs water"
+# flag when the soil goes dry. No pump — notification only (the actual push is an HA
+# automation, see home-assistant.yaml). See README.md for wiring + calibration.
+#
+# Everything you may need to change lives in `substitutions` below.
+
+substitutions:
+  device_name: plant-soil-notifier
+  friendly_name: "Plant Soil Notifier"
+
+  # --- Hardware ---
+  board: wemos_d1_mini32        # the ex-tower ESP32
+  soil_pin: GPIO34              # MUST be an ADC1 pin (GPIO32-39); ADC2 dies when WiFi is on
+
+  # --- Calibration (MEASURE these — see README "Calibration procedure") ---
+  # Capacitive sensors read a HIGHER voltage when DRY. Watch the raw voltage in the
+  # ESPHome logs: probe in dry air -> dry_voltage, probe in a glass of water -> wet_voltage.
+  dry_voltage: "2.6"            # TODO: voltage in dry air        (-> 0 %)
+  wet_voltage: "1.2"            # TODO: voltage submerged in water (-> 100 %)
+
+  # --- Dry-alert thresholds (with hysteresis so it doesn't flap) ---
+  dry_threshold: "30"           # below this % -> Needs water = ON
+  wet_reset_threshold: "40"     # only clears once back above this %
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: ${board}
+  framework:
+    type: arduino
+
+logger:
+
+# Integrates as an ESPHome device over the native HA API.
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Soil-Notifier Fallback"
+    password: !secret fallback_password
+
+captive_portal:
+
+sensor:
+  - platform: adc
+    pin: ${soil_pin}
+    name: "Soil moisture"
+    id: soil_moisture
+    update_interval: 60s
+    attenuation: 12db           # full ~0-3.3 V range (older ESPHome called this 11db)
+    unit_of_measurement: "%"
+    device_class: ""            # clear the adc platform's default "voltage" class (we report %)
+    state_class: measurement
+    accuracy_decimals: 0
+    icon: "mdi:water-percent"
+    filters:
+      # Map measured voltage -> moisture %. dry_voltage > wet_voltage, so the slope is
+      # negative; calibrate_linear solves the line regardless of direction.
+      - calibrate_linear:
+          - ${dry_voltage} -> 0.0
+          - ${wet_voltage} -> 100.0
+      - clamp:
+          min_value: 0
+          max_value: 100
+
+binary_sensor:
+  - platform: template
+    name: "Needs water"
+    id: needs_water
+    device_class: problem
+    icon: "mdi:watering-can"
+    # Hysteresis: trip below dry_threshold, clear only above wet_reset_threshold,
+    # hold the previous state in the band between so it doesn't chatter.
+    lambda: |-
+      if (isnan(id(soil_moisture).state)) {
+        return id(needs_water).state;
+      } else if (id(soil_moisture).state < ${dry_threshold}) {
+        return true;
+      } else if (id(soil_moisture).state > ${wet_reset_threshold}) {
+        return false;
+      } else {
+        return id(needs_water).state;
+      }

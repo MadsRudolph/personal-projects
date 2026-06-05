@@ -1,0 +1,56 @@
+# Optional Home Assistant snippets for the Plant Soil Notifier.
+#
+# Entity IDs assume HA prefixed entities with the friendly_name "plant_soil_notifier_".
+# If yours differ, use the dashboard/automation entity picker's autocomplete to correct them.
+
+# --------------------------------------------------------------------------------------
+# Lovelace dashboard card (Dashboard -> Edit -> Raw configuration editor, paste into a view)
+# --------------------------------------------------------------------------------------
+# type: entities
+# title: Plant Soil Notifier
+# entities:
+#   - entity: sensor.plant_soil_notifier_soil_moisture
+#     name: Soil moisture
+#   - entity: binary_sensor.plant_soil_notifier_needs_water
+#     name: Needs water
+
+# --------------------------------------------------------------------------------------
+# Dry-soil notification (paste into automations.yaml)
+# Fires once when the soil first reads dry for 5 min straight. `mode: single` + the
+# state trigger mean it won't re-notify until the soil recovers and goes dry again.
+# --------------------------------------------------------------------------------------
+- id: plant_soil_dry_alert
+  alias: "Plant soil — dry alert"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.plant_soil_notifier_needs_water
+      to: "on"
+      for: "00:05:00"
+  action:
+    - service: notify.notify
+      data:
+        title: "Plant needs water"
+        message: >-
+          Soil moisture dropped to
+          {{ states('sensor.plant_soil_notifier_soil_moisture') }}% — time to water.
+  mode: single
+
+# --------------------------------------------------------------------------------------
+# Optional: nag once a day while it's still dry (uncomment if a single ping isn't enough).
+# --------------------------------------------------------------------------------------
+# - id: plant_soil_dry_daily_nag
+#   alias: "Plant soil — daily dry reminder"
+#   trigger:
+#     - platform: time
+#       at: "18:00:00"
+#   condition:
+#     - condition: state
+#       entity_id: binary_sensor.plant_soil_notifier_needs_water
+#       state: "on"
+#   action:
+#     - service: notify.notify
+#       data:
+#         title: "Plant still needs water"
+#         message: >-
+#           Still dry at {{ states('sensor.plant_soil_notifier_soil_moisture') }}%.
+#   mode: single
