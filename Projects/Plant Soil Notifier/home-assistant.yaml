@@ -27,7 +27,9 @@
       to: "on"
       for: "00:05:00"
   action:
-    - service: notify.notify
+    # Deployed target on this HAOS is the Galaxy: notify.mobile_app_sm_s928b.
+    # Use notify.notify here if you copy this to a different setup.
+    - service: notify.mobile_app_sm_s928b
       data:
         title: "Plant needs water"
         message: >-
