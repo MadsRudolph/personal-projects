@@ -28,11 +28,15 @@ No pump, no auto-watering — Home Assistant sends the actual notification.
 |---|---|
 | `VCC` | `3V3` |
 | `GND` | `GND` |
-| `AOUT` | **`GPIO34`** |
+| `AOUT` | **`GPIO32`** |
 
 > ⚠️ **Use an ADC1 pin (GPIO32–39).** The ESP32's ADC2 pins stop working the moment WiFi is
-> active, so a soil sensor on an ADC2 pin just reads garbage. GPIO34 is ADC1 and input-only —
-> perfect for an analog sensor.
+> active, so a soil sensor on an ADC2 pin just reads garbage. GPIO32 is ADC1, so it reads the
+> analog output fine.
+
+> **Windows build gotcha:** this folder name has spaces, and the ESP32 toolchain (ESP-IDF under
+> the Arduino framework) refuses paths with whitespace. Build through a no-space directory
+> junction — see *Build & flash* below.
 
 ## Calibration procedure
 
@@ -50,19 +54,19 @@ the gap between them is hysteresis so the **Needs water** flag doesn't flap arou
 
 ## Build & flash
 
-The board is already on WiFi running ESPHome, so flash it **over the air** — no USB needed:
+The board is already on WiFi running ESPHome, so flash it **over the air** — no USB needed.
+But the ESP32 toolchain rejects paths with spaces, so build through a no-space junction:
 
-```bash
-esphome run soil-notifier.yaml
+```powershell
+cmd /c mklink /J C:\esphome-soil "C:\Users\Mads2\Documents\Projects\Projects\Plant Soil Notifier"
+python -m esphome run "C:\esphome-soil\soil-notifier.yaml" --device <device-ip>
 ```
 
-Pick the **wireless / OTA** target when prompted. It accepts the update because `secrets.yaml`
-carries the same OTA password. The old tower entities disappear from Home Assistant and the new
-`Soil moisture` + `Needs water` entities appear.
+The junction points at the same real folder, so source, secrets, and build output stay in place.
+OTA is accepted because `secrets.yaml` carries the device's current OTA password. The old tower
+entities disappear from Home Assistant and the new `Soil moisture` + `Needs water` entities appear.
 
-> If OTA ever fails, fall back to USB (`esphome run soil-notifier.yaml --device COMx`). Because
-> this config uses the **Arduino** framework (not ESP-IDF), the folder name's spaces are fine —
-> no directory-junction workaround needed.
+> If OTA ever fails, fall back to USB by passing `--device COMx` instead of the IP.
 
 ## Exposed to Home Assistant
 

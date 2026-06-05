@@ -20,8 +20,11 @@ soil goes dry. No pump, no auto-watering.
 **Wiring**
 
 - Sensor `VCC` → `3V3`, `GND` → `GND`.
-- Sensor `AOUT` → **GPIO34**. This must be an **ADC1** pin (GPIO32–39). The ESP32's ADC2 pins
+- Sensor `AOUT` → **GPIO32**. This must be an **ADC1** pin (GPIO32–39). The ESP32's ADC2 pins
   stop working once WiFi is active, so a soil sensor on an ADC2 pin reads garbage — a classic trap.
+
+> Build note: the ESP32 toolchain (ESP-IDF under Arduino) rejects paths with spaces, so the
+> folder is built through a no-space junction (`C:\esphome-soil`). See README "Build & flash".
 
 ## Firmware (`soil-notifier.yaml`, ESPHome, Arduino framework)
 

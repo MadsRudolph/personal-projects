@@ -13,7 +13,7 @@ substitutions:
 
   # --- Hardware ---
   board: wemos_d1_mini32        # the ex-tower ESP32
-  soil_pin: GPIO34              # MUST be an ADC1 pin (GPIO32-39); ADC2 dies when WiFi is on
+  soil_pin: GPIO32              # MUST be an ADC1 pin (GPIO32-39); ADC2 dies when WiFi is on
 
   # --- Calibration (MEASURE these — see README "Calibration procedure") ---
   # Capacitive sensors read a HIGHER voltage when DRY. Watch the raw voltage in the
