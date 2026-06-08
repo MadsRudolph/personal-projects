@@ -21,6 +21,9 @@ ESP_NEW_DEVICE_HANDOFF.md
 # Superprompts — contain WiFi password + HA details, do NOT commit
 *_SUPERPROMPT.md
 
+# External tools cloned locally (have their own git history)
+tools/
+
 # Personal workspace files (optional - uncomment if you don't want to share)
 # .obsidian/workspace.json
 # .obsidian/workspace-mobile.json
