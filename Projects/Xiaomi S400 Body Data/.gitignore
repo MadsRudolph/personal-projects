@@ -1,0 +1,4 @@
+# ESPHome
+/.esphome/
+/secrets.yaml
+*.log

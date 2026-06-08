@@ -1,0 +1,78 @@
+# Xiaomi Body Composition Scale S400 (MJTZC01YM) -> Home Assistant
+#
+# A LOLIN/Wemos D1 Mini ESP32 acts as a passive BLE listener: it receives the
+# scale's ENCRYPTED advertisements, decrypts them with the bindkey, and publishes
+# weight + dual-frequency impedance (+ heart rate) as ESPHome sensors over the
+# native HA API. Place the ESP32 near the scale. See README.md.
+#
+# The scale MAC + bindkey live in secrets.yaml (extract them with the Xiaomi
+# Cloud Tokens Extractor). Single-user setup -> no allowed_profile_ids filter.
+
+substitutions:
+  device_name: s400-scale
+  friendly_name: "S400 Body Scale"
+  board: wemos_d1_mini32          # LOLIN D1 Mini ESP32 (has BLE; ESP8266 would NOT work)
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+
+# S400 support is NOT in any released ESPHome. The stock xiaomi_miscale only handles
+# the unencrypted Mi Scale 2 (fails on the S400 with "couldn't identify scale version").
+# PR #8524 (zry98/esphome:miscale_s400) adds S400 decryption + dual impedance / heart
+# rate / profile id, and fixes a ciphertext offset in xiaomi_ble. The PR was closed as
+# stale (never merged) but is confirmed working, so we pull it as an external component.
+external_components:
+  - source: github://pr#8524
+    components: [xiaomi_miscale, xiaomi_ble]
+
+esp32:
+  board: ${board}
+  framework:
+    type: arduino                 # try arduino first; esp-idf is the BLE-stability fallback
+
+logger:
+
+# Native HA API (encrypted).
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "S400-Scale Fallback"
+    password: !secret fallback_password
+
+captive_portal:
+
+# BLE listener — passively receives the scale's encrypted advertisements.
+esp32_ble_tracker:
+
+sensor:
+  - platform: xiaomi_miscale
+    mac_address: !secret scale_mac
+    bindkey: !secret bindkey       # required for S400 — decrypts the advertisement
+    weight:
+      name: "Weight"
+      unit_of_measurement: kg
+      accuracy_decimals: 2
+    impedance:                     # HIGH frequency (~250 kHz)
+      name: "Impedance High"
+      unit_of_measurement: "Ω"
+      accuracy_decimals: 0
+    impedance_low:                 # LOW frequency (~50 kHz)
+      name: "Impedance Low"
+      unit_of_measurement: "Ω"
+      accuracy_decimals: 0
+    heart_rate:                    # optional (static HR reported by the scale)
+      name: "Heart rate"
+    # Single-user: no profile filter. For multi-user, uncomment and list the
+    # scale profile id(s) to accept:
+    # allowed_profile_ids:
+    #   - 1
