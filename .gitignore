@@ -15,6 +15,9 @@ desktop.ini
 # ESPHome secrets (contains WiFi passwords, API keys)
 secrets.yaml
 
+# Handoff doc — contains WiFi password + HA details, do NOT commit
+ESP_NEW_DEVICE_HANDOFF.md
+
 # Personal workspace files (optional - uncomment if you don't want to share)
 # .obsidian/workspace.json
 # .obsidian/workspace-mobile.json
