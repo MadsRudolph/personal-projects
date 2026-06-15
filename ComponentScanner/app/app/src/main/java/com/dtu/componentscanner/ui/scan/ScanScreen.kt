@@ -6,10 +6,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +27,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dtu.componentscanner.ocr.OcrAnalyzer
+import com.dtu.componentscanner.util.downscaleJpegBase64
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,6 +42,8 @@ fun ScanScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     var hasCamera by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
@@ -45,17 +56,59 @@ fun ScanScreen(
 
     LaunchedEffect(Unit) { if (!hasCamera) permLauncher.launch(Manifest.permission.CAMERA) }
 
+    // Hoisted ImageCapture instance — populated once CameraPreview binds the use case.
+    var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Scan component") },
                 actions = { TextButton(onClick = onOpenHistory) { Text("History") } },
             )
-        }
+        },
+        floatingActionButton = {
+            if (hasCamera) {
+                FloatingActionButton(
+                    onClick = {
+                        val capture = imageCapture ?: return@FloatingActionButton
+                        capture.takePicture(
+                            ContextCompat.getMainExecutor(context),
+                            object : ImageCapture.OnImageCapturedCallback() {
+                                override fun onCaptureSuccess(image: ImageProxy) {
+                                    scope.launch {
+                                        try {
+                                            val buffer = image.planes[0].buffer
+                                            val bytes = ByteArray(buffer.remaining())
+                                            buffer.get(bytes)
+                                            val base64 = withContext(Dispatchers.Default) {
+                                                downscaleJpegBase64(bytes)
+                                            }
+                                            viewModel.deepScan(base64, "image/jpeg")
+                                        } finally {
+                                            image.close()
+                                        }
+                                    }
+                                }
+
+                                override fun onError(exc: ImageCaptureException) {
+                                    // Surface the error through the ViewModel so the UI shows it.
+                                    viewModel.deepScan("", "image/jpeg") // triggers error path
+                                }
+                            }
+                        )
+                    }
+                ) {
+                    Icon(Icons.Filled.CameraAlt, contentDescription = "Deep scan")
+                }
+            }
+        },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
             if (hasCamera) {
-                CameraPreview(onOcrText = viewModel::onOcrText)
+                CameraPreview(
+                    onOcrText = viewModel::onOcrText,
+                    onImageCaptureReady = { imageCapture = it },
+                )
             } else {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -105,7 +158,10 @@ fun ScanScreen(
 }
 
 @Composable
-private fun CameraPreview(onOcrText: (String) -> Unit) {
+private fun CameraPreview(
+    onOcrText: (String) -> Unit,
+    onImageCaptureReady: (ImageCapture) -> Unit,
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
@@ -128,10 +184,18 @@ private fun CameraPreview(onOcrText: (String) -> Unit) {
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
                     .also { it.setAnalyzer(analysisExecutor, OcrAnalyzer(onOcrText)) }
+                val capture = ImageCapture.Builder()
+                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                    .build()
                 provider.unbindAll()
                 provider.bindToLifecycle(
-                    lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis,
+                    lifecycleOwner,
+                    CameraSelector.DEFAULT_BACK_CAMERA,
+                    preview,
+                    analysis,
+                    capture,
                 )
+                onImageCaptureReady(capture)
             }, ContextCompat.getMainExecutor(ctx))
             previewView
         },

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,6 +8,13 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
+
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+val backendUrl = (localProps.getProperty("backend.url")
+    ?: "https://REPLACE-WITH-YOUR-BACKEND-URL.workers.dev/")
 
 android {
     namespace = "com.dtu.componentscanner"
@@ -18,8 +27,8 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        // Backend base URL; override per build as needed.
-        buildConfigField("String", "BACKEND_BASE_URL", "\"https://component-scanner-backend.example.workers.dev/\"")
+        // Backend base URL — set backend.url in local.properties to override.
+        buildConfigField("String", "BACKEND_BASE_URL", "\"$backendUrl\"")
     }
 
     buildTypes {
