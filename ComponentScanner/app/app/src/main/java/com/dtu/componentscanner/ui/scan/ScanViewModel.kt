@@ -14,11 +14,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class ScanMode { SINGLE, SHELF }
+
 data class ScanUiState(
     val liveDetectedPart: String? = null,
     val candidates: List<Candidate> = emptyList(),
     val isScanning: Boolean = false,
     val error: String? = null,
+    val scanMode: ScanMode = ScanMode.SINGLE,
 )
 
 @HiltViewModel
@@ -36,11 +39,17 @@ class ScanViewModel @Inject constructor(
         _state.update { it.copy(liveDetectedPart = best) }
     }
 
+    /** Switch between single-component and shelf (multi-component) scan modes. */
+    fun setMode(mode: ScanMode) {
+        _state.update { it.copy(scanMode = mode, candidates = emptyList()) }
+    }
+
     /** Cloud fallback: send a captured still to the backend for a high-quality read. */
     fun deepScan(imageBase64: String, mimeType: String) {
+        val mode = if (_state.value.scanMode == ScanMode.SHELF) "shelf" else "single"
         _state.update { it.copy(isScanning = true, error = null) }
         viewModelScope.launch {
-            when (val outcome = repository.identify(imageBase64, mimeType, "single")) {
+            when (val outcome = repository.identify(imageBase64, mimeType, mode)) {
                 is IdentifyOutcome.Success ->
                     _state.update { it.copy(isScanning = false, candidates = outcome.candidates) }
                 is IdentifyOutcome.Error ->

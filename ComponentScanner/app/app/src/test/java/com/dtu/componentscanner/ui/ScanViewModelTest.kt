@@ -7,6 +7,7 @@ import com.dtu.componentscanner.data.remote.IdentifyRequest
 import com.dtu.componentscanner.data.remote.IdentifyResponse
 import com.dtu.componentscanner.data.repository.ComponentRepository
 import com.dtu.componentscanner.domain.PartNumberExtractor
+import com.dtu.componentscanner.ui.scan.ScanMode
 import com.dtu.componentscanner.ui.scan.ScanUiState
 import com.dtu.componentscanner.ui.scan.ScanViewModel
 import kotlinx.coroutines.Dispatchers
@@ -60,5 +61,39 @@ class ScanViewModelTest {
         assertEquals(true, vm.state.value.isScanning) // before dispatcher runs
         advanceUntilIdle()
         assertEquals(false, vm.state.value.isScanning)
+    }
+
+    @Test
+    fun `setMode switches mode and clears candidates`() = runTest {
+        val vm = ScanViewModel(repo(emptyList()), PartNumberExtractor())
+        vm.setMode(ScanMode.SHELF)
+        assertEquals(ScanMode.SHELF, vm.state.value.scanMode)
+        assertTrue(vm.state.value.candidates.isEmpty())
+        vm.setMode(ScanMode.SINGLE)
+        assertEquals(ScanMode.SINGLE, vm.state.value.scanMode)
+    }
+
+    @Test
+    fun `deepScan in SHELF mode requests shelf and stores all candidates`() = runTest {
+        var capturedMode: String? = null
+        val fakeRepo = ComponentRepository(object : ApiService {
+            override suspend fun identify(body: IdentifyRequest): IdentifyResponse {
+                capturedMode = body.mode
+                return IdentifyResponse(
+                    listOf(
+                        CandidateDto("LM358N", "TI", null, 0.9),
+                        CandidateDto("LM741", "NS", null, 0.7),
+                    )
+                )
+            }
+            override suspend fun datasheet(part: String) =
+                DatasheetResponse("X", "Y", "https://x/y.pdf")
+        })
+        val vm = ScanViewModel(fakeRepo, PartNumberExtractor())
+        vm.setMode(ScanMode.SHELF)
+        vm.deepScan("BASE64", "image/jpeg")
+        advanceUntilIdle()
+        assertEquals("shelf", capturedMode)
+        assertEquals(2, vm.state.value.candidates.size)
     }
 }

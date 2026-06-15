@@ -12,7 +12,10 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
@@ -59,6 +62,54 @@ fun ScanScreen(
     // Hoisted ImageCapture instance — populated once CameraPreview binds the use case.
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
 
+    // Sheet visibility: shown when shelf mode has candidates.
+    var showSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    LaunchedEffect(state.candidates, state.scanMode) {
+        if (state.scanMode == ScanMode.SHELF && state.candidates.isNotEmpty()) {
+            showSheet = true
+        }
+    }
+
+    if (showSheet && state.scanMode == ScanMode.SHELF && state.candidates.isNotEmpty()) {
+        ModalBottomSheet(
+            onDismissRequest = { showSheet = false },
+            sheetState = sheetState,
+        ) {
+            Text(
+                text = "Identified components",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding(),
+                contentPadding = PaddingValues(bottom = 16.dp),
+            ) {
+                items(state.candidates) { candidate ->
+                    ListItem(
+                        headlineContent = { Text(candidate.partNumber) },
+                        supportingContent = {
+                            Text(
+                                "${candidate.manufacturer ?: ""}" +
+                                    " — ${(candidate.confidence * 100).toInt()}%"
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showSheet = false
+                                onPartChosen(candidate.partNumber)
+                            },
+                    )
+                    HorizontalDivider()
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -71,6 +122,7 @@ fun ScanScreen(
                 FloatingActionButton(
                     onClick = {
                         val capture = imageCapture ?: return@FloatingActionButton
+                        showSheet = false // reset before new capture
                         capture.takePicture(
                             ContextCompat.getMainExecutor(context),
                             object : ImageCapture.OnImageCapturedCallback() {
@@ -132,16 +184,37 @@ fun ScanScreen(
             }
 
             Column(
+                Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // Mode toggle
+                SingleChoiceSegmentedButtonRow {
+                    SegmentedButton(
+                        selected = state.scanMode == ScanMode.SINGLE,
+                        onClick = { viewModel.setMode(ScanMode.SINGLE) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                    ) { Text("One") }
+                    SegmentedButton(
+                        selected = state.scanMode == ScanMode.SHELF,
+                        onClick = { viewModel.setMode(ScanMode.SHELF) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                    ) { Text("Shelf") }
+                }
+            }
+
+            Column(
                 Modifier.align(Alignment.BottomCenter).padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                state.liveDetectedPart?.let { part ->
-                    AssistChip(onClick = { onPartChosen(part) }, label = { Text("Detected: $part") })
-                    Spacer(Modifier.height(8.dp))
-                }
-                state.candidates.firstOrNull()?.let { c ->
-                    Button(onClick = { onPartChosen(c.partNumber) }) {
-                        Text("Open ${c.partNumber}")
+                if (state.scanMode == ScanMode.SINGLE) {
+                    state.liveDetectedPart?.let { part ->
+                        AssistChip(onClick = { onPartChosen(part) }, label = { Text("Detected: $part") })
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    state.candidates.firstOrNull()?.let { c ->
+                        Button(onClick = { onPartChosen(c.partNumber) }) {
+                            Text("Open ${c.partNumber}")
+                        }
                     }
                 }
                 if (state.isScanning) {
