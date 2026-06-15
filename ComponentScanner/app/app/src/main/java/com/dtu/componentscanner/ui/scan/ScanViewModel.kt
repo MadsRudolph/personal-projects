@@ -6,11 +6,13 @@ import com.dtu.componentscanner.data.repository.ComponentRepository
 import com.dtu.componentscanner.data.repository.IdentifyOutcome
 import com.dtu.componentscanner.domain.PartNumberExtractor
 import com.dtu.componentscanner.domain.model.Candidate
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class ScanUiState(
     val liveDetectedPart: String? = null,
@@ -19,7 +21,8 @@ data class ScanUiState(
     val error: String? = null,
 )
 
-class ScanViewModel(
+@HiltViewModel
+class ScanViewModel @Inject constructor(
     private val repository: ComponentRepository,
     private val extractor: PartNumberExtractor,
 ) : ViewModel() {

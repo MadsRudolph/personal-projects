@@ -1,7 +1,9 @@
 package com.dtu.componentscanner.domain
 
+import javax.inject.Inject
+
 /** Extracts and normalizes electronic part numbers from raw OCR text. Pure logic. */
-class PartNumberExtractor {
+class PartNumberExtractor @Inject constructor() {
 
     /** Canonicalize a single token: collapse whitespace, uppercase. */
     fun normalize(raw: String): String =

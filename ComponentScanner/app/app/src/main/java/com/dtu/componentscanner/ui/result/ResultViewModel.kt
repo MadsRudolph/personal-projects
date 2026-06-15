@@ -6,11 +6,13 @@ import com.dtu.componentscanner.data.pdf.PdfCache
 import com.dtu.componentscanner.data.repository.ComponentRepository
 import com.dtu.componentscanner.data.repository.HistoryRepository
 import com.dtu.componentscanner.domain.model.Datasheet
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class ResultUiState(
     val isLoading: Boolean = false,
@@ -20,11 +22,12 @@ data class ResultUiState(
     val error: String? = null,
 )
 
-class ResultViewModel(
+@HiltViewModel
+class ResultViewModel @Inject constructor(
     private val componentRepository: ComponentRepository,
     private val historyRepository: HistoryRepository,
     private val pdfCache: PdfCache,
-    private val clock: () -> Long = { System.currentTimeMillis() },
+    private val clock: () -> Long,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ResultUiState())
