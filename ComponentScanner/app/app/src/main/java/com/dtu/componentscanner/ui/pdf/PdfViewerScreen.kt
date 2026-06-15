@@ -15,46 +15,53 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import java.io.File
-import kotlinx.coroutines.Dispatchers
+import java.util.concurrent.Executors
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 // ---------------------------------------------------------------------------
-// PdfDocument — opens renderer once, renders pages lazily on Dispatchers.IO,
-// guards against PdfRenderer's non-thread-safety with a Mutex.
+// PdfDocument — opens renderer once, renders pages lazily on a single
+// dedicated thread so that render() and close() are always serialized.
 // ---------------------------------------------------------------------------
 
 private class PdfDocument(file: File) {
     private val pfd: ParcelFileDescriptor =
         ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
     private val renderer: PdfRenderer = PdfRenderer(pfd)
-    private val mutex = Mutex()
+    private val executor = Executors.newSingleThreadExecutor()
+    private val dispatcher = executor.asCoroutineDispatcher()
 
     val pageCount: Int get() = renderer.pageCount
 
     /** Renders [index] scaled so its width == [targetWidthPx]. Returns a white ARGB_8888 bitmap. */
-    suspend fun render(index: Int, targetWidthPx: Int): Bitmap = mutex.withLock {
-        withContext(Dispatchers.IO) {
-            val page = renderer.openPage(index)
-            try {
-                val scale = targetWidthPx.toFloat() / page.width
-                val w = targetWidthPx
-                val h = (page.height * scale).toInt().coerceAtLeast(1)
-                val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-                bmp.eraseColor(android.graphics.Color.WHITE)
-                page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                bmp
-            } finally {
-                page.close()
-            }
+    suspend fun render(index: Int, targetWidthPx: Int): Bitmap = withContext(dispatcher) {
+        val page = renderer.openPage(index)
+        try {
+            val scale = targetWidthPx.toFloat() / page.width
+            val w = targetWidthPx
+            val h = (page.height * scale).toInt().coerceAtLeast(1)
+            val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            bmp.eraseColor(android.graphics.Color.WHITE)
+            page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+            bmp
+        } finally {
+            page.close()
         }
     }
 
-    /** Closes renderer and file descriptor, swallowing any exception from each. */
+    /**
+     * Closes renderer and file descriptor on the same single thread so that any
+     * in-flight render() completes before the resources are released.
+     */
     fun close() {
-        runCatching { renderer.close() }
-        runCatching { pfd.close() }
+        // Submit close task on the same thread — runs strictly after any in-flight render.
+        runCatching {
+            executor.execute {
+                runCatching { renderer.close() }
+                runCatching { pfd.close() }
+            }
+        }
+        executor.shutdown()
     }
 }
 
@@ -126,7 +133,7 @@ private fun PdfPageItem(pdf: PdfDocument, index: Int) {
         ) {
             value = null // reset on key change
             if (widthPx > 0) {
-                value = pdf.render(index, widthPx)
+                value = runCatching { pdf.render(index, widthPx) }.getOrNull()
             }
         }
 

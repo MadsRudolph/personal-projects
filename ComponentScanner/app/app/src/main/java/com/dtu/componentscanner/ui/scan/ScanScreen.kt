@@ -125,33 +125,34 @@ fun ScanScreen(
             if (hasCamera) {
                 FloatingActionButton(
                     onClick = {
-                        val capture = imageCapture ?: return@FloatingActionButton
-                        showSheet = false // reset before new capture
-                        capture.takePicture(
-                            ContextCompat.getMainExecutor(context),
-                            object : ImageCapture.OnImageCapturedCallback() {
-                                override fun onCaptureSuccess(image: ImageProxy) {
-                                    scope.launch {
-                                        try {
-                                            val buffer = image.planes[0].buffer
-                                            val bytes = ByteArray(buffer.remaining())
-                                            buffer.get(bytes)
-                                            val base64 = withContext(Dispatchers.Default) {
-                                                downscaleJpegBase64(bytes)
+                        val ic = imageCapture
+                        if (ic != null && !state.isScanning) {
+                            showSheet = false // reset before new capture
+                            ic.takePicture(
+                                ContextCompat.getMainExecutor(context),
+                                object : ImageCapture.OnImageCapturedCallback() {
+                                    override fun onCaptureSuccess(image: ImageProxy) {
+                                        scope.launch {
+                                            try {
+                                                val base64 = withContext(Dispatchers.Default) {
+                                                    val buffer = image.planes[0].buffer
+                                                    val bytes = ByteArray(buffer.remaining())
+                                                    buffer.get(bytes)
+                                                    downscaleJpegBase64(bytes)
+                                                }
+                                                viewModel.deepScan(base64, "image/jpeg")
+                                            } finally {
+                                                image.close()
                                             }
-                                            viewModel.deepScan(base64, "image/jpeg")
-                                        } finally {
-                                            image.close()
                                         }
                                     }
-                                }
 
-                                override fun onError(exc: ImageCaptureException) {
-                                    // Surface the error through the ViewModel so the UI shows it.
-                                    viewModel.deepScan("", "image/jpeg") // triggers error path
+                                    override fun onError(exc: ImageCaptureException) {
+                                        viewModel.reportError(exc.message ?: "Capture failed")
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 ) {
                     Icon(Icons.Filled.CameraAlt, contentDescription = "Deep scan")

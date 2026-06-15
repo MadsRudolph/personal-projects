@@ -91,6 +91,18 @@ class ScanViewModelTest {
     }
 
     @Test
+    fun `reportError sets the error message and clears scanning`() = runTest {
+        val vm = ScanViewModel(repo(emptyList()), PartNumberExtractor())
+        // Simulate a scan in-flight
+        vm.deepScan("B", "image/jpeg")
+        assertEquals(true, vm.state.value.isScanning)
+        // A capture error arrives before the backend responds
+        vm.reportError("Capture failed")
+        assertEquals(false, vm.state.value.isScanning)
+        assertEquals("Capture failed", vm.state.value.error)
+    }
+
+    @Test
     fun `deepScan in SHELF mode requests shelf and stores all candidates`() = runTest {
         var capturedMode: String? = null
         val fakeRepo = ComponentRepository(object : ApiService {

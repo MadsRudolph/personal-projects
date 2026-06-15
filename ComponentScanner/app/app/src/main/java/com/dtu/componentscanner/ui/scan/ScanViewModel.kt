@@ -68,4 +68,6 @@ class ScanViewModel @Inject constructor(
     }
 
     fun clearError() = _state.update { it.copy(error = null) }
+
+    fun reportError(message: String) = _state.update { it.copy(isScanning = false, error = message) }
 }
