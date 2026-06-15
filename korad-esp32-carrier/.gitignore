@@ -1,0 +1,7 @@
+# KiCad auto-backups, caches, and per-user local state
+kicad/*-backups/
+kicad/logs/
+kicad/fp-info-cache
+kicad/*.kicad_prl
+# pipeline temp
+_net.net

@@ -1,0 +1,19 @@
+** Drc report for korad-esp32-carrier.kicad_pcb **
+** Created on 2026-06-15T10:43:03+0200 **
+
+** Found 3 DRC violations **
+[track_dangling]: Track has unconnected end
+    Local override; warning
+    @(104.7042 mm, 64.8620 mm): Track [/ESP_TX] on B.Cu, length 1.2770 mm
+[track_dangling]: Track has unconnected end
+    Local override; warning
+    @(115.8520 mm, 86.6243 mm): Track [/J9_TX] on B.Cu, length 1.7242 mm
+[track_dangling]: Track has unconnected end
+    Local override; warning
+    @(102.6970 mm, 100.4695 mm): Track [GND] on B.Cu, length 1.5050 mm
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** End of Report **

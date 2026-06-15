@@ -1,0 +1,11 @@
+ERC report (2026-06-15T10:41:32+0200, Encoding UTF8)
+
+***** Sheet /
+[lib_symbol_mismatch]: Symbol 'BS170' doesn't match copy in library 'Transistor_FET'
+    ; warning
+    @(110.49 mm, 149.86 mm): Symbol Q1 [BS170]
+[lib_symbol_mismatch]: Symbol 'BS170' doesn't match copy in library 'Transistor_FET'
+    ; warning
+    @(110.49 mm, 185.42 mm): Symbol Q2 [BS170]
+
+ ** ERC messages: 2  Errors 0  Warnings 2
