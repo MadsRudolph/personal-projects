@@ -57,7 +57,25 @@ fun ScanScreen(
             if (hasCamera) {
                 CameraPreview(onOcrText = viewModel::onOcrText)
             } else {
-                Text("Camera permission is required to scan components.")
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.padding(24.dp),
+                ) {
+                    Text("Camera permission is required to scan components.")
+                    Button(onClick = { permLauncher.launch(Manifest.permission.CAMERA) }) {
+                        Text("Grant camera permission")
+                    }
+                    OutlinedButton(onClick = {
+                        val intent = android.content.Intent(
+                            android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            android.net.Uri.fromParts("package", context.packageName, null)
+                        )
+                        context.startActivity(intent)
+                    }) {
+                        Text("Open settings")
+                    }
+                }
             }
 
             Column(
@@ -91,6 +109,10 @@ private fun CameraPreview(onOcrText: (String) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
+
+    DisposableEffect(Unit) {
+        onDispose { analysisExecutor.shutdown() }
+    }
 
     AndroidView(
         modifier = Modifier.fillMaxSize(),

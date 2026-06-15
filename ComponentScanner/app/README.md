@@ -38,3 +38,12 @@ renderer, and Compose UI are verified by compilation and manual device testing.
   and is unit-tested; live OCR drives identification in the MVP).
 - Shelf / multi-component scan mode (Phase 2).
 - Pinch-zoom in the PDF viewer (currently scroll + fit-width).
+- **Fuller OCR normalisation (deferred):** strip date/lot codes and fix common OCR character
+  confusions (0/O, 1/I/l, 5/S, 8/B), plus a fuzzy matcher for near-miss part numbers.
+  The MVP delegates robust reads to the backend vision model; this refinement is Phase 1.x.
+- **Offline banner + retry-with-backoff (deferred):** show a persistent "no connection"
+  banner when the backend is unreachable and retry failed requests with exponential
+  back-off rather than surfacing a raw error to the user.
+- **Lazy per-page PDF rendering with bitmap recycling (deferred):** currently all pages are
+  rasterised eagerly on first open. For very large datasheets this can exhaust memory;
+  a future pass will render only visible pages and recycle off-screen bitmaps.
