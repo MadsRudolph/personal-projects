@@ -1,0 +1,9 @@
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+
+# Build output (per-subproject .gitignore files cover the rest)
+**/build/
