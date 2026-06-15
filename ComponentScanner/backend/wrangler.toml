@@ -10,3 +10,9 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 CLAUDE_MODEL = "claude-opus-4-8"
 RATE_LIMIT = "60"
+
+# Create with: npx wrangler kv namespace create CACHE
+# then paste the id below and uncomment:
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "<your-kv-namespace-id>"

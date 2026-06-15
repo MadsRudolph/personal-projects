@@ -11,6 +11,26 @@ secret API keys server-side. Runs on Node (dev) and Cloudflare Workers (prod).
 - `GET  /datasheet?part=PARTNO`
   → `{ partNumber, manufacturer, datasheetUrl, keySpecs: [{name,value}] }` or 404
 
+**Note:** `datasheetUrl` is returned as-is from Nexar; reachability/PDF validation
+and fallback resolvers (vision-guessed URL, generic web search) are a planned Phase-1.x enhancement.
+
+## Caching & rate limiting
+
+Result caching uses **Cloudflare Workers KV** in production. Create the namespace and
+add it to `wrangler.toml`:
+
+```bash
+npx wrangler kv namespace create CACHE
+# paste the returned id into wrangler.toml under [[kv_namespaces]]
+```
+
+Without a `CACHE` KV binding the backend falls back to **in-memory caching**
+(suitable for local dev only — cache is lost on each request cold-start in Workers).
+
+Rate limiting is **per-isolate best-effort in-memory**. Under normal Workers traffic
+patterns (one long-lived isolate per region) this is effective, but it is not
+globally strict. Strict global rate limiting would require Durable Objects.
+
 ## Local development
 
 ```bash

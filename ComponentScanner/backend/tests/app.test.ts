@@ -17,6 +17,7 @@ function deps() {
       })),
     },
     cache: new MemoryCache(() => 0),
+    rateLimitStore: new MemoryCache(() => 0),
     rateLimit: 100,
     rateWindowSeconds: 60,
     identifyCacheTtl: 600,

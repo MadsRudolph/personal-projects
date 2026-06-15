@@ -3,18 +3,41 @@ import { serve } from "@hono/node-server";
 import { buildApp, type AppDeps } from "./app.js";
 import { loadConfig } from "./config.js";
 import { MemoryCache } from "./cache/memoryCache.js";
+import { KVCache, type KVNamespaceLike } from "./cache/kvCache.js";
 import { ClaudeVisionProvider } from "./vision/claudeVision.js";
 import { NexarDatasheetProvider } from "./datasheet/nexarDatasheet.js";
 
-function depsFromEnv(env: Record<string, string | undefined>): AppDeps {
-  const cfg = loadConfig(env);
+function isKVNamespaceLike(v: unknown): v is KVNamespaceLike {
+  return typeof v === "object" && v !== null && typeof (v as Record<string, unknown>)["get"] === "function";
+}
+
+function depsFromEnv(env: Record<string, unknown>): AppDeps {
+  // loadConfig expects string | undefined values; cast non-string KV binding out.
+  const stringEnv: Record<string, string | undefined> = {};
+  for (const [k, v] of Object.entries(env)) {
+    if (typeof v === "string" || v === undefined) {
+      stringEnv[k] = v;
+    }
+  }
+
+  const cfg = loadConfig(stringEnv);
+
+  const cache: AppDeps["cache"] = isKVNamespaceLike(env["CACHE"])
+    ? new KVCache(env["CACHE"])
+    : new MemoryCache();
+
+  // Rate-limit store is always in-memory (per-isolate best-effort).
+  // Strict global rate limiting would require Durable Objects.
+  const rateLimitStore = new MemoryCache();
+
   return {
     vision: new ClaudeVisionProvider({
       apiKey: cfg.anthropicApiKey,
       model: cfg.claudeModel,
     }),
     datasheet: new NexarDatasheetProvider({ token: cfg.nexarToken }),
-    cache: new MemoryCache(),
+    cache,
+    rateLimitStore,
     rateLimit: cfg.rateLimit,
     rateWindowSeconds: cfg.rateWindowSeconds,
     identifyCacheTtl: cfg.identifyCacheTtl,
@@ -22,10 +45,12 @@ function depsFromEnv(env: Record<string, string | undefined>): AppDeps {
   };
 }
 
-// Cloudflare Workers entry: env is passed per-request.
+// Cloudflare Workers entry: build the app once per isolate lifetime.
+let cachedApp: ReturnType<typeof buildApp> | undefined;
 export default {
-  fetch(req: Request, env: Record<string, string | undefined>) {
-    return buildApp(depsFromEnv(env)).fetch(req);
+  fetch(req: Request, env: Record<string, unknown>) {
+    cachedApp ??= buildApp(depsFromEnv(env));
+    return cachedApp.fetch(req);
   },
 };
 

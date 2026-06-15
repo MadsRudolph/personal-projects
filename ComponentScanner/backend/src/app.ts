@@ -11,6 +11,10 @@ export interface AppDeps {
   vision: VisionProvider;
   datasheet: DatasheetProvider;
   cache: Cache;
+  /** Separate store for rate-limit counters. In production this is an
+   *  in-memory MemoryCache (per-isolate best-effort). Result caching
+   *  uses deps.cache which may be a KVCache in production. */
+  rateLimitStore: Cache;
   rateLimit: number;
   rateWindowSeconds: number;
   identifyCacheTtl: number;
@@ -25,7 +29,7 @@ export function buildApp(deps: AppDeps) {
   app.use(
     "/identify",
     rateLimit({
-      cache: deps.cache,
+      cache: deps.rateLimitStore,
       limit: deps.rateLimit,
       windowSeconds: deps.rateWindowSeconds,
     }),
@@ -33,7 +37,7 @@ export function buildApp(deps: AppDeps) {
   app.use(
     "/datasheet",
     rateLimit({
-      cache: deps.cache,
+      cache: deps.rateLimitStore,
       limit: deps.rateLimit,
       windowSeconds: deps.rateWindowSeconds,
     }),
