@@ -62,6 +62,10 @@ fun ScanScreen(
     // Hoisted ImageCapture instance — populated once CameraPreview binds the use case.
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
 
+    // Manual part-number entry state.
+    var showManualEntry by remember { mutableStateOf(false) }
+    var manualText by remember { mutableStateOf("") }
+
     // Sheet visibility: shown when shelf mode has candidates.
     var showSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -206,6 +210,34 @@ fun ScanScreen(
                 Modifier.align(Alignment.BottomCenter).padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                // Manual part-number entry affordance (visible in both camera states).
+                if (showManualEntry) {
+                    OutlinedTextField(
+                        value = manualText,
+                        onValueChange = { manualText = it },
+                        label = { Text("Part number") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = {
+                            val normalized = viewModel.lookupManual(manualText)
+                            if (normalized != null) {
+                                onPartChosen(normalized)
+                                manualText = ""
+                                showManualEntry = false
+                            }
+                        }) { Text("Look up") }
+                        OutlinedButton(onClick = {
+                            showManualEntry = false
+                            manualText = ""
+                        }) { Text("Cancel") }
+                    }
+                } else {
+                    TextButton(onClick = { showManualEntry = true }) { Text("Enter part #") }
+                }
+
                 if (state.scanMode == ScanMode.SINGLE) {
                     state.liveDetectedPart?.let { part ->
                         AssistChip(onClick = { onPartChosen(part) }, label = { Text("Detected: $part") })
@@ -221,9 +253,15 @@ fun ScanScreen(
                     Spacer(Modifier.height(8.dp))
                     CircularProgressIndicator()
                 }
-                state.error?.let {
+                state.error?.let { errorMsg ->
                     Spacer(Modifier.height(8.dp))
-                    Text("Error: $it")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text("Error: $errorMsg", modifier = Modifier.weight(1f))
+                        TextButton(onClick = viewModel::clearError) { Text("Dismiss") }
+                    }
                 }
             }
         }

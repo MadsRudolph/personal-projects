@@ -58,5 +58,14 @@ class ScanViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Normalize a manually-entered part number.
+     * Returns the normalized string when [text] is non-blank, null otherwise.
+     */
+    fun lookupManual(text: String): String? {
+        val normalized = extractor.normalize(text)
+        return if (normalized.isBlank()) null else normalized
+    }
+
     fun clearError() = _state.update { it.copy(error = null) }
 }

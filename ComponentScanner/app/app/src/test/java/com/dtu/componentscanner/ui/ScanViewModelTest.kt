@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -71,6 +72,22 @@ class ScanViewModelTest {
         assertTrue(vm.state.value.candidates.isEmpty())
         vm.setMode(ScanMode.SINGLE)
         assertEquals(ScanMode.SINGLE, vm.state.value.scanMode)
+    }
+
+    @Test
+    fun `lookupManual returns null for blank input`() = runTest {
+        val vm = ScanViewModel(repo(emptyList()), PartNumberExtractor())
+        assertNull(vm.lookupManual(""))
+        assertNull(vm.lookupManual("   "))
+        assertNull(vm.lookupManual("\t\n"))
+    }
+
+    @Test
+    fun `lookupManual returns normalized part number for non-blank input`() = runTest {
+        val vm = ScanViewModel(repo(emptyList()), PartNumberExtractor())
+        assertEquals("LM358N", vm.lookupManual("lm358n"))
+        assertEquals("LM358N", vm.lookupManual("  lm358n  "))
+        assertEquals("STM32F103", vm.lookupManual("stm32f103"))
     }
 
     @Test

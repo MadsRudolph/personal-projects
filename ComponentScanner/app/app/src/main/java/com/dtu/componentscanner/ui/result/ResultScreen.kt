@@ -33,7 +33,11 @@ fun ResultScreen(
             when {
                 state.isLoading -> CircularProgressIndicator()
                 state.notFound -> Text("No datasheet found for $partNumber.")
-                state.error != null -> Text("Error: ${state.error}")
+                state.error != null -> {
+                    Text("Error: ${state.error}")
+                    Spacer(Modifier.height(12.dp))
+                    Button(onClick = { viewModel.load(partNumber) }) { Text("Retry") }
+                }
                 state.datasheet != null -> {
                     val ds = state.datasheet!!
                     Text("Manufacturer: ${ds.manufacturer}", style = MaterialTheme.typography.titleMedium)
