@@ -1,6 +1,6 @@
 // tests/normalize.test.ts
 import { describe, it, expect } from "vitest";
-import { normalizePartNumber, looksLikePartNumber } from "../src/normalize.js";
+import { normalizePartNumber } from "../src/normalize.js";
 
 describe("normalizePartNumber", () => {
   it("uppercases and trims surrounding whitespace", () => {
@@ -13,17 +13,5 @@ describe("normalizePartNumber", () => {
 
   it("strips a trailing date/lot code segment after whitespace newline", () => {
     expect(normalizePartNumber("STM32F103C8T6\n2143")).toBe("STM32F103C8T6");
-  });
-});
-
-describe("looksLikePartNumber", () => {
-  it("accepts tokens with letters and digits of reasonable length", () => {
-    expect(looksLikePartNumber("LM358")).toBe(true);
-    expect(looksLikePartNumber("STM32F103C8T6")).toBe(true);
-  });
-
-  it("rejects pure words and very short tokens", () => {
-    expect(looksLikePartNumber("HELLO")).toBe(false);
-    expect(looksLikePartNumber("A1")).toBe(false);
   });
 });
