@@ -85,13 +85,30 @@ export class ClaudeVisionProvider implements VisionProvider {
     const text =
       body.content?.find((c) => c.type === "text")?.text ?? '{"candidates":[]}';
 
-    const parsed = ReplySchema.safeParse(JSON.parse(extractJson(text)));
+    let parsedJson: unknown;
+    try {
+      parsedJson = JSON.parse(extractJson(text));
+    } catch {
+      return [];
+    }
+
+    const parsed = ReplySchema.safeParse(parsedJson);
     if (!parsed.success) return [];
 
-    return parsed.data.candidates
+    const normalized = parsed.data.candidates
       .map((c) => ({ ...c, partNumber: normalizePartNumber(c.partNumber) }))
       .filter((c) => c.partNumber.length > 0)
       .map((c) => CandidateSchema.parse(c));
+
+    // Dedup by partNumber, keeping the highest-confidence entry for each
+    const byPart = new Map<string, Candidate>();
+    for (const candidate of normalized) {
+      const existing = byPart.get(candidate.partNumber);
+      if (existing === undefined || candidate.confidence > existing.confidence) {
+        byPart.set(candidate.partNumber, candidate);
+      }
+    }
+    return Array.from(byPart.values());
   }
 }
 
