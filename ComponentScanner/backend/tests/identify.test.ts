@@ -57,4 +57,16 @@ describe("POST /identify", () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it("rejects an imageBase64 over 12 MB with 400", async () => {
+    const app = makeApp({ identify: vi.fn() });
+    // 12_000_001 'A' characters — just over the cap
+    const oversize = "A".repeat(12_000_001);
+    const res = await app.request("/identify", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ imageBase64: oversize, mimeType: "image/jpeg", mode: "single" }),
+    });
+    expect(res.status).toBe(400);
+  });
 });

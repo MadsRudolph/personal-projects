@@ -5,7 +5,7 @@ import type { VisionProvider } from "../vision/visionProvider.js";
 import type { Cache } from "../cache/cache.js";
 
 const RequestSchema = z.object({
-  imageBase64: z.string().min(1),
+  imageBase64: z.string().min(1).max(12_000_000),
   mimeType: z.string().min(1),
   mode: z.enum(["single", "shelf"]).default("single"),
 });
@@ -39,8 +39,12 @@ export function createIdentifyRoute(deps: IdentifyDeps): Handler {
 
     const cacheKey = `identify:${mode}:${hashKey(imageBase64)}`;
     const cached = await deps.cache.get(cacheKey);
-    if (cached) {
-      return c.json({ candidates: JSON.parse(cached), cached: true });
+    if (cached !== null) {
+      try {
+        return c.json({ candidates: JSON.parse(cached), cached: true });
+      } catch {
+        // Cache entry is corrupt — fall through to provider
+      }
     }
 
     const candidates = await deps.vision.identify(imageBase64, mimeType, mode);

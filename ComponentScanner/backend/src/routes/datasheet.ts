@@ -20,7 +20,13 @@ export function createDatasheetRoute(deps: DatasheetDeps): Handler {
 
     const cacheKey = `datasheet:${part}`;
     const cached = await deps.cache.get(cacheKey);
-    if (cached) return c.json(JSON.parse(cached));
+    if (cached !== null) {
+      try {
+        return c.json(JSON.parse(cached));
+      } catch {
+        // Cache entry is corrupt — fall through to provider
+      }
+    }
 
     const result = await deps.datasheet.resolve(part);
     if (!result) {
