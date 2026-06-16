@@ -48,11 +48,15 @@ export class NexarDatasheetProvider implements DatasheetProvider {
   private maxSpecs: number;
   private now: () => number;
   private cachedToken: CachedToken | null = null;
+  private fetchFn: typeof fetch;
 
   constructor(
     private config: NexarConfig,
-    private fetchFn: typeof fetch = fetch,
+    fetchFn: typeof fetch = fetch,
   ) {
+    // Bind to globalThis so the call works on Cloudflare Workers, where calling
+    // a detached `fetch` (via `this.fetchFn(...)`) throws "Illegal invocation".
+    this.fetchFn = fetchFn.bind(globalThis);
     this.endpoint = config.endpoint ?? "https://api.nexar.com/graphql";
     this.tokenEndpoint =
       config.tokenEndpoint ?? "https://identity.nexar.com/connect/token";

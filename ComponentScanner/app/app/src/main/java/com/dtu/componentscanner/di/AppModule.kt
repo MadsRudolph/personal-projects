@@ -30,7 +30,15 @@ object AppModule {
     fun provideJson(): Json = Json { ignoreUnknownKeys = true }
 
     @Provides @Singleton
-    fun provideOkHttp(): OkHttpClient = OkHttpClient.Builder().build()
+    fun provideOkHttp(): OkHttpClient =
+        OkHttpClient.Builder()
+            // The backend calls Claude (vision + web search) and downloads PDFs,
+            // which can take tens of seconds — give generous timeouts.
+            .connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(90, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+            .callTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
 
     @Provides @Singleton
     fun provideRetrofit(client: OkHttpClient, json: Json): Retrofit =

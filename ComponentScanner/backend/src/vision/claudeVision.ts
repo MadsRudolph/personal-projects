@@ -34,10 +34,16 @@ const SHELF_PROMPT =
   "Ignore unreadable items.";
 
 export class ClaudeVisionProvider implements VisionProvider {
+  private fetchFn: typeof fetch;
+
   constructor(
     private config: ClaudeConfig,
-    private fetchFn: typeof fetch = fetch,
-  ) {}
+    fetchFn: typeof fetch = fetch,
+  ) {
+    // Bind to globalThis so the call works on Cloudflare Workers, where calling
+    // a detached `fetch` (via `this.fetchFn(...)`) throws "Illegal invocation".
+    this.fetchFn = fetchFn.bind(globalThis);
+  }
 
   async identify(
     imageBase64: string,

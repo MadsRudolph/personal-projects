@@ -6,6 +6,8 @@ import { MemoryCache } from "./cache/memoryCache.js";
 import { KVCache, type KVNamespaceLike } from "./cache/kvCache.js";
 import { ClaudeVisionProvider } from "./vision/claudeVision.js";
 import { NexarDatasheetProvider } from "./datasheet/nexarDatasheet.js";
+import { ClaudeDatasheetProvider } from "./datasheet/claudeDatasheet.js";
+import { CompositeDatasheetProvider } from "./datasheet/compositeDatasheet.js";
 
 function isKVNamespaceLike(v: unknown): v is KVNamespaceLike {
   return typeof v === "object" && v !== null && typeof (v as Record<string, unknown>)["get"] === "function";
@@ -35,10 +37,18 @@ function depsFromEnv(env: Record<string, unknown>): AppDeps {
       apiKey: cfg.anthropicApiKey,
       model: cfg.claudeModel,
     }),
-    datasheet: new NexarDatasheetProvider({
-      clientId: cfg.nexarClientId,
-      clientSecret: cfg.nexarClientSecret,
-    }),
+    datasheet: new CompositeDatasheetProvider([
+      // Nexar first (structured specs) — used when the account has quota.
+      new NexarDatasheetProvider({
+        clientId: cfg.nexarClientId,
+        clientSecret: cfg.nexarClientSecret,
+      }),
+      // Fallback: Claude finds + validates a manufacturer datasheet PDF.
+      new ClaudeDatasheetProvider({
+        apiKey: cfg.anthropicApiKey,
+        model: cfg.claudeModel,
+      }),
+    ]),
     cache,
     rateLimitStore,
     rateLimit: cfg.rateLimit,
