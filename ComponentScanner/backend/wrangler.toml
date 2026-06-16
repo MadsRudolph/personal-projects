@@ -11,9 +11,12 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 CLAUDE_MODEL = "claude-sonnet-4-6"
 RATE_LIMIT = "60"
+# Cache resolved datasheets for 30 days so each unique part is paid for once.
+DATASHEET_CACHE_TTL = "2592000"
+IDENTIFY_CACHE_TTL = "604800"
 
-# Create with: npx wrangler kv namespace create CACHE
-# then paste the id below and uncomment:
-# [[kv_namespaces]]
-# binding = "CACHE"
-# id = "<your-kv-namespace-id>"
+# Persistent cache (shared across all requests/users) — each unique datasheet
+# lookup hits the paid API only once, then serves from KV.
+[[kv_namespaces]]
+binding = "CACHE"
+id = "7169ecf896534e42b659e97516b89554"

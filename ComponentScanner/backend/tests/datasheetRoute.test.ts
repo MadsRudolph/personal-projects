@@ -47,4 +47,14 @@ describe("GET /datasheet", () => {
     await app.request("/datasheet?part=LM358N");
     expect(resolve).toHaveBeenCalledOnce();
   });
+
+  it("caches a not-found result so the paid lookup is not repeated", async () => {
+    const resolve = vi.fn(async () => null);
+    const app = makeApp({ resolve });
+    const r1 = await app.request("/datasheet?part=NOPART");
+    const r2 = await app.request("/datasheet?part=NOPART");
+    expect(r1.status).toBe(404);
+    expect(r2.status).toBe(404);
+    expect(resolve).toHaveBeenCalledOnce(); // second served from cache
+  });
 });

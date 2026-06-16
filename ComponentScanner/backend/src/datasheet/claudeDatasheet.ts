@@ -131,7 +131,7 @@ export class ClaudeDatasheetProvider implements DatasheetProvider {
 
   private async ask(part: string, useSearch: boolean): Promise<Guess | null> {
     const tools = useSearch
-      ? [{ type: "web_search_20260209", name: "web_search", max_uses: 4 }]
+      ? [{ type: "web_search_20260209", name: "web_search", max_uses: 2 }]
       : undefined;
 
     let messages: Array<{ role: string; content: unknown }> = [
@@ -148,7 +148,7 @@ export class ClaudeDatasheetProvider implements DatasheetProvider {
         },
         body: JSON.stringify({
           model: this.config.model,
-          max_tokens: 1024,
+          max_tokens: 768,
           ...(tools ? { tools } : {}),
           messages,
         }),
