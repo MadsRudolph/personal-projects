@@ -25,6 +25,8 @@ class HistoryViewModelTest {
     private class FakeDao(initial: List<HistoryEntity>) : HistoryDao {
         val items = MutableStateFlow(initial)
         override fun observeAll(): Flow<List<HistoryEntity>> = items
+        override suspend fun getByPart(partNumber: String): HistoryEntity? =
+            items.value.firstOrNull { it.partNumber == partNumber }
         override suspend fun upsert(entity: HistoryEntity) {}
         override suspend fun deleteByPart(partNumber: String) {
             items.value = items.value.filterNot { it.partNumber == partNumber }

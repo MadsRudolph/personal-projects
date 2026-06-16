@@ -2,7 +2,9 @@ package com.dtu.componentscanner.ui.scan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dtu.componentscanner.data.pdf.PdfCache
 import com.dtu.componentscanner.data.repository.ComponentRepository
+import com.dtu.componentscanner.data.repository.HistoryRepository
 import com.dtu.componentscanner.data.repository.IdentifyOutcome
 import com.dtu.componentscanner.domain.PartNumberExtractor
 import com.dtu.componentscanner.domain.model.Candidate
@@ -28,7 +30,12 @@ data class ScanUiState(
 class ScanViewModel @Inject constructor(
     private val repository: ComponentRepository,
     private val extractor: PartNumberExtractor,
+    // Optional so unit tests can construct the VM without these; injected in the app.
+    private val pdfCache: PdfCache? = null,
+    private val historyRepository: HistoryRepository? = null,
 ) : ViewModel() {
+
+    private val prefetched = mutableSetOf<String>()
 
     private val _state = MutableStateFlow(ScanUiState())
     val state: StateFlow<ScanUiState> = _state.asStateFlow()
@@ -50,6 +57,9 @@ class ScanViewModel @Inject constructor(
         if (winner != null && winner.value >= STABLE_THRESHOLD) {
             if (_state.value.liveDetectedPart != winner.key) {
                 _state.update { it.copy(liveDetectedPart = winner.key) }
+                // Resolve + cache the datasheet in the background so tapping the
+                // detected part opens it near-instantly.
+                prefetch(winner.key)
             }
         }
     }
@@ -68,10 +78,37 @@ class ScanViewModel @Inject constructor(
         _state.update { it.copy(isScanning = true, error = null) }
         viewModelScope.launch {
             when (val outcome = repository.identify(imageBase64, mimeType, mode)) {
-                is IdentifyOutcome.Success ->
+                is IdentifyOutcome.Success -> {
                     _state.update { it.copy(isScanning = false, candidates = outcome.candidates) }
+                    if (mode == "single") {
+                        outcome.candidates.firstOrNull()?.let { prefetch(it.partNumber) }
+                    }
+                }
                 is IdentifyOutcome.Error ->
                     _state.update { it.copy(isScanning = false, error = outcome.message) }
+            }
+        }
+    }
+
+    /**
+     * Resolve + cache a part's datasheet in the background (once per part) so the
+     * Result screen opens it instantly. No-op when caching deps aren't wired (tests).
+     */
+    private fun prefetch(partNumber: String) {
+        val cache = pdfCache ?: return
+        val history = historyRepository ?: return
+        if (!prefetched.add(partNumber)) return
+        viewModelScope.launch {
+            try {
+                if (cache.cachedFile(partNumber) != null) return@launch
+                val sheet = repository.datasheet(partNumber) ?: return@launch
+                history.record(
+                    sheet.partNumber, sheet.manufacturer, sheet.datasheetUrl,
+                    System.currentTimeMillis(),
+                )
+                runCatching { cache.getOrDownload(sheet.partNumber, sheet.datasheetUrl) }
+            } catch (_: Exception) {
+                // Best-effort prefetch; the Result screen will resolve on demand.
             }
         }
     }

@@ -20,6 +20,12 @@ class PdfCache(
         return file
     }
 
+    /** Returns the already-cached PDF for this part, or null if not downloaded yet. */
+    fun cachedFile(partNumber: String): File? {
+        val file = File(cacheDir, fileName(partNumber))
+        return if (file.exists() && file.length() > 0) file else null
+    }
+
     /** PDFs start with the magic bytes "%PDF". */
     private fun isPdf(bytes: ByteArray): Boolean =
         bytes.size >= 4 &&

@@ -15,6 +15,8 @@ class HistoryRepositoryTest {
     private class FakeDao : HistoryDao {
         val items = MutableStateFlow<List<HistoryEntity>>(emptyList())
         override fun observeAll(): Flow<List<HistoryEntity>> = items
+        override suspend fun getByPart(partNumber: String): HistoryEntity? =
+            items.value.firstOrNull { it.partNumber == partNumber }
         override suspend fun upsert(entity: HistoryEntity) {
             items.value = listOf(entity) + items.value.filterNot { it.partNumber == entity.partNumber }
         }

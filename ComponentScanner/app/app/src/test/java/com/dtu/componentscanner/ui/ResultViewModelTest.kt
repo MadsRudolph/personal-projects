@@ -37,6 +37,8 @@ class ResultViewModelTest {
     private class FakeDao : HistoryDao {
         val items = MutableStateFlow<List<HistoryEntity>>(emptyList())
         override fun observeAll(): Flow<List<HistoryEntity>> = items
+        override suspend fun getByPart(partNumber: String): HistoryEntity? =
+            items.value.firstOrNull { it.partNumber == partNumber }
         override suspend fun upsert(entity: HistoryEntity) { items.value = listOf(entity) }
         override suspend fun deleteByPart(partNumber: String) {}
     }
@@ -81,6 +83,32 @@ class ResultViewModelTest {
         vm.load("NOPART")
         advanceUntilIdle()
         assertEquals(true, vm.state.value.notFound)
+    }
+
+    @Test
+    fun `load uses cache and skips the backend for a known part`() = runTest {
+        val dao = FakeDao().apply {
+            items.value = listOf(HistoryEntity("LM358N", "TI", "https://x/lm358.pdf", 1L))
+        }
+        java.io.File(tmp.root, "LM358N.pdf").writeBytes("%PDF-1.7".toByteArray())
+        val repo = ComponentRepository(object : ApiService {
+            override suspend fun identify(body: IdentifyRequest) = IdentifyResponse(emptyList())
+            override suspend fun datasheet(part: String): DatasheetResponse =
+                throw IllegalStateException("backend must not be called for a cached part")
+        })
+        val pdfCache = PdfCache(tmp.root, object : PdfDownloader {
+            override suspend fun download(url: String): ByteArray =
+                throw IllegalStateException("must not download a cached part")
+        })
+        val vm = ResultViewModel(repo, HistoryRepository(dao), pdfCache) { 0L }
+
+        vm.load("LM358N")
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertEquals("TI", state.datasheet?.manufacturer)
+        assertNotNull(state.localPdfPath)
+        assertEquals(null, state.error)
     }
 
     @Test

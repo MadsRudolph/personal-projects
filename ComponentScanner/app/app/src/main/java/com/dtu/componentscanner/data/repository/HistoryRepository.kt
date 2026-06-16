@@ -12,6 +12,8 @@ class HistoryRepository @Inject constructor(
 ) {
     fun observeHistory(): Flow<List<HistoryEntity>> = dao.observeAll()
 
+    suspend fun find(partNumber: String): HistoryEntity? = dao.getByPart(partNumber)
+
     suspend fun record(partNumber: String, manufacturer: String, datasheetUrl: String, timestamp: Long) {
         dao.upsert(HistoryEntity(partNumber, manufacturer, datasheetUrl, timestamp))
     }

@@ -50,24 +50,47 @@ class ResultViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
+                // Cache-first: if we've already resolved this part (e.g. opened
+                // before, or prefetched on detection), skip the backend entirely.
+                val cached = historyRepository.find(partNumber)
+                if (cached != null) {
+                    val ds = Datasheet(
+                        cached.partNumber, cached.manufacturer, cached.datasheetUrl, emptyList(),
+                    )
+                    _state.update { it.copy(isLoading = false, datasheet = ds) }
+                    serveOrDownload(ds)
+                    return@launch
+                }
+
                 val sheet = componentRepository.datasheet(partNumber)
                 if (sheet == null) {
                     _state.update { it.copy(isLoading = false, notFound = true) }
                     return@launch
                 }
                 historyRepository.record(sheet.partNumber, sheet.manufacturer, sheet.datasheetUrl, clock())
-                // Surface the datasheet (and its URL) immediately so "Open in browser"
-                // works even if the in-app download below is blocked by the vendor.
+                // Surface the datasheet (and its URL) immediately so the viewer/
+                // browser fallback works even if the download below is blocked.
                 _state.update { it.copy(isLoading = false, datasheet = sheet) }
-                try {
-                    val file = pdfCache.getOrDownload(sheet.partNumber, sheet.datasheetUrl)
-                    _state.update { it.copy(localPdfPath = file.absolutePath) }
-                } catch (e: Exception) {
-                    _state.update { it.copy(downloadFailed = true) }
-                }
+                serveOrDownload(sheet)
             } catch (e: Exception) {
                 _state.update { it.copy(isLoading = false, error = e.message ?: "failed to load datasheet") }
             }
+        }
+    }
+
+    /** Use the already-cached PDF instantly, otherwise download it (failure is
+     *  non-fatal — the screen falls back to the WebView/browser viewer). */
+    private suspend fun serveOrDownload(sheet: Datasheet) {
+        val cachedFile = pdfCache.cachedFile(sheet.partNumber)
+        if (cachedFile != null) {
+            _state.update { it.copy(localPdfPath = cachedFile.absolutePath) }
+            return
+        }
+        try {
+            val file = pdfCache.getOrDownload(sheet.partNumber, sheet.datasheetUrl)
+            _state.update { it.copy(localPdfPath = file.absolutePath) }
+        } catch (e: Exception) {
+            _state.update { it.copy(downloadFailed = true) }
         }
     }
 }
