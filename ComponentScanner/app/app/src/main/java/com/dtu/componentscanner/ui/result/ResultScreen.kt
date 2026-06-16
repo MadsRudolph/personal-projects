@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun ResultScreen(
     partNumber: String,
     onOpenPdf: (String) -> Unit,
+    onOpenPdfWeb: (String) -> Unit,
     onBack: () -> Unit,
     viewModel: ResultViewModel = hiltViewModel(),
 ) {
@@ -53,28 +54,31 @@ fun ResultScreen(
                         }
                     }
                     Spacer(Modifier.height(16.dp))
-                    state.localPdfPath?.let { path ->
-                        Button(onClick = { onOpenPdf(path) }) { Text("Open datasheet PDF") }
-                        Spacer(Modifier.height(8.dp))
-                    }
-                    if (state.localPdfPath == null && !state.downloadFailed) {
-                        // Still downloading the PDF for the in-app viewer.
-                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Preparing datasheet…")
+                    when {
+                        // Downloadable PDF (e.g. TI) → fast native in-app renderer.
+                        state.localPdfPath != null -> {
+                            Button(onClick = { onOpenPdf(state.localPdfPath!!) }) {
+                                Text("Open datasheet")
+                            }
                         }
-                        Spacer(Modifier.height(8.dp))
+                        // Vendor blocks direct download (e.g. ST/Mouser) → render
+                        // in-app via the WebView (Google Docs) viewer.
+                        state.downloadFailed -> {
+                            Button(onClick = { onOpenPdfWeb(ds.datasheetUrl) }) {
+                                Text("Open datasheet")
+                            }
+                        }
+                        // Still downloading.
+                        else -> {
+                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Preparing datasheet…")
+                            }
+                        }
                     }
-                    if (state.downloadFailed) {
-                        Text(
-                            "This vendor blocks in-app download. Open it in your browser instead.",
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        Spacer(Modifier.height(8.dp))
-                    }
-                    // Always available: open the datasheet URL in the browser, which
-                    // handles vendors (e.g. ST) that block direct download.
+                    Spacer(Modifier.height(8.dp))
+                    // Last-resort fallback if the in-app viewer can't render it.
                     OutlinedButton(onClick = {
                         runCatching {
                             context.startActivity(
