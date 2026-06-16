@@ -90,7 +90,9 @@ class ScanViewModel @Inject constructor(
     fun reportError(message: String) = _state.update { it.copy(isScanning = false, error = message) }
 
     private companion object {
-        const val WINDOW_SIZE = 12
-        const val STABLE_THRESHOLD = 4
+        const val WINDOW_SIZE = 8
+        // Surface a part after it's read twice within the window — responsive but
+        // still ignores one-off misreads. Raise to reduce false positives.
+        const val STABLE_THRESHOLD = 2
     }
 }

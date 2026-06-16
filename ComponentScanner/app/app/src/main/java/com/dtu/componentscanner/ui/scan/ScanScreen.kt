@@ -292,7 +292,18 @@ private fun CameraPreview(
                 val preview = Preview.Builder().build().also {
                     it.setSurfaceProvider(previewView.surfaceProvider)
                 }
+                // Higher analysis resolution so on-device OCR can read small chip
+                // markings (the default ~640x480 is too low for tiny text).
+                val resolutionSelector = androidx.camera.core.resolutionselector.ResolutionSelector.Builder()
+                    .setResolutionStrategy(
+                        androidx.camera.core.resolutionselector.ResolutionStrategy(
+                            android.util.Size(1920, 1080),
+                            androidx.camera.core.resolutionselector.ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER,
+                        )
+                    )
+                    .build()
                 val analysis = ImageAnalysis.Builder()
+                    .setResolutionSelector(resolutionSelector)
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
                     .also { it.setAnalyzer(analysisExecutor, OcrAnalyzer(onOcrText)) }
