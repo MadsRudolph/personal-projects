@@ -33,15 +33,33 @@ class ScanViewModel @Inject constructor(
     private val _state = MutableStateFlow(ScanUiState())
     val state: StateFlow<ScanUiState> = _state.asStateFlow()
 
+    // Rolling window of recent per-frame readings, used to stabilize the live
+    // detection so it locks onto a confident part instead of flickering through
+    // everything the camera momentarily reads.
+    private val recentReadings = ArrayDeque<String>()
+
     /** Called continuously with on-device OCR text from the camera frame analyzer. */
     fun onOcrText(text: String) {
-        val best = extractor.extractCandidates(text).firstOrNull()
-        _state.update { it.copy(liveDetectedPart = best) }
+        val best = extractor.extractCandidates(text).firstOrNull() ?: return
+        recentReadings.addLast(best)
+        while (recentReadings.size > WINDOW_SIZE) recentReadings.removeFirst()
+
+        // Only surface a part once it dominates the recent window — and keep it
+        // shown until a different candidate becomes the new clear winner.
+        val winner = recentReadings.groupingBy { it }.eachCount().maxByOrNull { it.value }
+        if (winner != null && winner.value >= STABLE_THRESHOLD) {
+            if (_state.value.liveDetectedPart != winner.key) {
+                _state.update { it.copy(liveDetectedPart = winner.key) }
+            }
+        }
     }
 
     /** Switch between single-component and shelf (multi-component) scan modes. */
     fun setMode(mode: ScanMode) {
-        _state.update { it.copy(scanMode = mode, candidates = emptyList()) }
+        recentReadings.clear()
+        _state.update {
+            it.copy(scanMode = mode, candidates = emptyList(), liveDetectedPart = null)
+        }
     }
 
     /** Cloud fallback: send a captured still to the backend for a high-quality read. */
@@ -70,4 +88,9 @@ class ScanViewModel @Inject constructor(
     fun clearError() = _state.update { it.copy(error = null) }
 
     fun reportError(message: String) = _state.update { it.copy(isScanning = false, error = message) }
+
+    private companion object {
+        const val WINDOW_SIZE = 12
+        const val STABLE_THRESHOLD = 4
+    }
 }

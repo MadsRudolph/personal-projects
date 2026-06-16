@@ -51,7 +51,7 @@ class ResultViewModelTest {
     fun `load resolves datasheet, records history, and caches the pdf`() = runTest {
         val dao = FakeDao()
         val pdfCache = PdfCache(tmp.root, object : PdfDownloader {
-            override suspend fun download(url: String) = byteArrayOf(9, 9, 9)
+            override suspend fun download(url: String) = "%PDF-1.7\n...".toByteArray()
         })
         val vm = ResultViewModel(componentRepo(), HistoryRepository(dao), pdfCache) { 1234L }
 

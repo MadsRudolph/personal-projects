@@ -35,9 +35,27 @@ class ScanViewModelTest {
     })
 
     @Test
-    fun `onOcrText updates the live detected part from the best candidate`() = runTest {
+    fun `onOcrText does not surface a part from a single noisy frame`() = runTest {
         val vm = ScanViewModel(repo(emptyList()), PartNumberExtractor())
         vm.onOcrText("TEXAS\nLM358N\n2143")
+        // One reading is below the stability threshold — stays null (no flicker).
+        assertEquals(null, vm.state.value.liveDetectedPart)
+    }
+
+    @Test
+    fun `onOcrText surfaces a part once it is read consistently`() = runTest {
+        val vm = ScanViewModel(repo(emptyList()), PartNumberExtractor())
+        repeat(4) { vm.onOcrText("TEXAS\nLM358N\n2143") }
+        assertEquals("LM358N", vm.state.value.liveDetectedPart)
+    }
+
+    @Test
+    fun `onOcrText holds the stable part despite occasional misreads`() = runTest {
+        val vm = ScanViewModel(repo(emptyList()), PartNumberExtractor())
+        repeat(4) { vm.onOcrText("LM358N") }
+        assertEquals("LM358N", vm.state.value.liveDetectedPart)
+        // A single different reading should not flip the locked-on detection.
+        vm.onOcrText("NE555P")
         assertEquals("LM358N", vm.state.value.liveDetectedPart)
     }
 
