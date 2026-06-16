@@ -22,8 +22,10 @@ Phone app  ──►  Backend (holds your keys)  ──►  Claude (reads the ch
 ## 1. Get the two keys (free)
 1. **Anthropic API key** — https://console.anthropic.com → *API Keys* → create key.
    Looks like `sk-ant-...`. (Used by the backend to read chip markings with Claude vision.)
-2. **Nexar token** — https://nexar.com → sign up → create an application → get an API token.
-   (Used by the backend to look up datasheets. Free tier is plenty for classroom use.)
+2. **Nexar Client ID + Secret** — https://nexar.com → sign up → create an **application**
+   with the **Supply** scope → copy the **Client ID** and **Client Secret** (the secret is
+   shown once). The backend exchanges these for an access token automatically. (Used to look
+   up datasheets. Free tier is plenty for classroom use.)
 
 You never put these in the phone app — only in the backend. That's the whole point of the
 backend: keys stay off the device.
@@ -42,7 +44,8 @@ npm test           # optional: confirms everything is green (41 tests)
 Create a file `ComponentScanner/backend/.dev.vars` (it is git-ignored) with your keys:
 ```
 ANTHROPIC_API_KEY=sk-ant-...your key...
-NEXAR_TOKEN=...your nexar token...
+NEXAR_CLIENT_ID=...your nexar client id...
+NEXAR_CLIENT_SECRET=...your nexar client secret...
 ```
 Then run it:
 ```bash
@@ -60,7 +63,8 @@ npm run dev        # serves on http://localhost:8787
 ```bash
 npx wrangler login
 npx wrangler secret put ANTHROPIC_API_KEY      # paste your key when prompted
-npx wrangler secret put NEXAR_TOKEN            # paste your token when prompted
+npx wrangler secret put NEXAR_CLIENT_ID        # paste your Nexar Client ID
+npx wrangler secret put NEXAR_CLIENT_SECRET    # paste your Nexar Client Secret
 # (optional, enables shared caching) create a KV namespace and paste the id into wrangler.toml:
 npx wrangler kv namespace create CACHE
 npm run deploy

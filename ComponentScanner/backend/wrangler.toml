@@ -5,7 +5,8 @@ compatibility_flags = ["nodejs_compat"]
 
 # Secrets are set with `wrangler secret put <NAME>`, never committed:
 #   wrangler secret put ANTHROPIC_API_KEY
-#   wrangler secret put NEXAR_TOKEN
+#   wrangler secret put NEXAR_CLIENT_ID
+#   wrangler secret put NEXAR_CLIENT_SECRET
 # Non-secret vars:
 [vars]
 CLAUDE_MODEL = "claude-opus-4-8"

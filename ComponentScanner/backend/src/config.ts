@@ -2,7 +2,8 @@
 export interface AppConfig {
   anthropicApiKey: string;
   claudeModel: string;
-  nexarToken: string;
+  nexarClientId: string;
+  nexarClientSecret: string;
   rateLimit: number; // requests per window
   rateWindowSeconds: number;
   identifyCacheTtl: number;
@@ -21,7 +22,8 @@ export function loadConfig(env: Env): AppConfig {
   return {
     anthropicApiKey: required(env, "ANTHROPIC_API_KEY"),
     claudeModel: env.CLAUDE_MODEL ?? "claude-opus-4-8",
-    nexarToken: required(env, "NEXAR_TOKEN"),
+    nexarClientId: required(env, "NEXAR_CLIENT_ID"),
+    nexarClientSecret: required(env, "NEXAR_CLIENT_SECRET"),
     rateLimit: Number(env.RATE_LIMIT ?? "60"),
     rateWindowSeconds: Number(env.RATE_WINDOW_SECONDS ?? "60"),
     identifyCacheTtl: Number(env.IDENTIFY_CACHE_TTL ?? "600"),

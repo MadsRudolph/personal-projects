@@ -35,7 +35,7 @@ globally strict. Strict global rate limiting would require Durable Objects.
 
 ```bash
 npm install
-cp .env.example .env   # fill in ANTHROPIC_API_KEY and NEXAR_TOKEN
+cp .env.example .env   # fill in ANTHROPIC_API_KEY + NEXAR_CLIENT_ID/SECRET
 npm run dev            # http://localhost:8787
 npm test               # run the test suite
 ```
@@ -43,14 +43,17 @@ npm test               # run the test suite
 ## Required secrets
 
 - `ANTHROPIC_API_KEY` — from console.anthropic.com (vision model).
-- `NEXAR_TOKEN` — Nexar/Octopart bearer token (free tier at nexar.com).
+- `NEXAR_CLIENT_ID` / `NEXAR_CLIENT_SECRET` — from a Nexar app with the **Supply**
+  scope (free tier at nexar.com). The backend exchanges these for an OAuth2 access
+  token automatically (and refreshes it before expiry).
 
 ## Deploy to Cloudflare Workers
 
 ```bash
 npx wrangler login
 npx wrangler secret put ANTHROPIC_API_KEY
-npx wrangler secret put NEXAR_TOKEN
+npx wrangler secret put NEXAR_CLIENT_ID
+npx wrangler secret put NEXAR_CLIENT_SECRET
 npm run deploy
 ```
 

@@ -35,7 +35,10 @@ function depsFromEnv(env: Record<string, unknown>): AppDeps {
       apiKey: cfg.anthropicApiKey,
       model: cfg.claudeModel,
     }),
-    datasheet: new NexarDatasheetProvider({ token: cfg.nexarToken }),
+    datasheet: new NexarDatasheetProvider({
+      clientId: cfg.nexarClientId,
+      clientSecret: cfg.nexarClientSecret,
+    }),
     cache,
     rateLimitStore,
     rateLimit: cfg.rateLimit,
