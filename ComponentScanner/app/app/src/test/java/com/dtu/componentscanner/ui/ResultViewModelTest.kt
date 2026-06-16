@@ -82,4 +82,22 @@ class ResultViewModelTest {
         advanceUntilIdle()
         assertEquals(true, vm.state.value.notFound)
     }
+
+    @Test
+    fun `load keeps datasheet url when in-app download fails`() = runTest {
+        val pdfCache = PdfCache(tmp.root, object : PdfDownloader {
+            override suspend fun download(url: String): ByteArray =
+                throw java.io.IOException("blocked")
+        })
+        val vm = ResultViewModel(componentRepo(), HistoryRepository(FakeDao()), pdfCache) { 0L }
+
+        vm.load("L7805CV")
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertNotNull(state.datasheet)            // URL still available for the browser
+        assertEquals(true, state.downloadFailed)
+        assertEquals(null, state.localPdfPath)
+        assertEquals(null, state.error)           // download failure is not fatal
+    }
 }

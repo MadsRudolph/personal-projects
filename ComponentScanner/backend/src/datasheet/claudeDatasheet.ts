@@ -61,14 +61,20 @@ export class ClaudeDatasheetProvider implements DatasheetProvider {
     useSearch: boolean,
   ): Promise<Datasheet | null> {
     const guess = await this.ask(part, useSearch);
-    if (!guess?.datasheetUrl) return null;
-    if (!(await this.validatePdf(guess.datasheetUrl))) return null;
-    return {
-      partNumber: part,
-      manufacturer: guess.manufacturer ?? "Unknown",
-      datasheetUrl: guess.datasheetUrl,
-      keySpecs: [],
-    };
+    const url = guess?.datasheetUrl;
+    if (!url) return null;
+    // Accept if we can confirm it's a PDF, OR if it's a plausible PDF URL from a
+    // known manufacturer whose site blocks automated fetches (e.g. st.com). The
+    // app's "Open in browser" fallback handles vendors that block direct download.
+    if ((await this.validatePdf(url)) || isTrustedPdfUrl(url)) {
+      return {
+        partNumber: part,
+        manufacturer: guess.manufacturer ?? "Unknown",
+        datasheetUrl: url,
+        keySpecs: [],
+      };
+    }
+    return null;
   }
 
   private async ask(part: string, useSearch: boolean): Promise<Guess | null> {
@@ -124,8 +130,16 @@ export class ClaudeDatasheetProvider implements DatasheetProvider {
     try {
       const res = await this.fetchFn(url, {
         method: "GET",
-        headers: { range: "bytes=0-2047" },
+        headers: {
+          range: "bytes=0-2047",
+          // Some vendor sites (e.g. st.com) 403 requests without a browser UA.
+          "user-agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          accept: "application/pdf,*/*",
+        },
         signal: AbortSignal.timeout(15_000),
+        redirect: "follow",
       });
       if (!res.ok && res.status !== 206) {
         await res.body?.cancel?.();
@@ -148,6 +162,40 @@ export class ClaudeDatasheetProvider implements DatasheetProvider {
     } catch {
       return false;
     }
+  }
+}
+
+/** Manufacturer/distributor domains whose datasheet PDFs we trust even when the
+ *  site blocks our validation fetch (bot protection). Keep to reputable sources. */
+const TRUSTED_DATASHEET_HOSTS = [
+  "ti.com",
+  "st.com",
+  "microchip.com",
+  "onsemi.com",
+  "infineon.com",
+  "nxp.com",
+  "analog.com",
+  "diodes.com",
+  "vishay.com",
+  "rohm.com",
+  "toshiba.com",
+  "renesas.com",
+  "nexperia.com",
+  "mouser.com",
+  "digikey.com",
+];
+
+export function isTrustedPdfUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "https:" && u.protocol !== "http:") return false;
+    const host = u.hostname.toLowerCase();
+    const trusted = TRUSTED_DATASHEET_HOSTS.some(
+      (d) => host === d || host.endsWith("." + d),
+    );
+    return trusted && u.pathname.toLowerCase().endsWith(".pdf");
+  } catch {
+    return false;
   }
 }
 

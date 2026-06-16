@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   ClaudeDatasheetProvider,
   parseGuess,
+  isTrustedPdfUrl,
 } from "../src/datasheet/claudeDatasheet.js";
 
 const PDF_URL = "https://www.ti.com/lit/ds/symlink/lm358.pdf";
@@ -56,12 +57,28 @@ describe("ClaudeDatasheetProvider", () => {
     expect(await provider(fetchFn).resolve("NOPART")).toBeNull();
   });
 
-  it("returns null when the URL fails validation (404)", async () => {
+  it("returns null when an untrusted URL fails validation (404)", async () => {
     const fetchFn = routerFetch({
-      guessJson: JSON.stringify({ manufacturer: "TI", datasheetUrl: PDF_URL }),
+      guessJson: JSON.stringify({
+        manufacturer: "X",
+        datasheetUrl: "https://files.example.org/ds.pdf",
+      }),
       pdfStatus: 404,
     });
     expect(await provider(fetchFn).resolve("LM358N")).toBeNull();
+  });
+
+  it("accepts a trusted-domain PDF URL even when validation is blocked", async () => {
+    const fetchFn = routerFetch({
+      guessJson: JSON.stringify({
+        manufacturer: "STMicroelectronics",
+        datasheetUrl: "https://www.st.com/resource/en/datasheet/l7805.pdf",
+      }),
+      pdfStatus: 403, // st.com blocks the validator
+    });
+    const r = await provider(fetchFn).resolve("L7805CV");
+    expect(r?.datasheetUrl).toContain("st.com");
+    expect(r?.manufacturer).toBe("STMicroelectronics");
   });
 
   it("rejects a URL that does not serve a PDF", async () => {
@@ -100,5 +117,17 @@ describe("parseGuess", () => {
 
   it("returns null on non-JSON", () => {
     expect(parseGuess("no json here")).toBeNull();
+  });
+});
+
+describe("isTrustedPdfUrl", () => {
+  it("accepts manufacturer PDF URLs", () => {
+    expect(isTrustedPdfUrl("https://www.st.com/resource/en/datasheet/l7805.pdf")).toBe(true);
+    expect(isTrustedPdfUrl("https://www.ti.com/lit/ds/symlink/lm358.pdf")).toBe(true);
+  });
+
+  it("rejects untrusted hosts and non-pdf paths", () => {
+    expect(isTrustedPdfUrl("https://random.example/ds.pdf")).toBe(false);
+    expect(isTrustedPdfUrl("https://www.st.com/product/l7805")).toBe(false);
   });
 });

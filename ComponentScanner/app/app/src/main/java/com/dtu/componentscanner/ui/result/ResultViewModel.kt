@@ -20,6 +20,10 @@ data class ResultUiState(
     val localPdfPath: String? = null,
     val notFound: Boolean = false,
     val error: String? = null,
+    /** True when the PDF could not be downloaded for the in-app viewer (e.g. the
+     *  vendor blocks direct download). The datasheet URL is still available to
+     *  open in the browser. */
+    val downloadFailed: Boolean = false,
 )
 
 @HiltViewModel
@@ -34,7 +38,16 @@ class ResultViewModel @Inject constructor(
     val state: StateFlow<ResultUiState> = _state.asStateFlow()
 
     fun load(partNumber: String) {
-        _state.update { it.copy(isLoading = true, notFound = false, error = null) }
+        _state.update {
+            it.copy(
+                isLoading = true,
+                notFound = false,
+                error = null,
+                datasheet = null,
+                localPdfPath = null,
+                downloadFailed = false,
+            )
+        }
         viewModelScope.launch {
             try {
                 val sheet = componentRepository.datasheet(partNumber)
@@ -43,9 +56,14 @@ class ResultViewModel @Inject constructor(
                     return@launch
                 }
                 historyRepository.record(sheet.partNumber, sheet.manufacturer, sheet.datasheetUrl, clock())
-                val file = pdfCache.getOrDownload(sheet.partNumber, sheet.datasheetUrl)
-                _state.update {
-                    it.copy(isLoading = false, datasheet = sheet, localPdfPath = file.absolutePath)
+                // Surface the datasheet (and its URL) immediately so "Open in browser"
+                // works even if the in-app download below is blocked by the vendor.
+                _state.update { it.copy(isLoading = false, datasheet = sheet) }
+                try {
+                    val file = pdfCache.getOrDownload(sheet.partNumber, sheet.datasheetUrl)
+                    _state.update { it.copy(localPdfPath = file.absolutePath) }
+                } catch (e: Exception) {
+                    _state.update { it.copy(downloadFailed = true) }
                 }
             } catch (e: Exception) {
                 _state.update { it.copy(isLoading = false, error = e.message ?: "failed to load datasheet") }
