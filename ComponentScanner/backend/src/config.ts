@@ -21,7 +21,7 @@ function required(env: Env, key: string): string {
 export function loadConfig(env: Env): AppConfig {
   return {
     anthropicApiKey: required(env, "ANTHROPIC_API_KEY"),
-    claudeModel: env.CLAUDE_MODEL ?? "claude-opus-4-8",
+    claudeModel: env.CLAUDE_MODEL ?? "claude-sonnet-4-6",
     nexarClientId: required(env, "NEXAR_CLIENT_ID"),
     nexarClientSecret: required(env, "NEXAR_CLIENT_SECRET"),
     rateLimit: Number(env.RATE_LIMIT ?? "60"),
