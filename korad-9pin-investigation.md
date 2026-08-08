@@ -84,6 +84,26 @@ Idle baseline (2MHz, 2s, PSU on @3V): ALL THREE lines idle HIGH.
 => Serial-port profile (VCC + TX + RX all idle high). Opposite of the 9-pin (idle LOW).
 Next: power-cycle to catch boot UART TX burst; then USB-TTL *IDN? poll.
 
+### 4-pin DC map CONFIRMED (multimeter vs neg terminal)
+Pin1=GND. Pins 2,3,4 = 3.3V at BOTH output 0V and 12V (none tracks output => none analog).
+=> Digital serial header, 3.3V logic. Likely: pin4=VCC (far end), pins 2&3 = TX/RX.
+Dongle/Arduino must be 3.3V or level-shifted (Arduino Uno=5V => needs divider on its output line).
+
+### POLL RESULT: NO RESPONSE (FTDI TTL-232R-3V3 on COM17)
+Tested *IDN? / VOUT1? / STATUS? across ALL pin orientations and baud rates: SILENT.
+- All 6 ordered TX/RX pairings of pins {2,3,4} (one is VCC) -> 0 bytes.
+- Baud sweep 4800/9600/19200/38400/57600/115200/128000 -> 0 bytes.
+- Terminators none/LF/CR/CRLF -> 0 bytes.
+- Cable PROVEN GOOD via TXD<->RXD loopback (echoed correctly). PSU confirmed on.
+- Also: during earlier AD3 captures (boot, dials) these lines NEVER transmitted unsolicited.
+=> This unit does not respond to Korad serial on this header. Likely causes (ranked):
+   1. D firmware lacks the serial command interpreter (documented: "only SOME D units respond").
+   2. 4-pin may not be the UART header (idle-high 3.3V was inferred, never saw real TX traffic).
+   3. Possible enable/detect condition for the interface board.
+NEXT: board photos to ground-truth (which connector is serial / MCU UART pins / enable jumper),
+re-read profi-max for J9 pinout + firmware-revision dependence. Fallbacks: encoder interception,
+DAC injection, or control-board replacement (profi-max / Modern_KORAD).
+
 ### VERIFIED against Korad docs + profi-max KORAD_WiFi_USB_module (the D->P mod project)
 - Korad programmable PSU serial = POLL-ONLY: device sends NOTHING unsolicited
   (no boot banner, no status-on-knob-turn). Our 3 silent passive tests = CORRECT/expected.
