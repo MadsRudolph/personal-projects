@@ -3,6 +3,37 @@
 Host: Windows 11 + Digilent AD3 (WaveForms). Logic level: 3.3V.
 GND reference: **negative output banana terminal** (NOT chassis earth).
 
+> ## STATUS 2026-08-08 — READ FIRST
+>
+> The KA3005P schematic set (main/power/display/interface boards) has been obtained and read.
+> It resolves the open questions in this log. Current plan:
+> **`docs/superpowers/specs/2026-08-08-korad-kd3005d-programmable-design.md`**
+>
+> **J9 is confirmed as the serial port and confirmed dead on this unit.** Schematic: J9 =
+> "connecting communication board", pin1=GND, pin4=DVDD, pins 2/3 = MCU UART0 (`RXD,P3.0` /
+> `TXD,P3.1`). The exhaustive null poll below was a genuine negative on the correct connector.
+> Independently reported D-model behaviour: "the mainboard actually doesn't respond to a
+> correct serial input. TX pin always stays high."
+>
+> **The 9-pin is the MCU↔display bus — and it carries the DAC's serial control lines.**
+> The DAC is three chained 74HC595s driving 10K/20K R-2R ladders, clocked by `SHCP2`, latched
+> by `STCP2`, fed by `SD2` (MCU pins 38/39/40). Those three nets are routed to the display
+> connector alongside `display1-5`. That makes the DAC controllable from an unpluggable
+> ribbon connector — this is now the primary route to programmability.
+>
+> ### Three conclusions below are WRONG — do not act on them
+>
+> 1. ~~"J9's VSS tracks the output voltage; galvanic isolation is MANDATORY; a bare USB-TTL
+>    is DANGEROUS"~~ (Phase 3 desk research, on `backup/main-pre-forcepush`). **Refuted by
+>    measurement**: the 4-pin DC map read pins 2/3/4 at 3.3 V at *both* Vout=0 V and Vout=12 V
+>    vs the negative terminal. Riding on Vout would have given ~15.3 V in the second case.
+>    The control domain is referenced to output-negative. No 30 V common-mode exists.
+>    Real remaining caveat: an earthed host ties output-negative to earth — don't float or
+>    series-stack the output, and connect no load, while probing.
+> 2. ~~"The polled 4-pin was probably not J9"~~ — it is J9 (schematic-confirmed).
+> 3. ~~"The 9-pin is the internal MCU↔power-board control bus"~~ — it is the MCU↔display bus.
+>    Half right, and it was the useful half: it does carry the DAC bus.
+
 ## Phase 1 — Continuity (PSU UNPLUGGED)
 Beep each pin against the negative output terminal. 0Ω = GND.
 
