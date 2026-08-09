@@ -44,11 +44,8 @@ def main():
             print(f"pull setting               : {io.pullGet()}")
         except Exception as e:
             print(f"pull setting               : (unavailable: {e})")
-        try:
-            drive = ", ".join(f"DIO{ch}={io.driveGet(ch)}" for ch in (0, 1, 2))
-            print(f"drive strength             : {drive}")
-        except Exception as e:
-            print(f"drive strength             : (unavailable: {e})")
+        # (driveGet needs a channel-group/idx signature that varies by build;
+        # it tells us nothing useful while the pins are inputs, so skip it.)
 
         print(f"\nWatching DIO0..2 for {a.seconds:.0f}s -- TURN THE KNOB NOW\n")
         seen = {}

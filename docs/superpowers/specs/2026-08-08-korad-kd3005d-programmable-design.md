@@ -9,6 +9,78 @@ Supersedes: the J9/UART approach in `korad-esp32-carrier/docs/2026-06-15-esp32-k
 PC control of a KORAD KD3005D bench supply — set voltage, set current, read back actual
 V/I, and toggle the output — on a unit whose firmware has **no serial command interpreter**.
 
+## 0. RESULT — the DAC protocol is solved (2026-08-09)
+
+Phases 0 and 1 are complete. The setpoint bus was tapped, captured and decoded.
+
+### Physical
+
+Three chained `74HC595D` (U14 → U13 → U12) on the **front board**, driving 10K/20K
+R-2R ladders. `OE` tied low, `MR` tied high. Tap U14 (first in chain):
+
+| U14 pin | Signal | |
+|---|---|---|
+| 11 | `SHCP` shift clock | ~1.4 MHz, 720 ns bit period |
+| 12 | `STCP` latch | one pulse per 24-bit word |
+| 14 | `DS` data | idles HIGH |
+| 8 | `GND` (**`GNDF` — floats at +Vout**) | |
+
+**The MCU refreshes the bus continuously**, so the current setpoint can be read at
+any moment — no need to catch a knob turn. A read takes ~3 ms.
+
+### Frame
+
+24 bits per word, one `STCP` pulse per word. The two DAC channels are
+**interleaved bit by bit** in shift order:
+
+- **odd bit indices (1,3,…,23)** = 12-bit **voltage** field, index 23 = LSB
+- **even bit indices (0,2,…,22)** = 12-bit **current** field, index 22 = LSB
+
+Data is shifted on `SHCP` rising, transferred on `STCP` rising (per datasheet).
+
+### Mapping (measured against the front panel)
+
+```
+V code = 106.000 * Vset + 36.0      exact at 1.00 / 5.00 / 7.50 / 8.00 V
+I code = 619.787 * Iset + 49.19     R^2 = 0.99999995, worst residual 0.7 mA
+```
+
+Resolution 9.43 mV/LSB and 1.61 mA/LSB; 4095 codes extrapolates to 38.3 V and
+6.53 A — sensible headroom over the 30 V / 5 A rating. Occasional ±1 count
+(0.00 V reads 35, not 36; 4 A and 5 A land one low) is the firmware interpolating
+calibration constants from the `24C64` EEPROM. Below display resolution.
+
+### Tooling (`ad3-logic-analyzer/`)
+
+| Script | Purpose |
+|---|---|
+| `read_dac.py` | read the live setpoint off the bus, decoded |
+| `cal_dac.py` | build a calibration set and fit both channels |
+| `decode_595.py` | decode/diff raw `.npy` captures offline |
+| `sweep_dac.py` | guided/free-run capture sweeps, holds the constants |
+| `probe_check.py` | probe liveness; catches the analyzer driving the bus |
+
+### Bench gotchas that cost real time
+
+1. **`GNDF` floats at +Vout.** Grounding an earthed analyzer to it corrupts the
+   DAC (supply stuck at 12 V, recovered on disconnect). Grounding to
+   output-negative instead makes the 3.3 V swing ride +Vout, so captures work at
+   0–1 V then read static HIGH from ~5 V up — which looks exactly like a broken
+   wire. **Fix: capture with Vout ≈ 0** (CC into a short, or simply Vset = 0
+   while sweeping current) so the common mode disappears.
+2. **`digitalIn.reset()` does not clear static-IO output enables** left by the
+   WaveForms GUI; force `digitalIO.outputEnableSet(0)` or the analyzer may drive
+   the bus.
+3. **Poll for a state other than `Done` after `configure()`** — otherwise the
+   first status read returns the *previous* acquisition's buffer.
+4. Probe with **1 kΩ series resistors** at the chip end; unterminated flying
+   leads on `STCP` glitch the latch and commit half-shifted words.
+
+### What remains
+
+Writing to the bus rather than reading it — the interception question in §6,
+now decidable with real timing data.
+
 ## 1. Established facts
 
 ### 1.1 J9 (the 4-pin header) is the serial port, and it is dead on this unit

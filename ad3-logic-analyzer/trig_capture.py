@@ -68,6 +68,14 @@ def main():
             # keep some samples before the trigger so we see the burst start
             din.triggerPositionSet(int(n * (1.0 - args.prefill)))
             din.configure(False, True)
+            # Block until the device has actually left the previous Done state,
+            # otherwise the first status() poll can return a STALE buffer from
+            # the last acquisition ("triggered before I touched anything").
+            t_arm = time.time()
+            while time.time() - t_arm < 3.0:
+                if din.status(True) != DwfState.Done:
+                    break
+                time.sleep(0.002)
 
             print(f"Armed @ {rate/1e6:.1f} MHz, {n} samples. Waiting {args.wait:.0f}s for an edge...")
             print(">>> PRESS THE OUTPUT BUTTON NOW <<<")
