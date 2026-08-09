@@ -21,6 +21,40 @@ GND reference: **negative output banana terminal** (NOT chassis earth).
 > connector alongside `display1-5`. That makes the DAC controllable from an unpluggable
 > ribbon connector — this is now the primary route to programmability.
 >
+> ## GROUND DOMAINS — MEASURED 2026-08-09 (this is the load-bearing fact)
+>
+> The board has **two separate grounds**, and the KA3005P schematic names them
+> distinctly: **`GND`** and **`GNDF`**. They are NOT the same node.
+>
+> | Node | Measured vs black (−) terminal | Domain |
+> |---|---|---|
+> | J9 pin 1 (`GND`) | **0 V at every setpoint** | fixed, at output-negative |
+> | 595 pin 8 (`GNDF`) | **0 V @ Vset=0, 5 V @ Vset=5** | **floats at +Vout** |
+> | 7-wire cable `G` | tracks Vout (0→5 V) | same floating domain as `GNDF` |
+>
+> **The 74HC595 DAC chain and the R-2R ladder are in the FLOATING domain.**
+> Consequences, all learned the hard way on 2026-08-09:
+> - Clipping an earthed instrument (AD3 via PC USB) to `GNDF` drags the analog
+>   domain to earth and **corrupts the DAC** — the supply got stuck at 12 V and
+>   stopped responding to the knob. It recovered the moment the AD3 came off.
+>   No damage.
+> - Clipping AD3 ground to output-negative while probing `GNDF`-referenced logic
+>   makes the whole 3.3 V swing sit +Vout above the AD3's reference. It reads
+>   correctly at Vset 0–1 V and then **all lines read static HIGH** from ~5 V up
+>   (a logic low at +5 V is far above the AD3's ~1.4 V threshold). This looks
+>   exactly like a broken wire and is not.
+>
+> **WORKAROUND for capturing the DAC bus:** put the supply in **CC with a shorted
+> output** (Iset ~0.1 A, wire across the terminals). Actual Vout collapses to ~0
+> so `GNDF` stays at ~0, while the *setpoint* — and therefore the DAC code — still
+> sweeps the full range. Ground the AD3 to 595 pin 8. Common mode gone.
+>
+> **OPEN LEAD:** if the MCU is on `GNDF` (floating) but J9's GND is hard at
+> output-negative, J9 cannot be directly wired to the MCU UART — there must be an
+> isolation barrier, i.e. **optocouplers, likely UNPOPULATED on this D unit**.
+> If so the J9 silence may never have been a firmware limitation at all. Check for
+> empty opto/resistor footprints near J9 before writing the serial route off.
+>
 > ### Three conclusions below are WRONG — do not act on them
 >
 > 1. ~~"J9's VSS tracks the output voltage; galvanic isolation is MANDATORY; a bare USB-TTL

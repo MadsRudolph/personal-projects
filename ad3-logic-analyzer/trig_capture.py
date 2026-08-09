@@ -43,6 +43,15 @@ def main():
     dwf = DwfLibrary()
     try:
         with openDwfDevice(dwf) as device:
+            # A previous WaveForms session (Static I/O / Pattern Generator) can
+            # leave DIO pins enabled as OUTPUTS. digitalIn.reset() does not
+            # clear that, so they keep driving and fight the target. Force
+            # every pin to high-Z input before touching the logic analyzer.
+            device.digitalIO.reset()
+            device.digitalIO.outputEnableSet(0)
+            if device.digitalIO.outputEnableGet():
+                print("WARNING: DIO pins still driving — disconnect before probing.")
+
             din = device.digitalIn
             din.reset()
             base = din.internalClockInfo()
