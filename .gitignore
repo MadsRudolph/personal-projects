@@ -31,6 +31,8 @@ __pycache__/
 *-backups/
 *.kicad_sch.bak
 *.kicad_sch.bak_*
+# Editor lock files -- present only while KiCad has the project open
+~*.lck
 
 # Windows artifacts
 nul

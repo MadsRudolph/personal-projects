@@ -7,9 +7,9 @@ tags:
   - subwoofer
   - crossover
   - active-project
-status: Design approved, not yet built
+status: Built and measured - Gates 0-5 pass
 started: 2026-08-13
-updated: 2026-08-13
+updated: 2026-08-15
 ---
 
 # Design - Sub Crossover Board
@@ -181,6 +181,23 @@ Steps are 1.50× and 1.47× — even spacing on a log scale, about 0.58 octave p
 click. Q is 0.742 in all three positions, because the C1/C2 *ratio* is held at
 2.2 throughout while the product scales.
 
+> [!warning] The board as built does not do this — see [[Results - Sub Crossover Bring-up]]
+> Three things diverged between this table and the hardware, and the measured
+> board is **100.7–212.3 Hz in nine steps**, not 86.7 / 130.1 / 191.0 in three.
+>
+> 1. **These are f₀, not −3 dB points.** They coincide only at Q = 0.707. A
+>    swept measurement reports the −3 dB point, and the two differ by −16 to
+>    +30 Hz across these settings.
+> 2. **C1_1 (330 nF) was never fitted**, and C2_2 became 120 nF. `JP1` and `JP2`
+>    select independently, so the board offers nine combinations rather than
+>    three ganged pairs.
+> 3. **C_in became 220 nF**, which puts it inside the filter — see the callout
+>    under "Why 2.2 µF and not 1 µF" below, which predicted exactly this.
+>
+> Q is also no longer 0.742 throughout: the ratio is not held constant once the
+> pairs are selected independently, and the C_in reactance damps the result.
+> Measured peaking runs +0.02 to +0.98 dB.
+
 > [!note] Why switching capacitors, not resistors, and not a dual-gang pot
 > A ganged pot sweeping both resistors would vary the corner continuously, but
 > its tracking error between sections directly skews Q — the filter's shape
@@ -301,19 +318,61 @@ tuning wants fast A/B comparison and jumpers mean opening the box.
 
 ## Verification
 
-Before it ever sees music, the board gets measured on the AD3 with the same
-coherent-DFT tooling used in Phase 0:
+Procedure in [[Test Guide - Sub Crossover Board]], results in
+[[Results - Sub Crossover Bring-up]]. Measured on the AD3 with the same
+coherent-DFT approach as Phase 0.
 
-1. **Transfer function per switch position** — network analyser sweep 10 Hz–2 kHz.
-   Confirm corners at 86.7 / 130.1 / 191.0 Hz within tolerance and Q ≈ 0.742.
-   Capacitor tolerance dominates: ±10 % parts shift f₀ by about ±5 %, since f₀
-   depends on √(C1·C2) and the errors partly average. Q depends on the *ratio*
-   C1/C2, so it is more exposed — measure it rather than assuming.
-2. **Polarity switch** — confirm 180° between positions across the passband.
-3. **Mono sum** — drive L only, R only, then both. Both should be +6 dB.
-4. **Noise and hum floor** — measure output with inputs shorted.
-5. **In situ** — sweep through the finished chain into the module and confirm
-   the acoustic corner moves as the switch is turned.
+### Done, 2026-08-15
+
+| Gate | Result |
+|---|---|
+| 0 — cold checks | pass |
+| 1 — staged power-up | pass |
+| 2 — DC survey | pass, every signal node at 6.00 V |
+| 3 — instrument through-cal | pass, C1 flat to 0.015 dB |
+| **5 — nine transfer functions** | **pass, 9 of 9** |
+
+**The board offers nine corners, 100.7–212.3 Hz:**
+
+| Corner | JP1 | JP2 | Level at 63 Hz | Peak |
+|---|---|---|---|---|
+| 100.7 Hz | pos2+3 | pos1 | −4.09 dB | +0.04 dB |
+| 108.7 Hz | pos2+3 | pos2 | −2.84 dB | +0.13 dB |
+| 113.8 Hz | pos2 | pos1 | −4.07 dB | +0.03 dB |
+| 121.9 Hz | pos3 | pos1 | −4.18 dB | +0.02 dB |
+| 125.4 Hz | pos2 | pos2 | −2.99 dB | +0.09 dB |
+| 135.5 Hz | pos3 | pos2 | −3.18 dB | +0.06 dB |
+| 155.4 Hz | pos2+3 | pos3 | −0.59 dB | +0.98 dB |
+| 189.2 Hz | pos2 | pos3 | −1.02 dB | +0.55 dB |
+| 212.3 Hz | pos3 | pos3 | −1.29 dB | +0.31 dB |
+
+A model of the as-built netlist reproduces all nine to within **0.80 % in corner
+and 0.037 dB in gain**. Two findings came out of the fit:
+
+- **The 220 nF coupling caps are inside the filter**, exactly as the *"Why
+  2.2 µF and not 1 µF"* callout above warned. This is now measured: the sweep
+  discriminates against both the ideal-formula prediction (5.4 % out) and the
+  2.2 µF prediction (7.8 % out), landing on the as-built model at 0.4 %.
+- **C2_3 measures 63.8 nF, not 68 nF** (−6.2 %, still in tolerance). Derived
+  from two settings and then confirmed out-of-sample: it predicted the held-out
+  370n/68n setting to 0.66 %, where nominal capacitors missed by 5.2 %.
+
+The design's expectation that "capacitor tolerance dominates, ±5 % on f₀" was
+right in magnitude and right about which parameter to watch.
+
+### Outstanding
+
+1. **Mono sum** — drive L only, R only, then both; expect exactly +6.02 dB with
+   the idle input **grounded**, not floating.
+2. **Polarity switch** — 180° between positions across the passband.
+3. **Noise and hum floor** — output with inputs shorted, then again in the
+   enclosure to see whether it earns its keep.
+4. **Headroom** — the AD3's ±5 V may not be able to clip this at all.
+5. **Output chain** — blocked on the 10 kΩ pot, not yet fitted.
+6. **In situ** — sweep through the finished chain into the module and confirm
+   the acoustic corner moves as the jumpers change. The module's own
+   63–203 Hz bandpass cascades with ours, so expect every acoustic result to be
+   narrower than the electrical one.
 
 ---
 
@@ -336,14 +395,19 @@ coherent-DFT tooling used in Phase 0:
   extreme) were never taken. Unknown whether it changes level or shape, and over
   what range. Worth measuring before finalising the level-trim range — if it
   already provides ±10 dB, VR1's job is smaller than assumed.
-- **Crossover point is a guess until listened to.** 130 Hz is the expected
-  default; the switch exists precisely because this cannot be predicted.
+- **Crossover point is a guess until listened to.** The switch exists precisely
+  because this cannot be predicted. The nearest setting to the 130 Hz that was
+  expected is **125.4 Hz** (JP1 pos2, JP2 pos2) — and it needs only two shunts,
+  which makes it the sensible starting point. If it wants to go lower, 113.8 and
+  121.9 Hz are also two-shunt settings; below that costs a third shunt.
 - **Sub placement** is untested and will matter more than any filter value.
 
 ---
 
 ## Related
 
+- [[Test Guide - Sub Crossover Board]] — bring-up procedure, twelve gates
+- [[Results - Sub Crossover Bring-up]] — what the board actually measures
 - [[Test Guide - Companion 5 Characterisation]]
 - [[Build Guide - 3rd Order PWM Filter]] — same Sallen-Key topology, same AD3 verification approach
 - [[Amplifier - Fosi Audio V3]]
