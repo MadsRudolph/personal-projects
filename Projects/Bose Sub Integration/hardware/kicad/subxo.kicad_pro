@@ -60,10 +60,10 @@
           "hatch_smoothing_level": 0,
           "hatch_smoothing_value": 0.1,
           "hatch_thickness": 1.0,
-          "min_clearance": 0.5,
+          "min_clearance": 0.85,
           "min_island_area": 10.0,
           "min_thickness": 0.25,
-          "pad_connection": 1,
+          "pad_connection": 2,
           "remove_islands": 0,
           "thermal_relief_gap": 0.5,
           "thermal_relief_spoke_width": 0.5
@@ -240,7 +240,7 @@
       "internal_id": "",
       "mfg": "",
       "mpn": "",
-      "sch_revision": ""
+      "sch_revision": "A"
     },
     "layer_pairs": [],
     "layer_presets": [],
@@ -516,7 +516,7 @@
     "last_paths": {
       "idf": "",
       "netlist": "",
-      "plot": "",
+      "plot": "production/subxo/gerbers/",
       "specctra_dsn": "",
       "vrml": ""
     },
@@ -637,7 +637,7 @@
       {
         "filename": "subxo.kicad_sch",
         "name": "subxo",
-        "uuid": "00000000-0000-0000-0000-000000000000"
+        "uuid": "89cbaec3-58f5-4c5d-9bf2-2458d8308eca"
       }
     ],
     "used_designators": "",
@@ -645,8 +645,8 @@
   },
   "sheets": [
     [
-      "aef4980f-ee39-4b09-b24f-5fc84b9ea69e",
-      "Root"
+      "89cbaec3-58f5-4c5d-9bf2-2458d8308eca",
+      "subxo"
     ]
   ],
   "text_variables": {},
