@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block subtitle %}<p class="subtitle">Step 5: Your configuration is ready!</p>{% endblock %}
+
+{% block progress %}
+<div class="progress-bar">
+    <div class="step done">1. Connect</div>
+    <div class="step done">2. Device</div>
+    <div class="step done">3. Brand</div>
+    <div class="step done">4. Discover</div>
+    <div class="step active">5. Results</div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="glass-card">
+    {% if session.confirmed_buttons %}
+    <div class="celebration-header">
+        <h2>Success!</h2>
+    </div>
+
+    <!-- ESPHome Button YAML (primary output for standalone) -->
+    <p class="subtitle" style="text-align: center; margin-bottom: 32px;">
+        ESPHome button YAML for your {{ session.device_type or 'device' }}.
+        Copy this into your ESPHome config, recompile & flash.
+    </p>
+
+    <div class="yaml-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <label
+                style="color: var(--text-secondary); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
+                ESPHome Button YAML</label>
+            <button id="copy-esphome" class="btn btn-secondary btn-small" onclick="copyToClipboard('esphome-yaml-code', this)">📋 Copy Code</button>
+        </div>
+        <div class="yaml-preview">
+            <pre style="margin: 0;"><code id="esphome-yaml-code" style="font-family: 'Fira Code', monospace; font-size: 13px; line-height: 1.6;">{{ yaml_content }}</code></pre>
+        </div>
+    </div>
+
+    <div style="margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--glass-border);">
+        <h3 style="font-size: 18px; margin-bottom: 12px;">Next Steps</h3>
+        <ol style="color: var(--text-secondary); padding-left: 20px; line-height: 2.2;">
+            <li>Click <strong>"Export Config"</strong> below to save files locally.</li>
+            <li>Add the button YAML to your <code>ir-blaster-standalone.yaml</code> under <code>button:</code>.</li>
+            <li>Run <code>esphome run ir-blaster-standalone.yaml</code> to flash.</li>
+            <li>Open <code>http://&lt;esp-ip&gt;/</code> &mdash; buttons appear in the web interface!</li>
+        </ol>
+    </div>
+
+    <div class="action-buttons" style="margin-top: 40px; display: flex; gap: 16px;">
+        <form method="post" action="/save-yaml" style="flex: 1;">
+            <input type="hidden" name="session_id" value="{{ session_id }}">
+            <button type="submit" class="btn btn-primary btn-wide btn-large">💾 Export Config</button>
+        </form>
+        <a href="/" class="btn btn-secondary btn-wide btn-large">Start Over</a>
+    </div>
+
+    {% if saved is defined and saved %}
+    <div class="alert alert-success" style="margin-top: 24px;">
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clip-rule="evenodd"></path>
+        </svg>
+        Exported to <strong>{{ save_path.split('/')[-1] if '/' in save_path else save_path.split('\\')[-1] }}</strong>
+    </div>
+    {% endif %}
+
+    <!-- HA Scripts (optional, collapsible) -->
+    {% if ha_scripts %}
+    <details style="margin-top: 32px;">
+        <summary style="cursor: pointer; color: var(--text-secondary); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 0;">
+            🏠 Optional: Home Assistant Scripts
+        </summary>
+        <p class="subtitle" style="font-size: 13px; margin: 8px 0 16px;">
+            If you also use Home Assistant, paste these into <code>scripts.yaml</code> and reload scripts.
+        </p>
+        <div class="yaml-preview">
+            <pre style="margin: 0;"><code id="ha-scripts-code" style="font-family: 'Fira Code', monospace; font-size: 13px; line-height: 1.6;">{{ ha_scripts }}</code></pre>
+        </div>
+        <button class="btn btn-secondary btn-small" style="margin-top: 12px;" onclick="copyToClipboard('ha-scripts-code', this)">📋 Copy HA Scripts</button>
+    </details>
+    {% endif %}
+
+    <!-- Dashboard card preview -->
+    {% if ha_dashboard is defined and ha_dashboard %}
+    <details style="margin-top: 16px;">
+        <summary style="cursor: pointer; color: var(--text-secondary); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 0;">
+            🖥️ Optional: HA Dashboard Card
+        </summary>
+        <div class="yaml-preview" style="background: rgba(0,0,0,0.3);">
+            <pre><code id="ha-dashboard-code" style="font-size: 12px; color: #a5b4fc;">{{ ha_dashboard }}</code></pre>
+        </div>
+        <button class="btn btn-secondary btn-small" style="margin-top: 12px;" onclick="copyToClipboard('ha-dashboard-code', this)">📋 Copy Dashboard Card</button>
+    </details>
+    {% endif %}
+
+    {% else %}
+    <div style="text-align: center; padding: 40px 0;">
+        <h2 style="font-size: 24px; margin-bottom: 16px;">No Working Codes Found</h2>
+        <p class="subtitle" style="margin-bottom: 32px;">We couldn't find any working IR codes for this device.</p>
+        <a href="/" class="btn btn-primary btn-large">Try Again or Use Learn Mode</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function copyToClipboard(elementId, btn) {
+    const code = document.getElementById(elementId);
+    if (!code) return;
+    const text = code.textContent;
+
+    function onSuccess() {
+        const original = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.textContent = original; }, 2000);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopy(text, onSuccess));
+    } else {
+        fallbackCopy(text, onSuccess);
+    }
+}
+
+function fallbackCopy(text, onSuccess) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); onSuccess(); }
+    catch(e) {}
+    document.body.removeChild(ta);
+}
+</script>
+{% endblock %}

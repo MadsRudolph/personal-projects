@@ -1,0 +1,244 @@
+# Plant Watering Tower — ESP32 pump controller
+#
+# Drives a salvaged mains-AC solenoid pump (Defond P500U) through a relay to water
+# a vertical plant tower on a schedule. The pump is ON/OFF only — dosing is by RUN
+# TIME, never by voltage/PWM. Firmware enforces dry-run lockout, max-run cap, and a
+# duty-cycle cooldown. See README.md for wiring, calibration, and the safety section.
+#
+# Everything you may need to change lives in `substitutions` below.
+
+substitutions:
+  device_name: plant-pump
+  friendly_name: "Plant Watering Tower"
+
+  # --- Hardware (CONFIRM these) ---
+  board: wemos_d1_mini32        # TODO: set to your actual ESP32 board string
+  relay_pin: GPIO16             # boot-safe output, NOT a strapping pin
+  float_pin: GPIO17             # reservoir float input
+
+  # --- Calibration (MEASURE this — see README) ---
+  flow_ml_per_s: "10"           # TODO: collected_ml / seconds at the real tower head
+
+  # --- Safety limits (duty cycle: 2 min on / 1 min off) ---
+  max_run_seconds: "120"        # absolute hard cap on a single run
+  min_rest_seconds: "60"        # forced cooldown between doses
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: ${board}
+  framework:
+    type: arduino
+
+logger:
+
+# Integrates as an ESPHome device over the native HA API.
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Plant-Pump Fallback"
+    password: !secret fallback_password
+
+captive_portal:
+
+# Time source for the watering schedule.
+time:
+  - platform: homeassistant
+    id: ha_time
+    on_time:
+      # TODO: set your watering schedule. Add more on_time blocks for extra doses.
+      - seconds: 0
+        minutes: 0
+        hours: 7
+        then:
+          - script.execute:
+              id: dose_water
+              volume_ml: !lambda "return id(dose_volume_ml).state;"
+
+globals:
+  # millis() timestamp when the last dose finished. Rolls over at ~49 days, which is
+  # acceptable for a cooldown window (worst case: one dose allowed slightly early).
+  - id: last_dose_finished_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  # TRUE while a manual override run is active. Suppresses the dry-run watchdog so the
+  # pump can be run with an empty reservoir (e.g. to prime). The hard max-run cap still applies.
+  - id: manual_override
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+# TRUE = water present. Set inverted/mode to match YOUR float switch (NO vs NC,
+# and float-up vs float-down). Test it before trusting the dry-run interlock.
+binary_sensor:
+  - platform: gpio
+    id: reservoir_has_water
+    name: "Reservoir has water"
+    pin:
+      number: ${float_pin}
+      mode:
+        input: true
+        pullup: true
+      inverted: true            # TODO: flip so ON = water present
+    filters:
+      - delayed_on: 500ms
+      - delayed_off: 500ms
+
+# Physical relay. internal: true keeps it OFF the HA dashboard so the interlocks in
+# `dose_water` can never be bypassed. HA only ever sees the safe button/number below.
+switch:
+  - platform: gpio
+    id: pump_relay
+    # Active-LOW module. The ESP's 3.3V push-pull "high" only half-turns-off this
+    # module's input (→ ~0.9A stall/twitch). Driving open-drain lets the pin release on
+    # OFF so the module's own pull-up takes IN to a true 5V (clean off); ON pulls IN to 0V.
+    pin:
+      number: ${relay_pin}
+      inverted: true
+      mode:
+        output: true
+        open_drain: true
+    restore_mode: ALWAYS_OFF    # boot fail-safe: relay defaults OFF on power-up/reboot
+    internal: true
+    on_turn_on:
+      # Independent hard backstop to the script's own timing. If anything keeps the
+      # relay on past the cap, force it off — regardless of script state.
+      - delay: ${max_run_seconds}s
+      - logger.log: "Max run reached — forcing pump off"
+      - switch.turn_off: pump_relay
+
+# Fast watchdog: kill the pump within ~250 ms if the reservoir empties mid-dose.
+interval:
+  - interval: 250ms
+    then:
+      - if:
+          condition:
+            and:
+              - switch.is_on: pump_relay
+              - binary_sensor.is_off: reservoir_has_water
+              # Don't abort during a manual override run (user opted to allow dry running).
+              - lambda: "return !id(manual_override);"
+          then:
+            - logger.log: "Reservoir empty mid-dose — aborting"
+            - switch.turn_off: pump_relay
+
+script:
+  - id: dose_water
+    mode: single                # ignore re-triggers while a dose is already running
+    parameters:
+      volume_ml: float
+    then:
+      - if:
+          condition:
+            and:
+              # Dry-run lockout: refuse to start with an empty reservoir.
+              - binary_sensor.is_on: reservoir_has_water
+              # Cooldown: respect the duty cycle between doses.
+              - lambda: |-
+                  return id(last_dose_finished_ms) == 0 ||
+                         (millis() - id(last_dose_finished_ms)) >= ${min_rest_seconds} * 1000UL;
+          then:
+            - switch.turn_on: pump_relay
+            - delay: !lambda "return (uint32_t)(volume_ml / ${flow_ml_per_s} * 1000.0);"
+            - switch.turn_off: pump_relay
+            - lambda: "id(last_dose_finished_ms) = millis();"
+          else:
+            - logger.log: "Dose skipped (empty reservoir or cooldown active)"
+
+  # Manual override: run the pump for a fixed time, ignoring cooldown AND the dry-run
+  # lockout (so it can prime). The relay's on_turn_on max-run delay is still an active
+  # hard cap. mode: restart so pressing again restarts the timer.
+  - id: manual_run
+    mode: restart
+    then:
+      - globals.set:
+          id: manual_override
+          value: 'true'
+      - logger.log: "Manual override run started"
+      - switch.turn_on: pump_relay
+      - delay: !lambda "return (uint32_t)(id(manual_run_seconds).state * 1000.0);"
+      - switch.turn_off: pump_relay
+      - lambda: "id(last_dose_finished_ms) = millis();"   # still arm cooldown for scheduled doses
+      - globals.set:
+          id: manual_override
+          value: 'false'
+      - logger.log: "Manual override run finished"
+
+  # Emergency stop: force the pump off and cancel any running dose/override.
+  - id: stop_pump
+    mode: single
+    then:
+      - script.stop: manual_run
+      - script.stop: dose_water
+      - switch.turn_off: pump_relay
+      - globals.set:
+          id: manual_override
+          value: 'false'
+      - logger.log: "Pump stopped by user"
+
+# Adjustable dose volume, surfaced to HA.
+number:
+  - platform: template
+    name: "Dose volume"
+    id: dose_volume_ml
+    unit_of_measurement: "ml"
+    min_value: 10
+    max_value: 1000
+    step: 10
+    initial_value: 100
+    optimistic: true
+    restore_value: true
+
+  # How long the manual override button runs the pump (capped by max_run_seconds).
+  - platform: template
+    name: "Manual run time"
+    id: manual_run_seconds
+    unit_of_measurement: "s"
+    min_value: 5
+    max_value: ${max_run_seconds}
+    step: 5
+    initial_value: 30
+    optimistic: true
+    restore_value: true
+
+button:
+  # Normal interlocked dose (respects dry-run + cooldown).
+  - platform: template
+    name: "Water now"
+    on_press:
+      - script.execute:
+          id: dose_water
+          volume_ml: !lambda "return id(dose_volume_ml).state;"
+
+  # Manual override: timed run, ignores cooldown + dry-run. Still capped by max-run.
+  - platform: template
+    name: "Manual run (override)"
+    on_press:
+      - script.execute: manual_run
+
+  # Emergency stop: force the pump off immediately.
+  - platform: template
+    name: "Stop pump"
+    on_press:
+      - script.execute: stop_pump
+
+# Read-only status for the HA dashboard.
+text_sensor:
+  - platform: template
+    name: "Pump state"
+    id: pump_state
+    lambda: |-
+      return id(pump_relay).state ? std::string("Running") : std::string("Idle");
+    update_interval: 1s

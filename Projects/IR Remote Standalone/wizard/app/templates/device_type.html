@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block subtitle %}<p class="subtitle">Step 2: What are we controlling?</p>{% endblock %}
+
+{% block progress %}
+<div class="progress-bar">
+    <div class="step done">1. Connect</div>
+    <div class="step active">2. Device</div>
+    <div class="step">3. Brand</div>
+    <div class="step">4. Discover</div>
+    <div class="step">5. Results</div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="glass-card" style="margin-bottom: 32px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+            <div class="connection-status">
+                <h2 style="font-size: 20px; margin-bottom: 4px;">Connected to {{ device_info.name }}</h2>
+            </div>
+            <p class="subtitle" style="font-size: 14px;">{{ device_info.model }} — ESPHome {{
+                device_info.esphome_version }}</p>
+        </div>
+        <form method="post" action="/self-check" class="inline-form">
+            <input type="hidden" name="session_id" value="{{ session_id }}">
+            <button type="submit" class="btn btn-secondary btn-small">Re-run Self-Check</button>
+        </form>
+    </div>
+
+    {% if self_check %}
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border);">
+        {% if self_check.success %}
+        <div class="alert alert-success" style="margin-bottom: 0;">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clip-rule="evenodd"></path>
+            </svg>
+            IR Transmitter &amp; Receiver verified.
+        </div>
+        {% else %}
+        <div class="alert alert-error" style="margin-bottom: 0;">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clip-rule="evenodd"></path>
+            </svg>
+            {{ self_check.error }}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<h3 style="margin: 32px 0 16px; font-weight: 600;">Select Device Type</h3>
+<div class="device-grid">
+    {% for dtype, count in device_types.items() %}
+    <form method="post" action="/device-type" style="display: contents;">
+        <input type="hidden" name="session_id" value="{{ session_id }}">
+        <input type="hidden" name="device_type" value="{{ dtype }}">
+        <button type="submit" class="device-card">
+            <span class="device-name">{{ dtype }}</span>
+            <span class="device-count">{{ count }} profiles</span>
+        </button>
+    </form>
+    {% endfor %}
+</div>
+
+<div class="glass-card" style="margin-top: 48px; text-align: center;">
+    <h3 style="margin-bottom: 8px;">Don't see your device?</h3>
+    <p class="subtitle" style="margin-bottom: 24px; font-size: 15px;">Capture codes directly from your physical remote.
+    </p>
+    <form method="post" action="/learn">
+        <input type="hidden" name="session_id" value="{{ session_id }}">
+        <button type="submit" class="btn btn-primary btn-large">Enter Learn Mode</button>
+    </form>
+</div>
+{% endblock %}

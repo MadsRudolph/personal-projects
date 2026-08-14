@@ -1,0 +1,267 @@
+INFO ESPHome 2025.12.4
+INFO Reading configuration C:\esphome-s400\s400-scale.yaml...
+INFO Generating C++ source...
+INFO Setting CONFIG_LWIP_MAX_SOCKETS to 11 (registered: api=4, captive_portal=4, mdns=2, ota=1)
+INFO Compiling app... Build path: C:\esphome-s400\.esphome\build\s400-scale
+********************************************************************************
+
+Obsolete PIO Core v6.1.18 is used (previous was 6.1.19)
+
+Please remove multiple PIO Cores from a system:
+
+https://docs.platformio.org/en/latest/core/installation/troubleshooting.html
+
+********************************************************************************
+
+Processing s400-scale (board: wemos_d1_mini32; framework: arduino, espidf; platform: https://github.com/pioarduino/platform-espressif32/releases/download/55.03.31-2/platform-espressif32.zip)
+
+--------------------------------------------------------------------------------
+
+HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+
+ - contrib-piohome @ 3.4.4 
+
+ - framework-arduinoespressif32 @ 3.3.2 
+
+ - framework-arduinoespressif32-libs @ 5.5.0+sha.129cd0d247 
+
+ - framework-espidf @ 3.50501.0 (5.5.1) 
+
+ - tool-cmake @ 4.0.3 
+
+ - tool-esp-rom-elfs @ 2024.10.11 
+
+ - tool-esptoolpy @ 5.1.0 
+
+ - tool-mklittlefs @ 3.2.0 
+
+ - tool-ninja @ 1.13.1 
+
+ - tool-scons @ 4.40801.0 (4.8.1) 
+
+ - toolchain-xtensa-esp-elf @ 14.2.0+20241119
+
+Reading CMake configuration...
+
+Dependency Graph
+
+|-- Networking @ 3.3.2
+
+|-- ESP32 Async UDP @ 3.3.2
+
+|-- DNSServer @ 3.3.2
+
+|-- WiFi @ 3.3.2
+
+|-- ESPmDNS @ 3.3.2
+
+|-- noise-c @ 0.1.10
+
+Compiling .pioenvs\s400-scale\src\main.cpp.o
+
+Linking .pioenvs\s400-scale\firmware.elf
+
+Firmware metrics can not be shown. Set the terminal codepage to "utf-8"
+
+RAM:   [==        ]  18.2% (used 59744 bytes from 327680 bytes)
+
+Flash: [========  ]  75.2% (used 1379691 bytes from 1835008 bytes)
+Building .pioenvs\s400-scale\firmware.bin
+
+Creating ESP32 image...
+
+Successfully created ESP32 image.
+
+merge_factory_bin([".pioenvs\s400-scale\firmware.bin"], [".pioenvs\s400-scale\firmware.elf"])
+
+Info: bootloader.bin not found - skipping
+
+Info: partition-table.bin not found - skipping
+
+Info: ota_data_initial.bin not found - skipping
+
+Info: s400-scale.bin not found - skipping
+
+Using FLASH_EXTRA_IMAGES from PlatformIO environment
+
+Merging binaries into C:\esphome-s400\.esphome\build\s400-scale\.pioenvs\s400-scale\firmware.factory.bin
+
+Merging binaries with esptool
+
+SHA digest in image updated.
+
+Wrote 0x160f00 bytes to file 'C:\esphome-s400\.esphome\build\s400-scale\.pioenvs\s400-scale\firmware.factory.bin', ready to flash to offset 0x0.
+
+Successfully created C:\esphome-s400\.esphome\build\s400-scale\.pioenvs\s400-scale\firmware.factory.bin
+
+esp32_copy_ota_bin([".pioenvs\s400-scale\firmware.bin"], [".pioenvs\s400-scale\firmware.elf"])
+
+Copied firmware to C:\esphome-s400\.esphome\build\s400-scale\.pioenvs\s400-scale/firmware.ota.bin
+
+========================= [SUCCESS] Took 23.01 seconds =========================
+
+INFO Successfully compiled program.
+INFO Connecting to 192.168.50.148 port 3232...
+INFO Connected to 192.168.50.148
+INFO Uploading C:\esphome-s400\.esphome\build\s400-scale\.pioenvs\s400-scale\firmware.bin (1380096 bytes)
+
+Uploading: [                                                            ] 0% 
+Uploading: [=                                                           ] 1% 
+Uploading: [=                                                           ] 2% 
+Uploading: [==                                                          ] 3% 
+Uploading: [==                                                          ] 4% 
+Uploading: [===                                                         ] 5% 
+Uploading: [====                                                        ] 6% 
+Uploading: [====                                                        ] 7% 
+Uploading: [=====                                                       ] 8% 
+Uploading: [======                                                      ] 9% 
+Uploading: [======                                                      ] 10% 
+Uploading: [=======                                                     ] 11% 
+Uploading: [=======                                                     ] 12% 
+Uploading: [========                                                    ] 13% 
+Uploading: [=========                                                   ] 14% 
+Uploading: [=========                                                   ] 15% 
+Uploading: [==========                                                  ] 16% 
+Uploading: [==========                                                  ] 17% 
+Uploading: [===========                                                 ] 18% 
+Uploading: [============                                                ] 19% 
+Uploading: [============                                                ] 20% 
+Uploading: [=============                                               ] 21% 
+Uploading: [==============                                              ] 22% 
+Uploading: [==============                                              ] 23% 
+Uploading: [===============                                             ] 24% 
+Uploading: [===============                                             ] 25% 
+Uploading: [================                                            ] 26% 
+Uploading: [================                                            ] 27% 
+Uploading: [=================                                           ] 28% 
+Uploading: [=================                                           ] 29% 
+Uploading: [==================                                          ] 30% 
+Uploading: [===================                                         ] 31% 
+Uploading: [===================                                         ] 32% 
+Uploading: [====================                                        ] 33% 
+Uploading: [=====================                                       ] 34% 
+Uploading: [=====================                                       ] 35% 
+Uploading: [======================                                      ] 36% 
+Uploading: [======================                                      ] 37% 
+Uploading: [=======================                                     ] 38% 
+Uploading: [========================                                    ] 39% 
+Uploading: [========================                                    ] 40% 
+Uploading: [=========================                                   ] 41% 
+Uploading: [=========================                                   ] 42% 
+Uploading: [==========================                                  ] 43% 
+Uploading: [===========================                                 ] 44% 
+Uploading: [===========================                                 ] 45% 
+Uploading: [============================                                ] 46% 
+Uploading: [============================                                ] 47% 
+Uploading: [=============================                               ] 48% 
+Uploading: [==============================                              ] 49% 
+Uploading: [==============================                              ] 50% 
+Uploading: [===============================                             ] 51% 
+Uploading: [===============================                             ] 52% 
+Uploading: [================================                            ] 53% 
+Uploading: [================================                            ] 54% 
+Uploading: [=================================                           ] 55% 
+Uploading: [==================================                          ] 56% 
+Uploading: [===================================                         ] 57% 
+Uploading: [===================================                         ] 58% 
+Uploading: [====================================                        ] 59% 
+Uploading: [====================================                        ] 60% 
+Uploading: [=====================================                       ] 61% 
+Uploading: [=====================================                       ] 62% 
+Uploading: [======================================                      ] 63% 
+Uploading: [======================================                      ] 64% 
+Uploading: [=======================================                     ] 65% 
+Uploading: [========================================                    ] 66% 
+Uploading: [========================================                    ] 67% 
+Uploading: [=========================================                   ] 68% 
+Uploading: [==========================================                  ] 69% 
+Uploading: [==========================================                  ] 70% 
+Uploading: [===========================================                 ] 71% 
+Uploading: [===========================================                 ] 72% 
+Uploading: [============================================                ] 73% 
+Uploading: [=============================================               ] 74% 
+Uploading: [=============================================               ] 75% 
+Uploading: [==============================================              ] 76% 
+Uploading: [==============================================              ] 77% 
+Uploading: [===============================================             ] 78% 
+Uploading: [================================================            ] 79% 
+Uploading: [================================================            ] 80% 
+Uploading: [=================================================           ] 81% 
+Uploading: [==================================================          ] 82% 
+Uploading: [==================================================          ] 83% 
+Uploading: [===================================================         ] 84% 
+Uploading: [===================================================         ] 85% 
+Uploading: [====================================================        ] 86% 
+Uploading: [====================================================        ] 87% 
+Uploading: [=====================================================       ] 88% 
+Uploading: [=====================================================       ] 89% 
+Uploading: [======================================================      ] 90% 
+Uploading: [=======================================================     ] 91% 
+Uploading: [=======================================================     ] 92% 
+Uploading: [========================================================    ] 93% 
+Uploading: [=========================================================   ] 94% 
+Uploading: [=========================================================   ] 95% 
+Uploading: [==========================================================  ] 96% 
+Uploading: [==========================================================  ] 97% 
+Uploading: [=========================================================== ] 98% 
+Uploading: [=========================================================== ] 99% 
+Uploading: [============================================================] 100% Done...
+
+
+INFO Upload took 7.07 seconds, waiting for result...
+INFO OTA successful
+INFO Successfully uploaded program.
+INFO Starting log output from 192.168.50.148 using esphome API
+INFO Successfully resolved s400-scale @ 192.168.50.148 in 0.000s
+INFO Trying to connect to s400-scale @ 192.168.50.148 in the background
+INFO Successfully connected to s400-scale @ 192.168.50.148 in 0.066s
+INFO Successful handshake with s400-scale @ 192.168.50.148 in 0.725s
+[21:28:11.516][I][app:194]: ESPHome version 2025.12.4 compiled on Jun  8 2026, 21:27:34
+[21:28:11.519][C][logger:261]: Logger:
+[21:28:11.519][C][logger:261]:   Max Level: DEBUG
+[21:28:11.519][C][logger:261]:   Initial Level: DEBUG
+[21:28:11.522][C][logger:267]:   Log Baud Rate: 115200
+[21:28:11.522][C][logger:267]:   Hardware UART: UART0
+[21:28:11.524][C][logger:274]:   Task Log Buffer Size: 768
+[21:28:11.582][C][xiaomi_miscale:012]: Xiaomi Miscale
+[21:28:11.582][C][xiaomi_miscale:013]:   Bindkey: 43.36.36.D2.70.D6.14.DC.50.02.85.E9.91.5C.C4.0A (16)
+[21:28:11.582][C][xiaomi_miscale:017]:   Weight 'Weight'
+[21:28:11.582][C][xiaomi_miscale:017]:     State Class: 'measurement'
+[21:28:11.582][C][xiaomi_miscale:017]:     Unit of Measurement: 'kg'
+[21:28:11.582][C][xiaomi_miscale:017]:     Accuracy Decimals: 2
+[21:28:11.582][C][xiaomi_miscale:027]:     Device Class: 'weight'
+[21:28:11.582][C][xiaomi_miscale:031]:     Icon: 'mdi:scale-bathroom'
+[21:28:11.582][C][xiaomi_miscale:017]:   Impedance 'Impedance High'
+[21:28:11.582][C][xiaomi_miscale:017]:     State Class: 'measurement'
+ERROR Exception in callback _ProactorReadPipeTransport._loop_reading(<_OverlappedF...ed result=918>)
+handle: <Handle _ProactorReadPipeTransport._loop_reading(<_OverlappedF...ed result=918>)>
+Traceback (most recent call last):
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0\Lib\asyncio\events.py", line 84, in _run
+    self._context.run(self._callback, *self._args)
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0\Lib\asyncio\proactor_events.py", line 324, in _loop_reading
+    self._data_received(data, length)
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0\Lib\asyncio\proactor_events.py", line 274, in _data_received
+    self._protocol.data_received(data)
+  File "aioesphomeapi/_frame_helper/noise.py", line 112, in aioesphomeapi._frame_helper.noise.APINoiseFrameHelper.data_received
+  File "aioesphomeapi/_frame_helper/noise.py", line 148, in aioesphomeapi._frame_helper.noise.APINoiseFrameHelper.data_received
+  File "aioesphomeapi/_frame_helper/noise.py", line 335, in aioesphomeapi._frame_helper.noise.APINoiseFrameHelper._handle_frame
+  File "aioesphomeapi/connection.py", line 1033, in aioesphomeapi.connection.APIConnection.process_packet
+  File "C:\Users\Mads2\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\esphome\components\api\client.py", line 70, in on_log
+    print(parsed_msg.replace("\033", "\\033") if dashboard else parsed_msg)
+  File "C:\Users\Mads2\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\colorama\ansitowin32.py", line 47, in write
+    self.__convertor.write(text)
+  File "C:\Users\Mads2\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\colorama\ansitowin32.py", line 177, in write
+    self.write_and_convert(text)
+  File "C:\Users\Mads2\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\colorama\ansitowin32.py", line 202, in write_and_convert
+    self.write_plain_text(text, cursor, start)
+  File "C:\Users\Mads2\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\colorama\ansitowin32.py", line 210, in write_plain_text
+    self.wrapped.write(text[start:end])
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u03a9' in position 51: character maps to <undefined>
+INFO Processing unexpected disconnect from ESPHome API for s400-scale @ 192.168.50.148
+WARNING Disconnected from API
+INFO Successfully resolved s400-scale @ 192.168.50.148 in 0.000s
+INFO Successfully connected to s400-scale @ 192.168.50.148 in 0.014s
+INFO Successful handshake with s400-scale @ 192.168.50.148 in 0.686s

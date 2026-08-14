@@ -1,0 +1,67 @@
+# Optional Home Assistant snippets for the Plant Watering Tower.
+#
+# Entity IDs assume device name "plant-pump" (set in pump.yaml). Adjust if you renamed it.
+# The firmware already runs its own on-device schedule (the `time:` block in pump.yaml);
+# use the automation below INSTEAD if you'd rather drive the schedule from HA.
+
+# --------------------------------------------------------------------------------------
+# Lovelace dashboard card  (Dashboard → Edit → Raw configuration editor, paste into a view)
+# Entity IDs assume HA prefixed with the device friendly_name "plant_watering_tower_".
+# If yours differ, use the dashboard entity picker's autocomplete to correct them.
+# --------------------------------------------------------------------------------------
+# type: entities
+# title: Plant Watering Tower
+# entities:
+#   - entity: sensor.plant_watering_tower_pump_state
+#     name: Status
+#   - entity: binary_sensor.plant_watering_tower_reservoir_has_water
+#     name: Reservoir
+#   - type: divider
+#   - entity: number.plant_watering_tower_dose_volume
+#     name: Dose volume
+#   - entity: button.plant_watering_tower_water_now
+#     name: Water now
+#   - type: divider
+#   - entity: number.plant_watering_tower_manual_run_time
+#     name: Manual run time
+#   - entity: button.plant_watering_tower_manual_run_override
+#     name: Manual run (override)
+#   - entity: button.plant_watering_tower_stop_pump
+#     name: Stop pump
+
+# --------------------------------------------------------------------------------------
+# Scheduling automation (HA-driven alternative to the on-device time: block)
+# Paste into automations.yaml. Disable the pump.yaml on_time block if you use this.
+# --------------------------------------------------------------------------------------
+- id: plant_tower_morning_water
+  alias: "Plant tower — morning water"
+  trigger:
+    - platform: time
+      at: "07:00:00"
+  condition:
+    # Don't even try if the reservoir is empty (firmware also enforces this).
+    - condition: state
+      entity_id: binary_sensor.plant_pump_reservoir_has_water
+      state: "on"
+  action:
+    - service: button.press
+      target:
+        entity_id: button.plant_pump_water_now
+  mode: single
+
+# --------------------------------------------------------------------------------------
+# Optional: notify if a scheduled water was skipped because the reservoir was empty.
+# --------------------------------------------------------------------------------------
+- id: plant_tower_empty_alert
+  alias: "Plant tower — reservoir empty alert"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.plant_pump_reservoir_has_water
+      to: "off"
+      for: "00:01:00"
+  action:
+    - service: notify.notify
+      data:
+        title: "Plant tower"
+        message: "Reservoir is empty — watering is locked out until refilled."
+  mode: single

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if devices %}
+<div class="glass-card">
+    <h2 style="font-size: 24px; margin-bottom: 8px;">Saved Devices</h2>
+    <p class="subtitle" style="margin-bottom: 24px;">Pick up where you left off, or configure something new.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+        {% for dev in devices %}
+        <div class="device-row">
+            <a href="/edit/{{ dev.device_id }}" class="device-row-link">
+                <div>
+                    <span style="font-weight: 600; font-size: 16px;">{{ dev.brand }} {{ dev.device_type }}</span>
+                    <span style="color: var(--text-secondary); font-size: 13px; margin-left: 12px;">
+                        {{ dev.buttons | length }} button{{ 's' if dev.buttons | length != 1 else '' }}
+                    </span>
+                </div>
+                <span style="color: var(--primary); font-size: 14px; font-weight: 500;">Edit &rarr;</span>
+            </a>
+            <form method="post" action="/delete/{{ dev.device_id }}" style="margin: 0;"
+                onsubmit="return confirm('Delete {{ dev.brand }} {{ dev.device_type }}?')">
+                <button type="submit" title="Delete {{ dev.brand }} {{ dev.device_type }}"
+                    class="device-row-delete">&times;</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="hero-cta">
+    <a href="/new" class="btn btn-primary btn-large btn-wide">Configure New Device</a>
+</div>
+{% endblock %}

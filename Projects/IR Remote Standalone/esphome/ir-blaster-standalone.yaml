@@ -1,0 +1,271 @@
+esphome:
+  name: ir-remote-standalone
+  friendly_name: IR Remote Standalone
+
+esp32:
+  board: lolin_d32
+  framework:
+    type: arduino
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "IR Remote Fallback"
+    password: !secret fallback_password
+
+captive_portal:
+
+web_server:
+  port: 80
+
+logger:
+
+globals:
+  - id: ir_listen_mode
+    type: bool
+    initial_value: 'false'
+
+api:
+  encryption:
+    key: !secret api_key
+  services:
+    - service: set_ir_listen
+      variables:
+        enabled: bool
+      then:
+        - globals.set:
+            id: ir_listen_mode
+            value: !lambda 'return enabled;'
+
+    - service: send_ir_nec
+      variables:
+        address: int
+        command: int
+      then:
+        - remote_transmitter.transmit_nec:
+            address: !lambda 'return address;'
+            command: !lambda 'return command;'
+
+    - service: send_ir_samsung
+      variables:
+        data: int
+      then:
+        - remote_transmitter.transmit_samsung:
+            data: !lambda 'return data;'
+
+    - service: send_ir_samsung36
+      variables:
+        address: int
+        command: int
+      then:
+        - remote_transmitter.transmit_samsung36:
+            address: !lambda 'return address;'
+            command: !lambda 'return command;'
+
+    - service: send_ir_sony
+      variables:
+        data: int
+        nbits: int
+      then:
+        - remote_transmitter.transmit_sony:
+            data: !lambda 'return data;'
+            nbits: !lambda 'return nbits;'
+
+    - service: send_ir_rc5
+      variables:
+        address: int
+        command: int
+      then:
+        - remote_transmitter.transmit_rc5:
+            address: !lambda 'return address;'
+            command: !lambda 'return command;'
+
+    - service: send_ir_rc6
+      variables:
+        address: int
+        command: int
+      then:
+        - remote_transmitter.transmit_rc6:
+            address: !lambda 'return address;'
+            command: !lambda 'return command;'
+
+    - service: send_ir_lg
+      variables:
+        data: int
+        nbits: int
+      then:
+        - remote_transmitter.transmit_lg:
+            data: !lambda 'return data;'
+            nbits: !lambda 'return nbits;'
+
+    - service: send_ir_panasonic
+      variables:
+        address: int
+        command: int
+      then:
+        - remote_transmitter.transmit_panasonic:
+            address: !lambda 'return address;'
+            command: !lambda 'return command;'
+
+    - service: send_ir_pioneer
+      variables:
+        rc_code_1: int
+      then:
+        - remote_transmitter.transmit_pioneer:
+            rc_code_1: !lambda 'return rc_code_1;'
+
+    - service: send_ir_jvc
+      variables:
+        data: int
+      then:
+        - remote_transmitter.transmit_jvc:
+            data: !lambda 'return data;'
+
+    - service: send_ir_dish
+      variables:
+        address: int
+        command: int
+      then:
+        - remote_transmitter.transmit_dish:
+            address: !lambda 'return address;'
+            command: !lambda 'return command;'
+
+    - service: send_ir_coolix
+      variables:
+        first: int
+      then:
+        - remote_transmitter.transmit_coolix:
+            first: !lambda 'return first;'
+
+    - service: send_ir_raw
+      variables:
+        code: int[]
+      then:
+        - remote_transmitter.transmit_raw:
+            carrier_frequency: 38000
+            code: !lambda 'return code;'
+
+    - service: send_ir_pronto
+      variables:
+        data: string
+      then:
+        - remote_transmitter.transmit_pronto:
+            data: !lambda 'return data;'
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+remote_transmitter:
+  pin: GPIO16
+  carrier_duty_percent: 33%
+
+remote_receiver:
+  pin:
+    number: GPIO17
+    inverted: true
+    mode:
+      input: true
+      pullup: true
+  tolerance: 25%
+  idle: 25ms
+  on_nec:
+    - if:
+        condition:
+          lambda: 'return id(ir_listen_mode);'
+        then:
+          - logger.log:
+              format: "Received NEC: address=0x%04X, command=0x%04X"
+              args: ['x.address', 'x.command']
+  on_samsung:
+    - if:
+        condition:
+          lambda: 'return id(ir_listen_mode);'
+        then:
+          - logger.log:
+              format: "Received Samsung: data=0x%08X"
+              args: ['x.data']
+  on_samsung36:
+    - if:
+        condition:
+          lambda: 'return id(ir_listen_mode);'
+        then:
+          - logger.log:
+              format: "Received Samsung36: address=0x%04X, command=0x%08X"
+              args: ['x.address', 'x.command']
+  on_sony:
+    - if:
+        condition:
+          lambda: 'return id(ir_listen_mode);'
+        then:
+          - logger.log:
+              format: "Received Sony: data=0x%04X, nbits=%d"
+              args: ['x.data', 'x.nbits']
+  on_rc5:
+    - if:
+        condition:
+          lambda: 'return id(ir_listen_mode);'
+        then:
+          - logger.log:
+              format: "Received RC5: address=0x%02X, command=0x%02X"
+              args: ['x.address', 'x.command']
+  on_rc6:
+    - if:
+        condition:
+          lambda: 'return id(ir_listen_mode);'
+        then:
+          - logger.log:
+              format: "Received RC6: address=0x%02X, command=0x%02X"
+              args: ['x.address', 'x.command']
+  on_lg:
+    - if:
+        condition:
+          lambda: 'return id(ir_listen_mode);'
+        then:
+          - logger.log:
+              format: "Received LG: data=0x%08X, nbits=%d"
+              args: ['x.data', 'x.nbits']
+  on_panasonic:
+    - if:
+        condition:
+          lambda: 'return id(ir_listen_mode);'
+        then:
+          - logger.log:
+              format: "Received Panasonic: address=0x%04X, command=0x%08X"
+              args: ['x.address', 'x.command']
+  on_pioneer:
+    - if:
+        condition:
+          lambda: 'return id(ir_listen_mode);'
+        then:
+          - logger.log:
+              format: "Received Pioneer: rc_code_1=0x%04X"
+              args: ['x.rc_code_1']
+  on_jvc:
+    - if:
+        condition:
+          lambda: 'return id(ir_listen_mode);'
+        then:
+          - logger.log:
+              format: "Received JVC: data=0x%04X"
+              args: ['x.data']
+  on_dish:
+    - if:
+        condition:
+          lambda: 'return id(ir_listen_mode);'
+        then:
+          - logger.log:
+              format: "Received Dish: address=0x%02X, command=0x%02X"
+              args: ['x.address', 'x.command']
+  on_coolix:
+    - if:
+        condition:
+          lambda: 'return id(ir_listen_mode);'
+        then:
+          - logger.log:
+              format: "Received Coolix: data=0x%08X"
+              args: ['x.first']
+
+status_led:
+  pin: GPIO2

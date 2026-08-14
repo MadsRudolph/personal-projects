@@ -1,0 +1,91 @@
+INFO ESPHome 2025.12.4
+INFO Reading configuration C:\esphome-s400\s400-scale.yaml...
+INFO Starting log output from 192.168.50.148 using esphome API
+INFO Successfully resolved s400-scale @ 192.168.50.148 in 0.000s
+INFO Successfully connected to s400-scale @ 192.168.50.148 in 0.084s
+INFO Successful handshake with s400-scale @ 192.168.50.148 in 0.705s
+[21:33:45.926][I][app:194]: ESPHome version 2025.12.4 compiled on Jun  8 2026, 21:27:34
+[21:33:45.928][C][logger:261]: Logger:
+[21:33:45.928][C][logger:261]:   Max Level: DEBUG
+[21:33:45.928][C][logger:261]:   Initial Level: DEBUG
+[21:33:45.928][C][logger:267]:   Log Baud Rate: 115200
+[21:33:45.928][C][logger:267]:   Hardware UART: UART0
+[21:33:45.931][C][logger:274]:   Task Log Buffer Size: 768
+[21:33:45.990][C][xiaomi_miscale:012]: Xiaomi Miscale
+[21:33:45.990][C][xiaomi_miscale:013]:   Bindkey: 43.36.36.D2.70.D6.14.DC.50.02.85.E9.91.5C.C4.0A (16)
+[21:33:45.996][C][xiaomi_miscale:017]:   Weight 'Weight'
+[21:33:45.996][C][xiaomi_miscale:017]:     State Class: 'measurement'
+[21:33:45.996][C][xiaomi_miscale:017]:     Unit of Measurement: 'kg'
+[21:33:45.996][C][xiaomi_miscale:017]:     Accuracy Decimals: 2
+[21:33:45.996][C][xiaomi_miscale:027]:     Device Class: 'weight'
+[21:33:45.996][C][xiaomi_miscale:031]:     Icon: 'mdi:scale-bathroom'
+[21:33:45.996][C][xiaomi_miscale:017]:   Impedance 'Impedance High'
+[21:33:45.996][C][xiaomi_miscale:017]:     State Class: 'measurement'
+[21:33:45.996][C][xiaomi_miscale:017]:     Unit of Measurement: 'Ω'
+[21:33:45.996][C][xiaomi_miscale:017]:     Accuracy Decimals: 0
+[21:33:45.997][C][xiaomi_miscale:031]:     Icon: 'mdi:omega'
+[21:33:45.997][C][xiaomi_miscale:017]:   Impedance Low 'Impedance Low'
+[21:33:45.997][C][xiaomi_miscale:017]:     State Class: 'measurement'
+[21:33:45.997][C][xiaomi_miscale:017]:     Unit of Measurement: 'Ω'
+[21:33:45.997][C][xiaomi_miscale:017]:     Accuracy Decimals: 0
+[21:33:45.997][C][xiaomi_miscale:031]:     Icon: 'mdi:omega'
+[21:33:45.998][C][xiaomi_miscale:017]:   Heart Rate 'Heart rate'
+[21:33:45.998][C][xiaomi_miscale:017]:     State Class: 'measurement'
+[21:33:45.998][C][xiaomi_miscale:017]:     Unit of Measurement: 'bpm'
+[21:33:45.998][C][xiaomi_miscale:017]:     Accuracy Decimals: 0
+[21:33:46.020][C][xiaomi_miscale:031]:     Icon: 'mdi:heart-pulse'
+[21:33:46.020][C][esp32_ble:656]: BLE:
+[21:33:46.020][C][esp32_ble:656]:   MAC address: 70:4B:CA:4C:BF:46
+[21:33:46.020][C][esp32_ble:656]:   IO Capability: none
+[21:33:46.038][C][esp32_ble_tracker:636]: BLE Tracker:
+[21:33:46.094][C][esp32_ble_tracker:637]:   Scan Duration: 300 s
+[21:33:46.094][C][esp32_ble_tracker:637]:   Scan Interval: 320.0 ms
+[21:33:46.094][C][esp32_ble_tracker:637]:   Scan Window: 30.0 ms
+[21:33:46.094][C][esp32_ble_tracker:637]:   Scan Type: ACTIVE
+[21:33:46.094][C][esp32_ble_tracker:637]:   Continuous Scanning: YES
+[21:33:46.094][C][esp32_ble_tracker:645]:   Scanner State: RUNNING
+[21:33:46.094][C][esp32_ble_tracker:646]:   Connecting: 0, discovered: 0, disconnecting: 0
+[21:33:46.094][C][captive_portal:118]: Captive Portal:
+[21:33:46.094][C][wifi:1132]: WiFi:
+[21:33:46.094][C][wifi:1132]:   Connected: YES
+[21:33:46.094][C][wifi:897]:   Local MAC: 70:4B:CA:4C:BF:44
+[21:33:46.094][C][wifi:904]:   IP Address: 192.168.50.148
+[21:33:46.094][C][wifi:908]:   SSID: 'WutanLan'
+[21:33:46.094][C][wifi:908]:   BSSID: 70:4F:57:8A:62:15
+[21:33:46.094][C][wifi:908]:   Hostname: 's400-scale'
+[21:33:46.094][C][wifi:908]:   Signal strength: -22 dB ▂▄▆█
+[21:33:46.094][C][wifi:908]:   Channel: 2
+[21:33:46.094][C][wifi:908]:   Subnet: 255.255.255.0
+[21:33:46.094][C][wifi:908]:   Gateway: 192.168.50.1
+[21:33:46.094][C][wifi:908]:   DNS1: 192.168.50.1
+[21:33:46.094][C][wifi:908]:   DNS2: 0.0.0.0
+[21:33:46.094][C][esphome.ota:092]: Over-The-Air updates:
+[21:33:46.094][C][esphome.ota:092]:   Address: s400-scale.local:3232
+[21:33:46.094][C][esphome.ota:092]:   Version: 2
+[21:33:46.109][C][esphome.ota:099]:   Password configured
+[21:33:46.112][C][safe_mode:018]: Safe Mode:
+[21:33:46.112][C][safe_mode:018]:   Successful after: 60s
+[21:33:46.112][C][safe_mode:018]:   Invoke after: 10 attempts
+[21:33:46.112][C][safe_mode:018]:   Duration: 300s
+[21:33:46.131][C][web_server.ota:241]: Web Server OTA
+[21:33:46.138][C][api:211]: Server:
+[21:33:46.138][C][api:211]:   Address: s400-scale.local:6053
+[21:33:46.138][C][api:211]:   Listen backlog: 4
+[21:33:46.138][C][api:211]:   Max connections: 8
+[21:33:46.141][C][api:218]:   Noise encryption: YES
+[21:33:46.206][C][mdns:177]: mDNS:
+[21:33:46.206][C][mdns:177]:   Hostname: s400-scale
+[21:35:09.903][I][xiaomi_miscale:307]: Got Xiaomi Miscale S400 (04:AE:47:62:41:33):
+[21:35:09.906][I][xiaomi_miscale:310]:   Weight: 111.00kg
+[21:35:09.910][I][xiaomi_miscale:313]:   Impedance: 470.0ohm
+[21:35:09.910][I][xiaomi_miscale:319]:   Heart Rate: 87bpm
+[21:35:09.911][I][xiaomi_miscale:322]:   Timestamp: 1780947311
+[21:35:09.913][I][xiaomi_miscale:325]:   Profile ID: 1
+[21:35:09.913][D][sensor:135]: 'Weight': Sending state 111.00000 kg with 2 decimals of accuracy
+[21:35:09.913][D][sensor:135]: 'Impedance High': Sending state 470.00000 Ω with 0 decimals of accuracy
+[21:35:09.913][D][sensor:135]: 'Heart rate': Sending state 87.00000 bpm with 0 decimals of accuracy
+[21:35:10.932][I][xiaomi_miscale:307]: Got Xiaomi Miscale S400 (04:AE:47:62:41:33):
+[21:35:10.932][I][xiaomi_miscale:316]:   Impedance Low: 431.5ohm
+[21:35:10.932][I][xiaomi_miscale:322]:   Timestamp: 1780947311
+[21:35:10.934][I][xiaomi_miscale:325]:   Profile ID: 1
+[21:35:10.936][D][sensor:135]: 'Impedance Low': Sending state 431.50000 Ω with 0 decimals of accuracy

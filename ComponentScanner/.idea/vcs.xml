@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../Projects/Pi Zero Room Sensor" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../ir-remote-wizard" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../pi-zero-room-sensor" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../spotify-addon" vcs="Git" />
+  </component>
+</project>
