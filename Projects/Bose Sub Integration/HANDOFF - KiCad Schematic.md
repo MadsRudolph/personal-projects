@@ -38,7 +38,7 @@ that, plus a panel rotary switch.
 | **Capacitor values are the as-built ones**, not the drawn ones — `C2_2` is 120 nF | Every measured corner depends on the parts actually soldered. `C2_3` also measures −6.2 %, confirmed out-of-sample |
 | **`C1_1` is fitted, at 470 nF** | Gives a 94.0 Hz corner — the first time the board reaches below 100 Hz. Rev A left it out and faked its setting by paralleling `C1_2 ∥ C1_3` on two jumpers |
 | **The parallel trick is retired** | It cannot survive a rotary switch. Wiring one header pin to two lugs ties those lugs together, and every position collapses to the same value |
-| **`C_in` is 220 nF on a dual-pitch footprint** | 220 n is what measured well; 2 µ2 is still arguable and Gate 11 has not run. The footprint takes either |
+| **`C_in` is 220 nF**, on the stock 15 mm footprint | 220 n is what measured well; 2 µ2 is still arguable and Gate 11 has not run. A 2 µ2 film is 15 mm pitch too, so one footprint takes either |
 | **Every capacitor footprint comes from calipers** | Rev A had `C1_2`, `C1_3` and `C2_2` on footprints too short for them. `C1_2` is a 15 mm part that was squeezed into a 7.50 mm footprint — its leads were bent inward by 7.5 mm |
 | **Two status LEDs** | `D1` power, `D2` inverted-polarity off SW2's unused second pole |
 
@@ -54,8 +54,8 @@ Signal chain: Schiit Saga preamp → passive RCA Y-split → **this board** → 
 into the Bose control pod's aux input. The other leg of the split goes to the
 existing power amp untouched.
 
-**Deliverable for this session: the schematic only** (`subxo.kicad_sch`). Layout
-is a separate task.
+The schematic (`subxo.kicad_sch`) is generated and verified; see **Layout** at
+the end for the state of the board.
 
 ---
 
@@ -139,8 +139,8 @@ supply** — this is a single-rail design with a mid-rail reference.
 > Whether 220 nF or 2.2 µF is the better *choice* is a listening question that
 > Gate 11 has not answered. 2.2 µF would move the three switch corners to
 > 88 / 127 / 192 Hz and cut the level spread between positions from 3.3 dB to
-> 1.7 dB, which matters because loudness confounds an A/B comparison. So the
-> footprint is dual-pitch and takes either. The 15 mm footprint takes either value.
+> 1.7 dB, which matters because loudness confounds an A/B comparison. A 2.2 µF
+> film is 15 mm pitch like the 220 n, so the one footprint takes either value.
 
 ### Switched capacitors
 
