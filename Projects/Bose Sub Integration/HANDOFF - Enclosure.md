@@ -8,7 +8,7 @@ tags:
   - crossover
   - enclosure
   - blender
-status: Modelled in Blender; awaiting caliper confirmation before printing
+status: Modelled and dimensionally settled; STLs ready to slice
 started: 2026-08-16
 updated: 2026-08-16
 ---
@@ -290,8 +290,8 @@ right to within 0.14 mm. The loom still sets the height at 30.6 mm internal.
 | LEDs | **Holes in the lid** above `D1` and `D2`. See the caveat below |
 | Retention | **Corner clips.** Rear two corners are rigid L-ledges, front two are flexing snap fingers |
 | Material | **Plastic, unshielded.** Recorded here so the Gate 8 noise floor is read against an unshielded box |
-| Rear panel | RCAs **opened out to 20 mm pitch** (X = 23.0 and 43.0) rather than aligned to `J1`/`J2`, which are only 13.0 mm apart |
-| External size | Minimal. **117.8 × 137.8 × 35.4 mm** |
+| Rear panel | Inputs are a **salvaged 4-pair RCA plate**, clipped to one pair and laid on its side. Plate stays inside; the two barrels press out through a pair of round holes |
+| External size | Minimal. **117.8 × 139.8 × 35.4 mm** |
 | Rotary switch | AliExpress 20 mm metal selector, M9×0.75, 18-tooth knurl shaft. **Order the 2P6T variant** |
 
 ### Verified against the board, not assumed
@@ -376,13 +376,21 @@ The internal stack as modelled, above the base floor:
 > Do not "reclaim" that 4 mm by looking at the render and concluding there is
 > spare space above the headers. There is not.
 
-That is with an 8 mm bend allowance above the 15 mm fitted header height. If
-the real loom needs more, raise `loom_above_board` and re-run — do not squeeze
-it, it is the most pickup-prone wiring in the build.
+That is with an 8 mm bend allowance above the 15 mm fitted header height.
+
+**Decided: the box is not growing for the loom — the loom gets dressed to fit
+the box.** 23 mm above the board is therefore a hard build budget, not an
+estimate to be checked later. Dress the wires over toward the front panel
+immediately above `JP1`/`JP2` rather than letting them stand up first.
 
 Box **length** is still set by the switch: its body must clear the board
 entirely, because `C1_1` stands only 1.4 mm from the front edge. Front gap is
-`switch depth + 3 mm` = 19 mm.
+`switch depth + 3 mm` = **21 mm**.
+
+Behind-panel depth measured at **18.0 mm** — from the face that bears on the
+inside of the front panel to the back of the switch. That is 2 mm more than
+the 16 mm estimated, so the box grew 2 mm long. The switch body now runs from
+y = −125 to −107, clearing the board's front edge by 3 mm.
 
 ### Two things to check when the switch arrives
 
@@ -398,20 +406,60 @@ entirely, because `C1_1` stands only 1.4 mm from the front edge. Front gap is
 
 ### Panel positions as modelled
 
-All panel parts share a 15.5 mm centre line above the internal floor.
-X is measured the same way as the table above — from the board's left edge.
+There are **two centre lines**, not one. X is measured the same way as the
+table above — from the board's left edge.
+
+- **Front, z = 15.3** — centred in the box.
+- **Rear, z = 18.1** — centred in the space *above the board* instead. The
+  RCA plate mounts inside and is 22 mm tall, so on the lower line its bottom
+  edge and anything hanging off its back would sit at board level. Lifting
+  the rear line puts the whole plate 1.5 mm above the board top and 1.5 mm
+  under the lid, which removes the depth budget entirely — nothing behind
+  that plate can reach the board, whatever it protrudes. Different faces, so
+  the two lines are never seen together.
 
 | Panel | Part | X | Hole ⌀ |
 |---|---|---|---|
-| Rear | RCA L | 23.0 | 10.4 |
-| Rear | RCA R | 43.0 | 10.4 |
+| Rear | RCA barrel L | 25.85 | 8.7 |
+| Rear | RCA barrel R | 40.15 | 8.7 |
 | Rear | 3.5 mm jack | 58.33 | 6.4 |
 | Rear | DC barrel | 87.42 | 8.4 |
-| Front | Rotary | 20.0 | 9.9 (M9×0.75 bushing) |
+| Front | Rotary | 20.0 | 9.4 (M9×0.75 bushing) |
 | Front | Toggle | 44.78 | 6.4 |
 | Front | Level pot | 82.90 | 7.4 |
 | Lid | `D1` window | 16.09 / 81.53 | 4.0, counterbored |
 | Lid | `D2` window | 6.49 / 81.53 | 4.0, counterbored |
+
+### The RCA plate
+
+Salvaged 4-pair plate, clipped to one pair, **laid on its side** so the two
+sockets sit side by side. Measured: 25.3 × 22.0 × 2.2 mm, sockets 22.6 mm
+outer ring to outer ring.
+
+The plate stays inside the box. A 2.5 mm rim on the inner face of the rear
+wall locates it in X and Z; the two barrels press out through round holes.
+
+Barrel diameter measured at **8.3 mm**, so the pitch is
+`22.6 − 8.3` = **14.3 mm**. Holes are ⌀8.7 at X = 25.85 and 40.15, leaving
+5.6 mm of wall between them.
+
+> [!note] The three measurements cross-check
+> Working the layout back from 8.3 mm barrels on a 14.3 mm pitch puts the
+> outermost edges 11.3 mm from the plate centre, which leaves **1.35 mm** of
+> plate either side. That is exactly `(25.3 − 22.6) / 2` — the bezel implied
+> by the width and span measured separately. Three independent caliper
+> readings agreeing to the hundredth is good evidence none of them is wrong.
+>
+> The holes also land within **0.7 mm** of `J1` (26.48) and `J2` (39.48).
+> The 14.3 mm pitch is fixed by the plate and `J1`/`J2` are 13.0 mm apart, so
+> they cannot match exactly — but centring the pair on their midpoint gets
+> the wiring as close to straight as the parts allow.
+
+> [!caution] The rim locates the plate, it does not hold it
+> Pushing a plug in drives the plate *inward*, away from the wall, and
+> nothing resists that — the barrels' shoulders only stop it going outward.
+> It needs securing: two screws if the plate has holes, otherwise epoxy at
+> the rim. Do not rely on the barrels being a tight fit in the holes.
 
 The rotary sits hard left at X = 20, right next to `JP2` (X = 22.0) and close
 to `JP1` (X = 32.2), so the noise-sensitive 8-wire loom stays as short as the
@@ -425,17 +473,43 @@ panel parts. They are aligned to their terminals wherever the parts fit.
 `J7` is unpopulated: the inverted indicator is `D2` on the board, read through
 the lid.
 
-### Assumptions still open
+### Dimensions are settled
 
-Everything here is a parameter in the `P` dict. Measure, edit, re-run.
+Every dimension that sets the box is now either read from the board file,
+measured off the KiCad 3D models, or measured with calipers. Nothing load-
+bearing is still a guess.
+
+| Parameter | Value | Source |
+|---|---|---|
+| `loom_above_board` | 23.0 | **Accepted as a build budget** — loom dressed to fit, box not resized |
+| `rotary_body_dia` / `_depth` | 20.0 / 18.0 | Calipers |
+| `rca_barrel_dia` / span / plate | 8.3 / 22.6 / 25.3 × 22.0 × 2.2 | Calipers, and they cross-check |
+| `tallest_part` (`U2`) | 18.86, held at 19.0 | KiCad 3D model |
+| Board outline and all connector X/Y | — | `subxo.kicad_pcb` |
+
+Remaining parameters are ordinary print settings and part-hole diameters:
 
 | Parameter | Assumed | Why it matters |
 |---|---|---|
-| **`loom_above_board`** | **23.0** (15 mm header + 8 mm bend) | **Sets the box height.** The only assumption still doing real work |
-| `rotary_body_depth` | 16.0 | **Sets the box length.** Not published in any listing — measure when the switch arrives |
-| `rca_hole` / `jack_hole` / `dc_hole` | 10 / 6 / 8 | Panel hole diameters |
-| `pot_hole` / `toggle_hole` | 7 / 6 | Bushing diameters |
+| `jack_hole` / `dc_hole` | 6 / 8 | Panel hole diameters |
+| `rotary_hole` / `pot_hole` / `toggle_hole` | 9 / 7 / 6 | **Bushing nominal diameters.** `hole_clear` (0.4) is added on top, so the cut holes are 9.4 / 7.4 / 6.4 — 0.2 mm radial clearance each. `rotary_hole` was briefly 9.5 here, which double-counted the clearance and cut a sloppy 9.9 |
 | Knob diameters | 25 (rotary) / 20 (pot) | Only affects whether the knobs foul each other; currently 4.3 mm apart |
+
+### Print-readiness pass
+
+Four defects were found and fixed by actually checking the meshes rather than
+eyeballing the renders. Worth recording, because three of them would only have
+shown up as a wasted print.
+
+| Found | Why it mattered | Fix |
+|---|---|---|
+| Retention faces sat **flush on the board**, zero clearance | Both the ledges and hooks are cantilevered overhangs that droop a few tenths on FDM. At zero clearance the droop pinches the board and it will not go in | `retain_clear` = 0.4 mm gap. Measured 0.49 mm to the real board |
+| Front snap hooks were **plain boxes with no lead-in** | A comment claimed a lead-in chamfer, but there was none. The board would butt against the flat hook underside and simply refuse to seat — the clips could not snap | Hooks are now wedges, ramping from 1.4 mm at the finger to a 0.4 mm tip, so pressing down cams the finger outward |
+| **Lid was not watertight** — 57 non-manifold edges, 8 boundary edges | Slices into garbage, and the slicer usually will not warn you | Cutters now overshoot every face they break through by 0.5 mm. Rails stop short of the bosses instead of being cut around them |
+| M3 counterbore **broke out of the lid corner** | Bosses sat on the cavity corners, only 2.4 mm from the outside; a 6.2 mm bore needs 3.1 mm. Left a 0.29 mm sliver | Counterbore dropped entirely — a 2.4 mm lid should not be recessed for M3. Bosses inset 1.5 mm and slimmed to ⌀6.4, giving 2.2 mm of lid around each screw hole and 1.32 mm to the board |
+
+`render_and_export.py` now refuses to export a mesh that is not watertight, so
+this cannot regress quietly.
 
 ### Two caveats to be aware of
 

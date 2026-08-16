@@ -119,7 +119,29 @@ base.hide_render = False
 
 
 # --- STL export ------------------------------------------------------------
+def assert_watertight(objname):
+    """
+    A non-watertight mesh slices into garbage - missing walls, stray skins -
+    and the slicer will usually not tell you. Cutters landing exactly on a
+    face are the usual cause. Fail loudly here rather than at the printer.
+    """
+    import bmesh
+    ob = bpy.data.objects[objname]
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    nonmani = sum(1 for e in bm.edges if not e.is_manifold)
+    boundary = sum(1 for e in bm.edges if e.is_boundary)
+    loose = sum(1 for v in bm.verts if not v.link_edges)
+    bm.free()
+    if nonmani or boundary or loose:
+        raise RuntimeError(
+            "%s is not watertight: %d non-manifold edges, %d boundary edges, "
+            "%d loose verts. Do not print this." % (objname, nonmani, boundary, loose))
+    return True
+
+
 def export(objname, fname):
+    assert_watertight(objname)
     ob = bpy.data.objects[objname]
     ob.hide_set(False)                      # hidden objects cannot be selected,
     bpy.ops.object.select_all(action='DESELECT')   # and export silently empties

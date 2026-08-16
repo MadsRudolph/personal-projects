@@ -93,6 +93,7 @@ P = {
     "loom_above_board": 23.0,
 
     # --- board retention: corner clips -------------------------------------
+    "retain_clear":     0.4,    # gap between board top and the retention faces
     "pad":              5.0,    # corner support pad, square, over the board
     "ledge_over":       3.0,    # fixed rear ledge reach over the board top
     "hook_over":        2.0,    # front snap hook reach over the board top
@@ -106,10 +107,15 @@ P = {
     "led_hole":         4.0,    # through the lid
     "led_cbore":        7.0,    # counterbore from the inside
     "led_web":          1.2,    # material left at the outer face
-    "boss_r":           4.0,    # corner screw boss
+    "boss_r":           3.2,    # corner screw boss. 6.4 dia is ample for an M3
+                                # self-tapper and keeps it clear of the board
+    "boss_inset":       1.5,    # pulled off the cavity corner, so the screw
+                                # hole keeps ~2.2 mm of lid material to the edge
     "boss_pilot":       2.5,    # M3 self-tapping pilot
     "screw_clear":      3.4,
-    "screw_cbore":      6.2,
+    # No lid counterbore. The lid is only 2.4 mm thick - recessing an M3 head
+    # would leave a 1.2 mm web under it, and a 6.2 mm bore breaks out of the
+    # corner entirely. Use M3 pan-head screws and let the heads sit proud.
 
     # --- panel parts -------------------------------------------------------
     # Rotary: AliExpress "20MM Metal Rotary Switch Selector, M9x0.75, 18 teeth
@@ -118,11 +124,14 @@ P = {
     #   body diameter  20.0  - from the listing
     #   bushing        M9x0.75, so a 9.5 mm clearance hole
     #   shaft          6 mm knurled, 20 mm long
-    #   body depth     NOT PUBLISHED. 16.0 is an estimate for a single wafer
-    #                  plus solder terminals. It only affects box length.
+    #   body depth     MEASURED 18.0, from the face that bears on the inside
+    #                  of the front panel to the back of the switch. Sets the
+    #                  front gap, and so the box length.
     "rotary_body_dia":  20.0,
-    "rotary_body_depth": 16.0,
-    "rotary_hole":       9.5,
+    "rotary_body_depth": 18.0,
+    # Nominal bushing diameter, like pot_hole and toggle_hole - hole_clear is
+    # added on top. M9x0.75 measures 9.0, so the cut hole is 9.4.
+    "rotary_hole":       9.0,
     "rotary_x":         20.0,   # kept hard left: JP2 is at x=22.0, JP1 at 32.2
 
     "pot_body_dia":     16.0,
@@ -135,11 +144,26 @@ P = {
     "toggle_hole":       6.0,
     "toggle_x":         44.78,  # aligned to J5
 
-    "rca_body_dia":     14.0,
-    "rca_body_depth":   12.0,
-    "rca_hole":         10.0,
-    "rca_l_x":          23.0,   # J1/J2 are only 13.0 mm apart - opened out to
-    "rca_r_x":          43.0,   # 20 mm pitch about their midpoint (33.0)
+    # RCA inputs are a salvaged 4-pair panel, clipped down to one pair and
+    # LAID ON ITS SIDE so the two sockets sit side by side. Measured:
+    #   25.3 wide (contains the 22.6 mm outer-to-outer socket span)
+    #   22.0 tall, 2.2 thick
+    # It is a rectangular aperture, not two round holes.
+    "rca_panel_w":      25.3,
+    "rca_panel_h":      22.0,
+    "rca_panel_th":      2.2,
+    "rca_panel_x":      33.0,   # midway between J1 (26.5) and J2 (39.5)
+    "rca_panel_clear":   0.4,
+    "rca_rim_w":         2.5,   # locating rim around the plate, inside
+    "rca_rim_extra":     0.3,   # rim depth beyond the plate thickness
+    "rca_panel_depth":  12.0,   # ASSUMPTION: inward protrusion, stand-in only
+
+    # Barrels press out through two round holes; the plate stays inside.
+    "rca_span":         22.6,   # MEASURED, outer ring to outer ring
+    # MEASURED. Pitch is derived, because the 22.6 span is outer-to-outer of
+    # these same barrels:  pitch = span - barrel_dia = 14.3 mm.
+    "rca_barrel_dia":    8.3,
+    "rca_barrel_clear":  0.4,
 
     "jack_hole":         6.0,
     "jack_body_dia":    10.0,
@@ -184,7 +208,14 @@ _drivers = {
 height_driver = max(_drivers, key=_drivers.get)
 internal_h = _drivers[height_driver]
 
-shaft_z = internal_h / 2.0          # every panel part shares this centre line
+shaft_z = internal_h / 2.0          # FRONT controls share this centre line
+
+# The REAR cluster sits on its own, higher line: centred in the space ABOVE
+# the board rather than in the box. With the RCA plate mounted inside, that
+# is what keeps the whole plate - and anything hanging off the back of it -
+# clear of the board's rear edge, instead of leaving a depth budget to police.
+# Front and rear are different faces, so nobody sees the two lines together.
+rear_z = (P["standoff"] + P["pcb_th"] + internal_h) / 2.0
 board_z0 = P["standoff"]
 board_z1 = P["standoff"] + P["pcb_th"]
 
@@ -207,8 +238,12 @@ ext_h = P["floor_th"] + internal_h + P["lid_th"]
 lid_z0 = internal_h
 lid_z1 = internal_h + P["lid_th"]
 
-# corner screw bosses, at the four cavity corners
-BOSS = [(in_x0, in_y0), (in_x1, in_y0), (in_x0, in_y1), (in_x1, in_y1)]
+# Corner screw bosses, pulled diagonally off the cavity corners. Sitting them
+# exactly on the corner puts them only `wall` from the outside, which does not
+# leave enough lid material around the screw hole.
+_bi = P["boss_inset"]
+BOSS = [(in_x0 + _bi, in_y0 - _bi), (in_x1 - _bi, in_y0 - _bi),
+        (in_x0 + _bi, in_y1 + _bi), (in_x1 - _bi, in_y1 + _bi)]
 
 # ===========================================================================
 # HELPERS
@@ -259,6 +294,26 @@ def box_c(name, cx, cy, sx, sy, z0, z1, coll, rot_z=0.0):
         )
     bmesh.ops.translate(bm, vec=Vector((cx, cy, (z0 + z1) / 2)), verts=bm.verts)
     return _finish(bm, name, coll)
+
+
+def wedge(name, x0, x1, y0, y1, z_lo, zh_x0, zh_x1, coll):
+    """
+    Prism with a flat bottom and a top face that ramps along X.
+
+    Used for the snap-hook lead-in: the board pressing down on the ramp cams
+    the clip outward. A plain box cannot do that - it just butts against the
+    board edge and refuses to go in.
+    """
+    v = [(x0, y0, z_lo), (x1, y0, z_lo), (x1, y1, z_lo), (x0, y1, z_lo),
+         (x0, y0, zh_x0), (x1, y0, zh_x1), (x1, y1, zh_x1), (x0, y1, zh_x0)]
+    f = [(3, 2, 1, 0), (4, 5, 6, 7), (0, 1, 5, 4),
+         (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+    me = bpy.data.meshes.new(name)
+    me.from_pydata(v, [], f)
+    me.update()
+    ob = bpy.data.objects.new(name, me)
+    coll.objects.link(ob)
+    return ob
 
 
 def cyl(name, cx, cy, cz, dia, length, coll, axis="Z", seg=48):
@@ -365,6 +420,30 @@ fuse(base, bosses)
 # which leaves the correct quarter-round boss flush with the walls.
 clip_to(base, box("_shell", out_x0, out_x1, out_y1, out_y0, -P["floor_th"], internal_h, coll))
 
+# --- RCA plate pocket ------------------------------------------------------
+# The salvaged plate stays INSIDE. Its two barrels press out through a pair of
+# round holes; this rim only locates the plate in X and Z so it cannot wander
+# or rotate. The rim runs through the full wall thickness so it merges with
+# the wall as solid overlap rather than meeting it face-to-face.
+rc = P["rca_panel_clear"]
+ap_x0 = P["rca_panel_x"] - (P["rca_panel_w"] + rc) / 2
+ap_x1 = P["rca_panel_x"] + (P["rca_panel_w"] + rc) / 2
+ap_z0 = rear_z - (P["rca_panel_h"] + rc) / 2
+ap_z1 = rear_z + (P["rca_panel_h"] + rc) / 2
+
+rw = P["rca_rim_w"]
+rim_y0 = in_y0 - (P["rca_panel_th"] + P["rca_rim_extra"])
+# The plate very nearly fills the wall height, so the top rail would otherwise
+# stand proud of the wall and hold the lid off. Clamp it to the wall top.
+rim_top = min(ap_z1 + rw, internal_h)
+rim_bot = max(ap_z0 - rw, 0.0)
+fuse(base, [
+    box("_rimL", ap_x0 - rw, ap_x0, rim_y0, out_y0, rim_bot, rim_top, coll),
+    box("_rimR", ap_x1, ap_x1 + rw, rim_y0, out_y0, rim_bot, rim_top, coll),
+    box("_rimB", ap_x0 - rw, ap_x1 + rw, rim_y0, out_y0, rim_bot, ap_z0, coll),
+    box("_rimT", ap_x0 - rw, ap_x1 + rw, rim_y0, out_y0, ap_z1, rim_top, coll),
+])
+
 cutters = []
 
 # --- panel holes -----------------------------------------------------------
@@ -374,12 +453,18 @@ front_y = in_y1 - P["wall"] / 2.0
 deep = P["wall"] * 4
 
 for nm, x, d in (
-    ("rcaL", P["rca_l_x"], P["rca_hole"]),
-    ("rcaR", P["rca_r_x"], P["rca_hole"]),
     ("jack", P["jack_x"], P["jack_hole"]),
     ("dc",   P["dc_x"],   P["dc_hole"]),
 ):
-    cutters.append(cyl("_h_" + nm, x, rear_y, shaft_z, d + hc, deep, coll, axis="Y"))
+    cutters.append(cyl("_h_" + nm, x, rear_y, rear_z, d + hc, deep, coll, axis="Y"))
+
+# --- two barrel holes. Pitch is derived from the measured 22.6 span --------
+rca_pitch = P["rca_span"] - P["rca_barrel_dia"]
+for nm, sgn in (("rcaL", -1), ("rcaR", +1)):
+    cutters.append(cyl("_h_" + nm, P["rca_panel_x"] + sgn * rca_pitch / 2,
+                       rear_y, rear_z,
+                       P["rca_barrel_dia"] + P["rca_barrel_clear"], deep,
+                       coll, axis="Y"))
 
 for nm, x, d in (
     ("rotary", P["rotary_x"],  P["rotary_hole"]),
@@ -418,21 +503,35 @@ for cx in (0, W):
     sx0, sx1 = (cx, cx + mp) if cx == 0 else (cx - mp, cx)
     retain.append(box("_midpad", sx0, sx1, -L / 2 - mp / 2, -L / 2 + mp / 2, 0.0, board_z0, coll))
 
-# rear: fixed L-ledges (rigid, no flex)
+# Retention faces sit `retain_clear` ABOVE the board, not flush on it. Two
+# reasons: FR4 thickness varies, and both the ledges and hooks are cantilevered
+# horizontal overhangs that will droop a few tenths on FDM. At zero clearance
+# that droop pinches the board and it will not go in.
+rz = board_z1 + P["retain_clear"]
+
+# rear: fixed L-ledges, rigid. The board slides under these first, so they
+# need no lead-in - just clearance.
 for cx in (0, W):
     ox0, ox1 = (cx - P["clip_th"], cx + over) if cx == 0 else (cx - over, cx + P["clip_th"])
-    # upright against the board edge
     ux0, ux1 = (cx - P["clip_th"], cx) if cx == 0 else (cx, cx + P["clip_th"])
-    retain.append(box("_rearpost", ux0, ux1, -pad, 0.0, 0.0, board_z1 + 2.5, coll))
-    retain.append(box("_rearledge", ox0, ox1, -pad, 0.0, board_z1, board_z1 + 2.5, coll))
+    retain.append(box("_rearpost", ux0, ux1, -pad, 0.0, 0.0, rz + 2.5, coll))
+    retain.append(box("_rearledge", ox0, ox1, -pad, 0.0, rz, rz + 2.5, coll))
 
-# front: flexing snap fingers with a lead-in chamfer
+# front: flexing snap fingers WITH a lead-in ramp on top of each hook, so
+# pressing the board down cams the finger outward instead of jamming on it.
 cw = P["clip_wide"]
+tip = 0.4                      # flat left at the hook tip; a knife edge will
+hook_h = 1.4                   # not print and would shear off anyway
 for cx in (0, W):
     fx0, fx1 = (cx - P["clip_th"], cx) if cx == 0 else (cx, cx + P["clip_th"])
-    hx0, hx1 = (cx - P["clip_th"], cx + P["hook_over"]) if cx == 0 else (cx - P["hook_over"], cx + P["clip_th"])
-    retain.append(box("_clip", fx0, fx1, -L, -L + cw, 0.0, board_z1 + 3.0, coll))
-    retain.append(box("_hook", hx0, hx1, -L, -L + cw, board_z1, board_z1 + 1.4, coll))
+    retain.append(box("_clip", fx0, fx1, -L, -L + cw, 0.0, rz + hook_h, coll))
+    if cx == 0:
+        # tip points inward (+x), so the ramp falls from the finger to the tip
+        retain.append(wedge("_hook", cx - P["clip_th"], cx + P["hook_over"],
+                            -L, -L + cw, rz, rz + hook_h, rz + tip, coll))
+    else:
+        retain.append(wedge("_hook", cx - P["hook_over"], cx + P["clip_th"],
+                            -L, -L + cw, rz, rz + tip, rz + hook_h, coll))
 
 fuse(base, retain)
 paint(base, M_CASE)
@@ -447,9 +546,17 @@ lid = box("Lid", out_x0, out_x1, out_y1, out_y0, lid_z0, lid_z1, coll)
 # with the rotary switch body across the front.
 lw, lh = P["lip_w"], P["lip_h"]
 fc = P["fit_clear"]
+OVER = 0.5   # cutters always overshoot the face they break through. A cutter
+             # ending exactly ON a face produces coincident geometry, and the
+             # EXACT solver leaves non-manifold edges behind - which slices badly.
+
+# Rails are stopped short of the screw bosses rather than being cut around
+# them afterwards. Same result, one less boolean, no coincident faces.
+rail_y0 = (in_y1 + _bi) + P["boss_r"] + 1.0
+rail_y1 = (in_y0 - _bi) - P["boss_r"] - 1.0
 rails = [
-    box("_railL", in_x0 + fc, in_x0 + fc + lw, in_y1 + fc, in_y0 - fc, lid_z0 - lh, lid_z0, coll),
-    box("_railR", in_x1 - fc - lw, in_x1 - fc, in_y1 + fc, in_y0 - fc, lid_z0 - lh, lid_z0, coll),
+    box("_railL", in_x0 + fc, in_x0 + fc + lw, rail_y0, rail_y1, lid_z0 - lh, lid_z0, coll),
+    box("_railR", in_x1 - fc - lw, in_x1 - fc, rail_y0, rail_y1, lid_z0 - lh, lid_z0, coll),
 ]
 fuse(lid, rails)
 
@@ -457,25 +564,24 @@ lidcuts = []
 
 # LED windows above D1 and D2. Counterbored from the inside: the LEDs sit
 # ~19 mm below the lid, so a plain 4 mm hole would read very dim off-axis.
+# The counterbore's top face is deliberately exact - it forms the web - but
+# its bottom overshoots through the lid underside.
+cb_top = lid_z1 - P["led_web"]
+cb_bot = lid_z0 - OVER
 for nm, lx, ly in (("D1", P["d1_x"], P["d1_y"]), ("D2", P["d2_x"], P["d2_y"])):
     lidcuts.append(
-        cyl("_ledc_" + nm, lx, -ly, lid_z0 + (P["lid_th"] - P["led_web"]) / 2,
-            P["led_cbore"], P["lid_th"] - P["led_web"], coll)
+        cyl("_ledc_" + nm, lx, -ly, (cb_top + cb_bot) / 2,
+            P["led_cbore"], cb_top - cb_bot, coll)
     )
     lidcuts.append(
-        cyl("_led_" + nm, lx, -ly, lid_z0 + P["lid_th"] / 2, P["led_hole"], P["lid_th"] * 3, coll)
+        cyl("_led_" + nm, lx, -ly, lid_z0 + P["lid_th"] / 2,
+            P["led_hole"], P["lid_th"] + 2 * OVER, coll)
     )
 
-# screw holes + counterbores
+# screw clearance holes, straight through - no counterbore, see the P dict
 for i, (bx, by) in enumerate(BOSS):
-    lidcuts.append(cyl("_sc%d" % i, bx, by, lid_z1 - 4.0, P["screw_clear"], 20.0, coll))
-    lidcuts.append(
-        cyl("_scb%d" % i, bx, by, lid_z1 - P["lid_th"] / 4, P["screw_cbore"], P["lid_th"] / 2 + 0.01, coll)
-    )
-
-# the lip must not run through the screw bosses
-for i, (bx, by) in enumerate(BOSS):
-    lidcuts.append(cyl("_lipclr%d" % i, bx, by, lid_z0 - lh / 2, P["boss_r"] * 2 + 1.0, lh + 0.02, coll))
+    lidcuts.append(cyl("_sc%d" % i, bx, by, lid_z0 + P["lid_th"] / 2,
+                       P["screw_clear"], P["lid_th"] + lh + 4 * OVER, coll))
 
 cut(lid, lidcuts)
 paint(lid, M_LID)
@@ -530,12 +636,26 @@ bpy.context.view_layer.update()
 panels = []
 # rear, protruding inward (+Y) from the rear panel inner face
 for nm, x, d, dep in (
-    ("RCA_L", P["rca_l_x"], P["rca_body_dia"], P["rca_body_depth"]),
-    ("RCA_R", P["rca_r_x"], P["rca_body_dia"], P["rca_body_depth"]),
     ("JACK",  P["jack_x"],  P["jack_body_dia"], P["jack_body_depth"]),
     ("DC",    P["dc_x"],    P["dc_body_dia"],  P["dc_body_depth"]),
 ):
-    panels.append(cyl("PANEL_" + nm, x, in_y0 - dep / 2, shaft_z, d, dep, coll, axis="Y", seg=24))
+    panels.append(cyl("PANEL_" + nm, x, in_y0 - dep / 2, rear_z, d, dep, coll, axis="Y", seg=24))
+
+# RCA plate: sits INSIDE, against the wall, inside the locating rim. Its two
+# barrels pass out through the wall. The rearward envelope is an assumption.
+pw2, ph2 = P["rca_panel_w"] / 2, P["rca_panel_h"] / 2
+panels.append(box("PANEL_RCA_PLATE",
+                  P["rca_panel_x"] - pw2, P["rca_panel_x"] + pw2,
+                  in_y0 - P["rca_panel_th"], in_y0,
+                  rear_z - ph2, rear_z + ph2, coll))
+for nm, sgn in (("L", -1), ("R", +1)):
+    bx = P["rca_panel_x"] + sgn * rca_pitch / 2
+    panels.append(cyl("PANEL_RCA_BARREL_" + nm, bx, out_y0 - 6.0, rear_z,
+                      P["rca_barrel_dia"], 16.0, coll, axis="Y", seg=24))
+panels.append(box("PANEL_RCA_ENVELOPE",
+                  P["rca_panel_x"] - pw2, P["rca_panel_x"] + pw2,
+                  in_y0 - P["rca_panel_depth"], in_y0 - P["rca_panel_th"],
+                  rear_z - ph2, rear_z + ph2, coll))
 
 # front, protruding inward (-Y is outward here, so bodies go +Y from in_y1)
 for nm, x, d, dep in (
