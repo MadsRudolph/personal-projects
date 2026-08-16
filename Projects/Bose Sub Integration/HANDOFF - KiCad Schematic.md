@@ -348,8 +348,17 @@ Rev B is captured, verified, and ready to place. Layout constraints:
   (1/64") bit, or rebuild at ≥1.2 mm via `LASERPCB_CLEARANCE_MM`.
 - The 104 × 104 mm jig applies to the **laser** only. The SRM-20 sets its origin
   in VPanel, so a milled board can be its natural size.
-- Rev A's copper is not reusable: four capacitor footprints changed pitch and
-  six parts are new (`C1_1`, `D1`, `D2`, `R10`, `R11`, `J7`).
+- Rev A's copper is not reusable: five capacitor footprints changed pitch
+  (`C1_1`, `C1_2`, `C1_3`, `C2_2`, `C_in1/2`) and five parts are new (`D1`,
+  `D2`, `R10`, `R11`, `J7`). `C1_1` was already placed on rev A as a DNP
+  footprint, so it is a swap rather than an addition — but it is now populated.
+- **`J1`–`J5` are locked** on the rev A board; `pcb_build.py` pins the edge
+  connectors. Unlock them before hand-placing.
+- Importing rev B needs **Re-link footprints … based on their reference
+  designators** ticked. `build_schematic.py` mints fresh UUIDs on every run, so
+  every symbol association on the board is stale and matching has to fall back
+  to refdes. Without it KiCad treats every existing footprint as orphaned and
+  every symbol as new, and you get a duplicate of the whole board.
 - Courtyards total **2731 mm² over 43 parts** — 27 % of a 100 × 100 board, 25 %
   of 104 × 104. Comfortable for single-sided routing, though wider clearance
   eats channel width rather than component area.
