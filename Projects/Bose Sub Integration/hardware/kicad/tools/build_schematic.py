@@ -46,21 +46,23 @@ FP_FILM_5 = "Capacitor_THT:C_Rect_L7.2mm_W5.5mm_P5.00mm_FKS2_FKP2_MKS2_MKP2"
 # end of the silk -- harmless, and it beats the only true L7.5 part in the
 # library, which is 3.5 mm wider than this cap needs.
 FP_C1_1 = "Capacitor_THT:C_Rect_L7.2mm_W3.0mm_P5.00mm_FKS2_FKP2_MKS2_MKP2"
-# C1_2: body 16.0 x 7.0 on a 10 mm pitch -- 3.0 mm of overhang at each lead. No
-# stock P10.00mm footprint reserves that; the longest in the library is L13.5.
-FP_C1_2 = "energy_system:C_Rect_L16.0mm_W7.0mm_P10.00mm"
+# C1_2: 15.00 mm pitch (14 mm inside the leads, which are 1 mm), body 16.0 x 7.0.
+# L18 over the tighter L16.5 because the L16.5 part drills 1.1 mm, only 0.1 mm
+# of slack on a 1 mm lead; this one drills 1.2, and 1.2 is already in the board's
+# drill set. The extra 2 mm of reserved length is cheap insurance.
+FP_C1_2 = "Capacitor_THT:C_Rect_L18.0mm_W7.0mm_P15.00mm_FKS3_FKP3"
 FP_C1_3 = "Capacitor_THT:C_Rect_L11.0mm_W4.2mm_P10.00mm_MKT"      # body 10.0 x 4.0
 FP_C2_2 = "Capacitor_THT:C_Rect_L13.0mm_W4.0mm_P10.00mm_FKS3_FKP3_MKS4"  # 12.0 x 4.0
-# C_in is tri-pitch. 10.00 mm is what actually gets fitted: the same 220n part as
-# C1_2. 5.00 mm is there for a 2u2 non-polarised electrolytic and 15.00 mm for a
-# large 2u2 film, because whether 220n or 2u2 is the better value is a listening
-# question Gate 11 has not answered. 2u2 would move the corners to 88/127/192 Hz
-# and, more usefully, cut the level spread between switch positions from 3.3 dB
-# to 1.7 dB. Rev A splayed a 220n across a bare 15.00 mm footprint.
-# Same-number pads share a net, so the extra pairs cost nothing in isolation --
-# the tightest pad-1-to-pad-2 channel is still 3.0 mm.
-FP_CIN_MULTI = ("energy_system:"
-                "C_Rect_L18.0mm_W9.0mm_P5.00mm_P10.00mm_P15.00mm_MultiPitch")
+# C_in is dual-pitch. 15.00 mm is what gets fitted: the same 220n part as C1_2,
+# which turns out to be a 15 mm part -- so rev A's bare 15.00 mm footprint had
+# the pitch right all along and the "splayed leads" note in the BOM was wrong.
+# 5.00 mm is kept for a 2u2 non-polarised electrolytic, because whether 220n or
+# 2u2 is the better value is a listening question Gate 11 has not answered. 2u2
+# would move the corners to 88/127/192 Hz and, more usefully, cut the level
+# spread between switch positions from 3.3 dB to 1.7 dB.
+# Same-number pads share a net, so the second pair costs nothing in isolation --
+# the tightest pad-1-to-pad-2 channel is 3.0 mm.
+FP_CIN_MULTI = "energy_system:C_Rect_L18.0mm_W9.0mm_P5.00mm_P15.00mm_MultiPitch"
 FP_EL_100U = "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm"
 FP_EL_10U = "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"
 FP_TERM2 = "TerminalBlock:TerminalBlock_bornier-2_P5.08mm"
@@ -122,13 +124,11 @@ COMPONENTS = [
     ("R1_2", "Device:R", "16k5", FP_R, 140, 235, 90, 1),
 
     # ---- F: Sallen-Key low-pass -- C1 bank above, C2 bank below ----
-    # All three C1 caps are different parts: 5 mm pitch and a 7.5 x 3.0 body on
-    # C1_1, 10 mm pitch on the other two but bodies of 16.0 x 7.0 and 10.0 x 4.0.
-    # Rev A had C1_2 and C1_3 on the same 7.50 mm footprint, which is why their
-    # leads had to be bent to fit. C1_2 also contradicts bom-as-built.csv, which
-    # records it as a 5 mm part splayed out -- the caliper says 10.5 mm, so the
-    # leads were squeezed in, not splayed. C1_2 is the biggest part in this block
-    # by some way; place it first.
+    # All three C1 caps are different parts: 5.00 mm pitch / 7.5 x 3.0 body on
+    # C1_1, 15.00 mm / 16.0 x 7.0 on C1_2, 10.00 mm / 10.0 x 4.0 on C1_3. Rev A
+    # had C1_2 and C1_3 on the same 7.50 mm footprint, which is why their leads
+    # had to be bent -- C1_2's by a full 7.5 mm. It is far and away the biggest
+    # part in this block; place it first and let the rest fall around it.
     ("C1_1", "Device:C", "470nF film", FP_C1_1, 215, 158, 90, 1),
     ("C1_2", "Device:C", "220nF film", FP_C1_2, 215, 170, 90, 1),
     ("C1_3", "Device:C", "150nF film", FP_C1_3, 215, 182, 90, 1),
