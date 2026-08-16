@@ -42,10 +42,15 @@ FP_CER = "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm"
 # value. Caliper inside-to-inside and outside-to-outside average to the pitch and
 # differ by the lead diameter; all three parts came out at 0.5 mm leads.
 FP_FILM_5 = "Capacitor_THT:C_Rect_L7.2mm_W5.5mm_P5.00mm_FKS2_FKP2_MKS2_MKP2"
-FP_FILM_5_TALL = "Capacitor_THT:C_Rect_L7.2mm_W7.2mm_P5.00mm_FKS2_FKP2_MKS2_MKP2"
-FP_FILM_75 = "Capacitor_THT:C_Rect_L10.3mm_W5.7mm_P7.50mm_MKS4"
-FP_FILM_10 = "Capacitor_THT:C_Rect_L13.0mm_W6.0mm_P10.00mm_FKS3_FKP3_MKS4"
-FP_FILM_10_THIN = "Capacitor_THT:C_Rect_L13.0mm_W4.0mm_P10.00mm_FKS3_FKP3_MKS4"
+# C1_1: body 7.5 x 3.0. L7.2 is 0.3 mm short, so 0.15 mm of body hangs over each
+# end of the silk -- harmless, and it beats the only true L7.5 part in the
+# library, which is 3.5 mm wider than this cap needs.
+FP_C1_1 = "Capacitor_THT:C_Rect_L7.2mm_W3.0mm_P5.00mm_FKS2_FKP2_MKS2_MKP2"
+# C1_2: body 16.0 x 7.0 on a 10 mm pitch -- 3.0 mm of overhang at each lead. No
+# stock P10.00mm footprint reserves that; the longest in the library is L13.5.
+FP_C1_2 = "energy_system:C_Rect_L16.0mm_W7.0mm_P10.00mm"
+FP_C1_3 = "Capacitor_THT:C_Rect_L11.0mm_W4.2mm_P10.00mm_MKT"      # body 10.0 x 4.0
+FP_C2_2 = "Capacitor_THT:C_Rect_L13.0mm_W4.0mm_P10.00mm_FKS3_FKP3_MKS4"  # 12.0 x 4.0
 # C_in is tri-pitch. 10.00 mm is what actually gets fitted: the same 220n part as
 # C1_2. 5.00 mm is there for a 2u2 non-polarised electrolytic and 15.00 mm for a
 # large 2u2 film, because whether 220n or 2u2 is the better value is a listening
@@ -117,16 +122,16 @@ COMPONENTS = [
     ("R1_2", "Device:R", "16k5", FP_R, 140, 235, 90, 1),
 
     # ---- F: Sallen-Key low-pass -- C1 bank above, C2 bank below ----
-    # Measured 5.0 mm pitch -- NOT the 10 mm a 470n usually wants. Body dims not
-    # yet taken, so the envelope is the generous 7.2 x 7.2 of the P5.00 family.
-    ("C1_1", "Device:C", "470nF film", FP_FILM_5_TALL, 215, 158, 90, 1),
-    # C1_2 and C1_3 both measure 10.00 mm pitch, so they share a footprint. Rev A
-    # had both on 7.50 mm, which is why their leads had to be bent to fit. Note
-    # this contradicts bom-as-built.csv, which records C1_2 as a 5 mm part
-    # splayed out to 7.50 mm -- the caliper says 10.5 mm. Body dims not yet
-    # taken; W6.0 clears the 5.7 mm rev A assumed.
-    ("C1_2", "Device:C", "220nF film", FP_FILM_10, 215, 170, 90, 1),
-    ("C1_3", "Device:C", "150nF film", FP_FILM_10, 215, 182, 90, 1),
+    # All three C1 caps are different parts: 5 mm pitch and a 7.5 x 3.0 body on
+    # C1_1, 10 mm pitch on the other two but bodies of 16.0 x 7.0 and 10.0 x 4.0.
+    # Rev A had C1_2 and C1_3 on the same 7.50 mm footprint, which is why their
+    # leads had to be bent to fit. C1_2 also contradicts bom-as-built.csv, which
+    # records it as a 5 mm part splayed out -- the caliper says 10.5 mm, so the
+    # leads were squeezed in, not splayed. C1_2 is the biggest part in this block
+    # by some way; place it first.
+    ("C1_1", "Device:C", "470nF film", FP_C1_1, 215, 158, 90, 1),
+    ("C1_2", "Device:C", "220nF film", FP_C1_2, 215, 170, 90, 1),
+    ("C1_3", "Device:C", "150nF film", FP_C1_3, 215, 182, 90, 1),
     ("JP1", "Connector_Generic:Conn_01x06", "C1 select", FP_HDR6, 262, 170, 0, 1),
     ("R2", "Device:R", "8k25", FP_R, 215, 205, 90, 1),
     ("U1", "Amplifier_Operational:TL074", "TL074", FP_DIP14, 265, 205, 0, 1),
@@ -134,7 +139,7 @@ COMPONENTS = [
     # The odd one out: measured 9.5 mm -> 10.00 mm pitch, body 12 x 4 mm, while
     # C2_1 and C2_3 are 5.00 mm parts. It was the substituted 120n, so the C2
     # bank is no longer three identical footprints in a row -- place accordingly.
-    ("C2_2", "Device:C", "120nF film", FP_FILM_10_THIN, 215, 257, 90, 1),
+    ("C2_2", "Device:C", "120nF film", FP_C2_2, 215, 257, 90, 1),
     ("C2_3", "Device:C", "68nF film", FP_FILM_5, 215, 269, 90, 1),
     ("JP2", "Connector_Generic:Conn_01x06", "C2 select", FP_HDR6, 262, 257, 0, 1),
 
