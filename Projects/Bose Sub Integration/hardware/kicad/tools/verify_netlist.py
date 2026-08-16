@@ -33,8 +33,10 @@ EXPECTED = {
     # Power (handoff "Power" table)
     "VIN": {"J4.1", "C10.1", "U2.1"},
     "GND": {"J4.2", "C10.2", "U2.2", "C11.2", "C12.2", "C13.2", "C14.2",
-            "R9.2", "C15.2", "U1.11", "J1.2", "J2.2", "J6.3", "R7.1", "JP3.1"},
-    "V12": {"U2.3", "C11.1", "C12.1", "C13.1", "C14.1", "R8.1", "U1.4"},
+            "R9.2", "C15.2", "U1.11", "J1.2", "J2.2", "J6.3", "R7.1", "JP3.1",
+            "D1.1", "J7.2"},
+    "V12": {"U2.3", "C11.1", "C12.1", "C13.1", "C14.1", "R8.1", "U1.4",
+            "R10.1", "R11.1"},
     "VG_DIV": {"R8.2", "R9.1", "C15.1", "U1.10"},
     # TL074 sections A3 (virtual ground) and A4 (terminated spare)
     "VGND": {"U1.8", "U1.9", "U1.12", "U1.5", "R_b1.2", "R_b2.2",
@@ -64,17 +66,29 @@ EXPECTED = {
     "OUT_TIP": {"R5.2", "J3.1"},
     "OUT_RING": {"R6.2", "J3.2"},
     "OUT_GND": {"R7.2", "JP3.2", "J3.3"},
+    # Status LEDs. D1 pin 2 = A, pin 1 = K (KiCad Device:LED). D2's cathode
+    # leaves the board on J7.1 to SW2's spare-pole INVERTED lug and returns on
+    # J7.2, so the lamp lights only in the inverted position.
+    "PWR_A": {"R10.2", "D1.2"},
+    "INV_A": {"R11.2", "D2.2"},
+    "INV_K": {"D2.1", "J7.1"},
 }
 
 EXPECTED_VALUES = {
     "C10": "100uF", "C11": "100uF", "C12": "100nF", "C13": "100nF",
     "C14": "100nF", "C15": "100uF", "R8": "10k", "R9": "10k",
-    "C_in1": "2.2uF", "C_in2": "2.2uF", "R_b1": "100k", "R_b2": "100k",
+    "C_in1": "220n or 2u2", "C_in2": "220n or 2u2",
+    "R_b1": "100k", "R_b2": "100k",
     "R1_1": "16k5", "R1_2": "16k5", "R2": "8k25", "R3": "10k", "R4": "10k",
     "R5": "100R", "R6": "100R", "R7": "10R",
-    "C1_1": "330nF", "C1_2": "220nF", "C1_3": "150nF",
-    "C2_1": "150nF", "C2_2": "100nF", "C2_3": "68nF",
+    # Rev B carries the AS-BUILT capacitor values, which are what every measured
+    # corner in Results - Sub Crossover Bring-up depends on. C1_1 is now fitted
+    # at 470nF (rev A left it out at 330nF) and C2_2 is the 120nF that was
+    # actually soldered, not the 100nF originally drawn.
+    "C1_1": "470nF", "C1_2": "220nF", "C1_3": "150nF",
+    "C2_1": "150nF", "C2_2": "120nF", "C2_3": "68nF",
     "C_out1": "10uF", "U1": "TL074", "U2": "LM7812",
+    "R10": "4k7", "R11": "4k7", "D1": "PWR", "D2": "INV",
 }
 
 SMD_MARKERS = ("SOIC", "TSOT", "SOT-23", "SolderWire", "QFN", "0805", "0603",

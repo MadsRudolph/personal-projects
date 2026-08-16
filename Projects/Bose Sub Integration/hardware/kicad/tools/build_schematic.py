@@ -40,7 +40,12 @@ FP_R = "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 FP_CER = "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm"
 FP_FILM_5 = "Capacitor_THT:C_Rect_L7.2mm_W5.5mm_P5.00mm_FKS2_FKP2_MKS2_MKP2"
 FP_FILM_75 = "Capacitor_THT:C_Rect_L10.3mm_W5.7mm_P7.50mm_MKS4"
-FP_FILM_15 = "Capacitor_THT:C_Rect_L18.0mm_W9.0mm_P15.00mm_FKS3_FKP3"
+FP_FILM_10 = "Capacitor_THT:C_Rect_L13.0mm_W6.0mm_P10.00mm_FKS3_FKP3_MKS4"
+# C_in is deliberately dual-pitch: 5.00 mm takes the 220n as built (or a 2u2
+# non-polarised electrolytic), 15.00 mm takes a real 2u2 film part. Rev A had a
+# 220n splayed across a 15.00 mm footprint. Which value is right is a listening
+# question that Gate 11 has not answered yet, so the board keeps both options.
+FP_CIN_MULTI = "energy_system:C_Rect_L18.0mm_W9.0mm_P5.00mm_P15.00mm_MultiPitch"
 FP_EL_100U = "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm"
 FP_EL_10U = "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"
 FP_TERM2 = "TerminalBlock:TerminalBlock_bornier-2_P5.08mm"
@@ -49,6 +54,7 @@ FP_HDR2 = "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
 FP_HDR6 = "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical"
 FP_DIP14 = "Package_DIP:DIP-14_W7.62mm_LongPads"        # socket
 FP_TO220 = "energy_system:TO-220-3_Vertical_LaserPads"
+FP_LED3 = "LED_THT:LED_D3.0mm"
 
 SYM_TERM2 = "Connector:Screw_Terminal_01x02"
 SYM_TERM3 = "Connector:Screw_Terminal_01x03"
@@ -73,6 +79,8 @@ COMPONENTS = [
     ("U2", "Regulator_Linear:LM7812_TO220", "LM7812", FP_TO220, 105, 55, 0, 1),
     ("C11", "Device:C_Polarized", "100uF/50V", FP_EL_100U, 130, 63, 0, 1),
     ("C12", "Device:C", "100nF", FP_CER, 150, 63, 0, 1),
+    ("R10", "Device:R", "4k7", FP_R, 170, 55, 0, 1),
+    ("D1", "Device:LED", "PWR green", FP_LED3, 170, 72, 90, 1),
 
     # ---- B: TL074 supply pins + their decoupling (top centre) ----
     ("U1", "Amplifier_Operational:TL074", "TL074", FP_DIP14, 215, 55, 0, 5),
@@ -88,25 +96,25 @@ COMPONENTS = [
 
     # ---- D: left channel input -- couple, bias, sum resistor ----
     ("J1", SYM_TERM2, "IN L", FP_TERM2, 55, 160, 180, 1),
-    ("C_in1", "Device:C", "2.2uF film", FP_FILM_15, 85, 160, 90, 1),
+    ("C_in1", "Device:C", "220n or 2u2", FP_CIN_MULTI, 85, 160, 90, 1),
     ("R_b1", "Device:R", "100k", FP_R, 112, 180, 0, 1),
     ("R1_1", "Device:R", "16k5", FP_R, 140, 160, 90, 1),
 
     # ---- E: right channel input ----
     ("J2", SYM_TERM2, "IN R", FP_TERM2, 55, 235, 180, 1),
-    ("C_in2", "Device:C", "2.2uF film", FP_FILM_15, 85, 235, 90, 1),
+    ("C_in2", "Device:C", "220n or 2u2", FP_CIN_MULTI, 85, 235, 90, 1),
     ("R_b2", "Device:R", "100k", FP_R, 112, 255, 0, 1),
     ("R1_2", "Device:R", "16k5", FP_R, 140, 235, 90, 1),
 
     # ---- F: Sallen-Key low-pass -- C1 bank above, C2 bank below ----
-    ("C1_1", "Device:C", "330nF film", FP_FILM_75, 215, 158, 90, 1),
+    ("C1_1", "Device:C", "470nF film", FP_FILM_10, 215, 158, 90, 1),
     ("C1_2", "Device:C", "220nF film", FP_FILM_75, 215, 170, 90, 1),
     ("C1_3", "Device:C", "150nF film", FP_FILM_75, 215, 182, 90, 1),
     ("JP1", "Connector_Generic:Conn_01x06", "C1 select", FP_HDR6, 262, 170, 0, 1),
     ("R2", "Device:R", "8k25", FP_R, 215, 205, 90, 1),
     ("U1", "Amplifier_Operational:TL074", "TL074", FP_DIP14, 265, 205, 0, 1),
     ("C2_1", "Device:C", "150nF film", FP_FILM_5, 215, 245, 90, 1),
-    ("C2_2", "Device:C", "100nF film", FP_FILM_5, 215, 257, 90, 1),
+    ("C2_2", "Device:C", "120nF film", FP_FILM_5, 215, 257, 90, 1),
     ("C2_3", "Device:C", "68nF film", FP_FILM_5, 215, 269, 90, 1),
     ("JP2", "Connector_Generic:Conn_01x06", "C2 select", FP_HDR6, 262, 257, 0, 1),
 
@@ -124,6 +132,16 @@ COMPONENTS = [
     ("R7", "Device:R", "10R", FP_R, 480, 292, 90, 1),
     ("JP3", "Connector_Generic:Conn_01x02", "GND lift", FP_HDR2, 480, 315, 0, 1),
     ("J3", SYM_TERM3, "OUT 3.5mm", FP_TERM3, 556, 250, 0, 1),
+
+    # ---- I: status LEDs ----
+    # D1 (power) lives in block A next to the regulator. D2 rides SW2's unused
+    # second pole: the polarity switch is a 2-pole changeover and rev A used
+    # only one pole, so lighting an "inverted" lamp costs a resistor, an LED and
+    # a 2-way terminal. J7 goes to that spare pole -- pin 1 to its INVERTED lug,
+    # pin 2 to its common, which returns the 2 mA to board GND.
+    ("R11", "Device:R", "4k7", FP_R, 520, 300, 0, 1),
+    ("D2", "Device:LED", "INV amber", FP_LED3, 520, 317, 90, 1),
+    ("J7", SYM_TERM2, "INV LED", FP_TERM2, 556, 317, 0, 1),
 ]
 
 # Which TL074 unit carries which DIP-14 pin (KiCad LM2902-derived geometry).
@@ -141,6 +159,7 @@ PIN_IDS = {
     "Device:C_Polarized": ["1", "2"],
     SYM_TERM2: ["1", "2"],
     SYM_TERM3: ["1", "2", "3"],
+    "Device:LED": ["1", "2"],                        # 1 = K, 2 = A
     "Connector_Generic:Conn_01x02": ["1", "2"],
     "Connector_Generic:Conn_01x06": ["1", "2", "3", "4", "5", "6"],
     "Regulator_Linear:LM7812_TO220": ["1", "2", "3"],
@@ -225,6 +244,15 @@ NETS = [
     ("GND", "R7", "1"), ("OUT_GND", "R7", "2"),
     ("GND", "JP3", "1"), ("OUT_GND", "JP3", "2"),
     ("OUT_TIP", "J3", "1"), ("OUT_RING", "J3", "2"), ("OUT_GND", "J3", "3"),
+
+    # ---- status LEDs ----
+    # Both run ~2 mA, so the LM7812 gains at most 4 mA on a 10-16 mA board and
+    # still dissipates under 70 mW. Neither touches a signal node.
+    ("V12", "R10", "1"), ("PWR_A", "R10", "2"),
+    ("PWR_A", "D1", "2"), ("GND", "D1", "1"),        # D1 pin 2 = A, pin 1 = K
+    ("V12", "R11", "1"), ("INV_A", "R11", "2"),
+    ("INV_A", "D2", "2"), ("INV_K", "D2", "1"),
+    ("INV_K", "J7", "1"), ("GND", "J7", "2"),
 ]
 
 # PWR_FLAGs. VIN and GND carry only power_INPUT and passive pins, so ERC has no
@@ -262,6 +290,7 @@ NOTES = [
     (205, 146, 2.0, "F  SALLEN-KEY LOW-PASS"),
     (335, 193, 2.0, "G  POLARITY INVERTER"),
     (470, 148, 2.0, "H  OUTPUT STAGE"),
+    (510, 288, 2.0, "I  STATUS LEDS"),
 
     # Design intent that must survive the next editor.
     (205, 92, 1.5, "U1 supply: pin 4 = V12, pin 11 = GND. No negative rail."),
@@ -275,9 +304,33 @@ NOTES = [
      "after the coupling caps -- 100k at N1 would shift every corner by 8%."),
     (205, 300, 1.5,
      "C1 returns to N1 -- the Sallen-Key feedback path. Not N2.\n"
-     "JP1/JP2 set the corner. ONE shunt in each, BOTH in the same position:\n"
-     "   1-2 = 87 Hz (330n/150n)   3-4 = 130 Hz (220n/100n)   5-6 = 191 Hz (150n/68n)\n"
-     "A mismatched pair gives the wrong Q, not an obvious fault."),
+     "JP1 selects C1 (odd pin = cap, even pin = N1); JP2 selects C2 (odd = cap,\n"
+     "even = VGND). They select INDEPENDENTLY -- nine corners, not three pairs.\n"
+     "Corners below are MEASURED on the rev A board, not calculated: the quoted\n"
+     "f0 = 1/(2*pi*R*sqrt(C1*C2)) is not a -3 dB point, and C_in sits inside the\n"
+     "filter. See Results - Sub Crossover Bring-up.\n"
+     "\n"
+     "Intended use is a panel 2-pole 3-position rotary, one pole per header:\n"
+     "   pos 1  94 Hz   A0->JP1 even, A1->JP1.1 (470n)   B0->JP2 even, B1->JP2.1\n"
+     "   pos 2 136 Hz                 A2->JP1.5 (150n)                 B2->JP2.3\n"
+     "   pos 3 189 Hz                 A3->JP1.3 (220n)                 B3->JP2.5\n"
+     "NEVER wire one header pin to two switch lugs unless both lugs want the same\n"
+     "capacitance -- the lugs are then tied together and every position collapses\n"
+     "to the same value. This is why C1_1 is fitted rather than paralleling\n"
+     "C1_2 || C1_3 on one lug.\n"
+     "Shunts across a pin pair still work as a bench fallback."),
+    (30, 340, 1.5,
+     "C_in1/C_in2 use a dual-pitch footprint: 5.00 mm for the 220n as built (or a\n"
+     "2u2 non-polarised electrolytic), 15.00 mm for a real 2u2 film part. Fit ONE\n"
+     "pair. 220n puts ~8.8k of reactance in series with R1 at 82 Hz, so it is part\n"
+     "of the filter, not just an input high-pass -- it costs 1.3-3.1 dB of passband\n"
+     "level and damps the peaking. Whether that is a defect or a feature is a\n"
+     "listening question; Gate 11 has not answered it, so both pitches are on the\n"
+     "board and the envelope reserves room for the larger part either way."),
+    (470, 355, 1.5,
+     "D1 = power lamp on V12 (proves the LM7812, not just VIN).\n"
+     "D2 = INVERTED lamp, fed from SW2's unused second pole via J7.\n"
+     "Both ~2 mA. No LED touches a signal node."),
     (470, 335, 1.5,
      "C_out + faces SW_COM: that node sits at 6 V DC, the pot side at 0 V.\n"
      "J6 pin 3 = GND, not VGND -- C_out has already removed the 6 V bias;\n"
@@ -754,8 +807,8 @@ HEADER = f'''(kicad_sch
 \t(paper "A2")
 \t(title_block
 \t\t(title "Bose Companion 5 sub crossover")
-\t\t(date "2026-08-13")
-\t\t(rev "A")
+\t\t(date "2026-08-16")
+\t\t(rev "B")
 \t\t(comment 1 "Mono-summing 2nd-order Sallen-Key low-pass, single +12 V rail")
 \t\t(comment 2 "Single-sided THT, CNC isolation milling (0.8 mm end mill), laser silkscreen")
 \t)'''
