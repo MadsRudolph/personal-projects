@@ -8,7 +8,7 @@ tags:
   - crossover
   - enclosure
   - blender
-status: Not started; PCB rev B is at the mill
+status: Modelled in Blender; awaiting caliper confirmation before printing
 started: 2026-08-16
 updated: 2026-08-16
 ---
@@ -195,6 +195,268 @@ tall parts, so clearances can be seen. It does not need to be a detailed board.
 5. **Material and shielding** — plastic or metal? Affects hum pickup on the
    rotary loom.
 6. Any constraint on external size or where it physically sits in the rack?
+
+---
+
+## Design notes — decisions taken 2026-08-16
+
+### Files
+
+| File | What |
+|---|---|
+| `hardware/enclosure/enclosure_model.py` | The model. All dimensions live in the `P` dict at the top; re-run the file in Blender to rebuild |
+| `hardware/enclosure/render_and_export.py` | Renders + STL export. Run after the model script |
+| `hardware/enclosure/subxo-enclosure.blend` | Saved scene |
+| `hardware/enclosure/stl/` | `subxo_base.stl`, `subxo_lid.stl` — 1 unit = 1 mm, verified by reading the exported files back |
+| `hardware/enclosure/pcb3d/subxo_board.glb` | The real board, exported from KiCad. The model imports this — there is no stand-in geometry anywhere in the scene |
+| `hardware/enclosure/pcb3d/make_model_shim.py` | Builds the 3D-model overlay the export needs. Run before re-exporting |
+| `hardware/enclosure/pcb3d/models/` | The overlay. `TerminalBlock.3dshapes/` holds the two hand-placed substitutes |
+| `hardware/enclosure/renders/` | Six previews, including `06_height_stack.png` |
+
+### The board in the model is the real KiCad export
+
+Not blocks. Regenerate it in two steps, from `hardware/kicad/`:
+
+```
+"C:/Program Files/KiCad/10.0/bin/python.exe" ../enclosure/pcb3d/make_model_shim.py
+```
+
+```
+kicad-cli pcb export glb --force --subst-models --no-dnp -D "KICAD9_3DMODEL_DIR=<abs>/hardware/enclosure/pcb3d/models" --user-origin "82.975x35.975mm" -o ../enclosure/pcb3d/subxo_board.glb subxo.kicad_pcb
+```
+
+`--user-origin` is the outline's top-left in KiCad page coordinates. With it,
+the export lands at 1 unit = 1 mm with the origin already on the model's
+origin and Y already negated — the only correction the script applies is
+lifting it onto the standoffs.
+
+### Why J1–J7 need a shim, and what they actually are
+
+`J1`–`J7` resolve their model through
+`${KICAD9_3DMODEL_DIR}/TerminalBlock.3dshapes/..._bornier-N_P5.08mm.step`.
+
+**That library does not exist anywhere.** Not in KiCad 9, not in KiCad 10, and
+not in the official `kicad-packages3D` on GitLab either — only the four branded
+`TerminalBlock_*` libraries are published. The bornier footprints point at a
+path that has never been populated in a modern library. The `bornier` STEP
+files survive only in third-party mirrors of a much older library.
+
+> [!warning] J1–J7 in the render are substitutes, not the specified part
+> They are genuine Phoenix **MKDS-1,5** 2-way and 3-way 5.08 mm blocks, copied
+> out of the local KiCad install and renamed to the bornier filenames. Same
+> pitch, same 2-way/3-way split, **different body**.
+>
+> They measure **13.88 mm tall** against roughly 10 mm for a generic bornier,
+> so the substitution errs ~4 mm tall — conservative, which is the safe
+> direction for a clearance check. Still well under `U2` at 18.86 mm, so it
+> changes nothing about the box.
+
+Redirecting the lookup with `-D` means **`subxo.kicad_pcb` is never edited** —
+the board being milled is untouched. The shim has to be a *complete* overlay
+rather than just the terminal blocks, because `U2`'s TO-220 resolves through
+the same variable and overriding it breaks that too. `make_model_shim.py`
+handles this: it copies the referenced models out of the install and leaves
+the hand-placed `TerminalBlock.3dshapes` alone.
+
+Still genuinely absent, no model anywhere: `D1`/`D2` (custom `energy_system`
+laser-pad footprints, ~6 mm) and `LK1` (wire link, flat). Neither is close to
+binding.
+
+### Part heights, measured off the real models
+
+| Part | Measured above board | Had assumed |
+|---|---|---|
+| `U2` TO-220 vertical | **18.86 mm** | 19.0 — confirmed |
+| Film caps (largest, FKS3/FKP3) | **15.08 mm** | 12.0 — was 3 mm optimistic |
+| Electrolytics ⌀10 radial | **10.08 mm** | 16.0 — was conservative |
+| Bare `1x06` header | 8.62 mm | — (loom adds to this) |
+| Bare DIP-14 | 3.76 mm | 10.0 incl. socket |
+
+**None of this changes the box.** `U2` was the one that mattered and it was
+right to within 0.14 mm. The loom still sets the height at 30.6 mm internal.
+
+> [!note] The leads in the render pass through the floor
+> KiCad's THT models carry full untrimmed leads — `U2`'s reach 8.15 mm below
+> the board, so at a 4 mm standoff they poke through the base. That is the
+> export being literal, not a modelling error. Real trimmed leads are 1–2 mm
+> and clear the standoff easily. Just do trim them: the copper is on that face
+> and it is bare.
+
+### Decisions
+
+| Question | Decision |
+|---|---|
+| Manufacture | **FDM 3D print.** 2.4 mm walls / floor / lid (6 perimeters at 0.4 mm), 0.4 mm added to every panel hole, 0.3 mm lid-lip fit clearance |
+| LEDs | **Holes in the lid** above `D1` and `D2`. See the caveat below |
+| Retention | **Corner clips.** Rear two corners are rigid L-ledges, front two are flexing snap fingers |
+| Material | **Plastic, unshielded.** Recorded here so the Gate 8 noise floor is read against an unshielded box |
+| Rear panel | RCAs **opened out to 20 mm pitch** (X = 23.0 and 43.0) rather than aligned to `J1`/`J2`, which are only 13.0 mm apart |
+| External size | Minimal. **117.8 × 137.8 × 35.4 mm** |
+| Rotary switch | AliExpress 20 mm metal selector, M9×0.75, 18-tooth knurl shaft. **Order the 2P6T variant** |
+
+### Verified against the board, not assumed
+
+Read out of `hardware/kicad/subxo.kicad_pcb` with KiCad's Python. Outline is
+101.0 × 104.0 mm and all 13 connector positions match this document exactly.
+
+> [!warning] There is no copper-free rim
+> The bottom-face GND pour fills **to 0.53 mm from every edge**, so any
+> edge-gripping scheme lands on exposed unmasked copper. That is electrically
+> harmless against plastic — it is all one net — but it caps how deep a grip
+> can go, because signal copper starts shortly after:
+>
+> | Edge | Nearest signal copper | Net |
+> |---|---|---|
+> | Left | 4.22 mm | `/N1` — the noise-sensitive 3 kΩ node |
+> | Right | 4.52 mm | `/POT_W` |
+> | Rear | 2.52 mm | `/POT_W` |
+> | Front | 2.52 mm | `/PWR_A` |
+>
+> Corner clips reach at most 3 mm over the board and only at the corners, so
+> they stay on pour throughout. Had this been a metal box, a card guide on the
+> **left** wall deeper than 4.2 mm would have shorted straight onto `N1`.
+
+### The rotary switch, and what actually sets the box height
+
+The switch is the AliExpress *20 mm Metal Rotary Switch Selector, M9×0.75,
+18 teeth knurl shaft, solder terminals*, sold as 1P12T / 2P6T / 3P4T / 4P3T.
+
+> [!danger] Order the 2P6T. The 1P12T will not work.
+> This design needs **two poles** — one selects `C1` via `JP1`, the other
+> selects `C2` via `JP2`. The 1P12T has a single pole and physically cannot do
+> that. All four variants are the same single wafer, so they are the same size;
+> only the pole/throw split differs.
+>
+> - **2P6T** — the right pick. Set its end-stop washer to **3 positions**
+>   (these ship with a numbered stop washer under the mounting nut).
+> - **4P3T** — also fine, and gives 3 detents natively with no stop to set.
+>   Use two of the four poles.
+> - **3P4T** — works, stop set to 3.
+> - **1P12T** — **no.**
+>
+> 2 poles × 3 throws + 2 commons = the 8-wire loom this design already assumes.
+
+**The 20 mm body is small enough that the switch no longer sets the height.**
+An earlier draft of these notes assumed a chunky 28 mm body and concluded the
+switch was the binding constraint. With the real part it needs only 23 mm
+internal, so it drops to third place:
+
+| Constraint | Internal height needed |
+|---|---|
+| Rotary switch body (⌀20 + 3) | 23.0 mm |
+| `U2` / board parts | 26.6 mm |
+| **`JP1`/`JP2` loom bend** | **30.6 mm ← binding** |
+
+So the box is **30.6 mm internal**, and the thing setting it is the loom — 
+exactly what this document warned about under *Clearances and heights*. `U2`
+was never the real constraint.
+
+> [!bug] This nearly went wrong silently
+> The height formula originally summed only the board parts and the switch. The
+> loom envelope was drawn but not included in the sum, and it only fitted
+> because the assumed fat switch had forced the box tall. Dropping in the real
+> 20 mm switch would have given 26.6 mm internal and pushed the loom **2 mm
+> through the lid**, with no error and nothing obviously wrong in the render.
+> `internal_h` is now `max()` over all three terms.
+
+The internal stack as modelled, above the base floor:
+
+| | z | Clear of the lid |
+|---|---|---|
+| Board underside | 4.0 | — |
+| Board top | 5.6 | — |
+| `U2` top | 24.6 | 6.0 mm |
+| Rotary body top | 25.3 | 5.3 mm |
+| **`JP1`/`JP2` loom bend — not drawn** | **28.6** | **2.0 mm — tightest** |
+
+> [!important] The loom is not in the scene, but it still sizes the box
+> Nothing in the model is invented geometry — the loom envelope was removed
+> along with the component stand-ins. `loom_above_board` is still in the
+> height sum, so the box is built around a loom you cannot see in any render.
+> Do not "reclaim" that 4 mm by looking at the render and concluding there is
+> spare space above the headers. There is not.
+
+That is with an 8 mm bend allowance above the 15 mm fitted header height. If
+the real loom needs more, raise `loom_above_board` and re-run — do not squeeze
+it, it is the most pickup-prone wiring in the build.
+
+Box **length** is still set by the switch: its body must clear the board
+entirely, because `C1_1` stands only 1.4 mm from the front edge. Front gap is
+`switch depth + 3 mm` = 19 mm.
+
+### Two things to check when the switch arrives
+
+- **Shaft length.** It is 6 mm × 20 mm knurled, and the front panel is only
+  2.4 mm thick, so roughly 17 mm of shaft will stand proud. That is more than
+  many push-on knobs will swallow — check the knob's bore depth, or plan to
+  shorten the shaft.
+- **The body is metal, and the box is not.** Given the unshielded-plastic
+  decision, fit a solder lug under the mounting nut and run it to board GND.
+  That turns the switch frame into a local shield around exactly the wiring
+  that carries `N1`. It is the cheapest noise mitigation available here and is
+  worth doing before the Gate 8 measurement, not after.
+
+### Panel positions as modelled
+
+All panel parts share a 15.5 mm centre line above the internal floor.
+X is measured the same way as the table above — from the board's left edge.
+
+| Panel | Part | X | Hole ⌀ |
+|---|---|---|---|
+| Rear | RCA L | 23.0 | 10.4 |
+| Rear | RCA R | 43.0 | 10.4 |
+| Rear | 3.5 mm jack | 58.33 | 6.4 |
+| Rear | DC barrel | 87.42 | 8.4 |
+| Front | Rotary | 20.0 | 9.9 (M9×0.75 bushing) |
+| Front | Toggle | 44.78 | 6.4 |
+| Front | Level pot | 82.90 | 7.4 |
+| Lid | `D1` window | 16.09 / 81.53 | 4.0, counterbored |
+| Lid | `D2` window | 6.49 / 81.53 | 4.0, counterbored |
+
+The rotary sits hard left at X = 20, right next to `JP2` (X = 22.0) and close
+to `JP1` (X = 32.2), so the noise-sensitive 8-wire loom stays as short as the
+board allows. That was the point of the argument in this document, and it is
+the reason the rotary is not centred.
+
+Note the rear and front panel positions are *choices*, not board constraints —
+`J1`–`J4` are screw terminals and `J5`–`J7` are headers, all wired to separate
+panel parts. They are aligned to their terminals wherever the parts fit.
+
+`J7` is unpopulated: the inverted indicator is `D2` on the board, read through
+the lid.
+
+### Assumptions still open
+
+Everything here is a parameter in the `P` dict. Measure, edit, re-run.
+
+| Parameter | Assumed | Why it matters |
+|---|---|---|
+| **`loom_above_board`** | **23.0** (15 mm header + 8 mm bend) | **Sets the box height.** The only assumption still doing real work |
+| `rotary_body_depth` | 16.0 | **Sets the box length.** Not published in any listing — measure when the switch arrives |
+| `rca_hole` / `jack_hole` / `dc_hole` | 10 / 6 / 8 | Panel hole diameters |
+| `pot_hole` / `toggle_hole` | 7 / 6 | Bushing diameters |
+| Knob diameters | 25 (rotary) / 20 (pot) | Only affects whether the knobs foul each other; currently 4.3 mm apart |
+
+### Two caveats to be aware of
+
+> [!caution] The lid LED windows are 19.4 mm above the LEDs
+> Because the rotary switch forced the box to 31 mm internal, `D1`/`D2` sit a
+> long way below the lid. A plain 4 mm hole would read dim and only close to
+> straight-on. The windows are therefore counterbored from the inside — 7 mm
+> down to a 1.2 mm web, then 4 mm through — to widen the acceptance cone.
+> If that still reads badly, the cheap fix is a 4 mm clear acrylic rod dropped
+> into each window as a light pipe. That is a retrofit, not a reprint.
+
+> [!caution] Corner clips are the weak point in FDM
+> The two front snap fingers bend about their root, and on a base printed
+> floor-down that stress runs across the layer lines — the classic way a
+> printed clip snaps. They are 2.5 mm thick and 9 mm wide with only a 1.4 mm
+> hook, so travel is small, but print the base with a few extra walls and
+> expect the clips to be the first thing to fail. The rear two corners are
+> deliberately rigid ledges so only two clips ever flex.
+>
+> Fitting: slide the board's rear edge under the two rear ledges first, then
+> press the front down until it snaps. Nothing goes through the board.
 
 ---
 
