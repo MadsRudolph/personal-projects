@@ -356,7 +356,7 @@ and that gets tacked on the copper side.
 | U2 LM7812 | TO-220, vertical, no heatsink needed (~20 mA draw) |
 | Electrolytics | Radial, 50 V parts from stock |
 | Resistors | 1/4 W axial, E96 metal film |
-| LEDs | 3 mm through-hole, `LED_THT:LED_D3.0mm` |
+| LEDs | 3 mm through-hole, **`energy_system:LED_D3.0mm_P5.08mm_LaserPads`**. Stock `LED_THT` is 2.54 mm pitch with 1.8 mm pads — a 0.74 mm gap that fails the 0.85 mm rule, and *every* stock two-pad LED footprint is identical in that respect. Legs bend, so the project part widens the pitch to 5.08 mm and keeps 2.0 mm pads: a 3.08 mm channel, clear for a 1.2 mm endmill too |
 | Headers | 2.54 mm male pin header |
 | Screw terminals | 5.08 mm pitch, 2- and 3-pole. **`bornier` lives in the project library** — KiCad 10 deleted it from stock |
 

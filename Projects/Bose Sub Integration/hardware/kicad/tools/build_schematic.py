@@ -75,7 +75,13 @@ FP_HDR2 = "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
 FP_HDR6 = "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical"
 FP_DIP14 = "Package_DIP:DIP-14_W7.62mm_LongPads"        # socket
 FP_TO220 = "energy_system:TO-220-3_Vertical_LaserPads"
-FP_LED3 = "LED_THT:LED_D3.0mm"
+# Stock LED_THT is 2.54 mm pitch with 1.8 mm pads = a 0.74 mm gap, which fails
+# the 0.85 mm rule and was the only real DRC error on the first hand-placed
+# board. Every stock two-pad LED footprint has the same geometry, so this is a
+# project part: 5.08 mm pitch, 2.0 mm pads, 3.08 mm channel. LED legs bend, so
+# pitch is the lever rather than pad size -- unlike the TO-220, where the pitch
+# is fixed and the pads had to be narrowed instead.
+FP_LED3 = "energy_system:LED_D3.0mm_P5.08mm_LaserPads"
 
 SYM_TERM2 = "Connector:Screw_Terminal_01x02"
 SYM_TERM3 = "Connector:Screw_Terminal_01x03"
