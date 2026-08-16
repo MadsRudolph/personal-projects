@@ -32,9 +32,14 @@ FP_DIRS = [
 EXPECTED = {
     # Power (handoff "Power" table)
     "VIN": {"J4.1", "C10.1", "U2.1"},
-    "GND": {"J4.2", "C10.2", "U2.2", "C11.2", "C12.2", "C13.2", "C14.2",
-            "R9.2", "C15.2", "U1.11", "J1.2", "J2.2", "J6.3", "R7.1", "JP3.1",
-            "D1.1", "J7.2"},
+    # GND fills as two islands on the board -- the power corner is walled off by
+    # the ring of parts around it -- so LK1 bridges them on a flying wire and the
+    # net is split to match. Membership below is exactly what KiCad's own zone
+    # fill reported, not a guess. Re-place the board and this split may move.
+    "GND": {"C15.2", "D1.1", "J1.2", "J2.2", "J6.3", "J7.2", "JP3.1", "R7.1",
+            "U1.11", "LK1.2"},
+    "GND_LNK": {"J4.2", "C10.2", "U2.2", "C11.2", "C12.2", "C13.2", "C14.2",
+                "R9.2", "LK1.1"},
     "V12": {"U2.3", "C11.1", "C12.1", "C13.1", "C14.1", "R8.1", "U1.4",
             "R10.1", "R11.1"},
     "VG_DIV": {"R8.2", "R9.1", "C15.1", "U1.10"},
@@ -88,6 +93,7 @@ EXPECTED_VALUES = {
     "C1_1": "470nF", "C1_2": "220nF", "C1_3": "150nF",
     "C2_1": "150nF", "C2_2": "120nF", "C2_3": "68nF",
     "C_out1": "10uF", "U1": "TL074", "U2": "LM7812",
+    "LK1": "wire link",
     "R10": "4k7", "R11": "4k7", "D1": "PWR", "D2": "INV",
 }
 

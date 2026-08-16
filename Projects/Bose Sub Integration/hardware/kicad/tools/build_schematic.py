@@ -53,16 +53,20 @@ FP_C1_1 = "Capacitor_THT:C_Rect_L7.2mm_W3.0mm_P5.00mm_FKS2_FKP2_MKS2_MKP2"
 FP_C1_2 = "Capacitor_THT:C_Rect_L18.0mm_W7.0mm_P15.00mm_FKS3_FKP3"
 FP_C1_3 = "Capacitor_THT:C_Rect_L11.0mm_W4.2mm_P10.00mm_MKT"      # body 10.0 x 4.0
 FP_C2_2 = "Capacitor_THT:C_Rect_L13.0mm_W4.0mm_P10.00mm_FKS3_FKP3_MKS4"  # 12.0 x 4.0
-# C_in is dual-pitch. 15.00 mm is what gets fitted: the same 220n part as C1_2,
-# which turns out to be a 15 mm part -- so rev A's bare 15.00 mm footprint had
-# the pitch right all along and the "splayed leads" note in the BOM was wrong.
-# 5.00 mm is kept for a 2u2 non-polarised electrolytic, because whether 220n or
-# 2u2 is the better value is a listening question Gate 11 has not answered. 2u2
-# would move the corners to 88/127/192 Hz and, more usefully, cut the level
-# spread between switch positions from 3.3 dB to 1.7 dB.
-# Same-number pads share a net, so the second pair costs nothing in isolation --
-# the tightest pad-1-to-pad-2 channel is 3.0 mm.
-FP_CIN_MULTI = "energy_system:C_Rect_L18.0mm_W9.0mm_P5.00mm_P15.00mm_MultiPitch"
+# C_in takes the same 220n part as C1_2, so it is a 15 mm part and rev A's bare
+# 15.00 mm footprint had the pitch right all along -- the "splayed leads" note in
+# the BOM was simply wrong. A 2u2 FILM is also 15 mm pitch, so this one footprint
+# covers both values and the dual-pitch experiment was unnecessary: its two
+# same-numbered pads sat 5 mm apart with no copper between them, and stock
+# multi-pitch footprints only get away with duplicate pad numbers because their
+# alternate pads physically overlap. Only a 2u2 non-polarised electrolytic wants
+# 5 mm, and that gets tacked on the copper side.
+FP_FILM_15 = "Capacitor_THT:C_Rect_L18.0mm_W9.0mm_P15.00mm_FKS3_FKP3"
+# Wire link: two holes 14.50 mm apart, joined by insulated wire on the component
+# side. It only works as a routing aid because it SPLITS a net in two -- if both
+# pads carried the same net, KiCad would not know the wire exists and would go on
+# reporting the two regions as an unconnected island.
+FP_WIRELINK = "energy_system:WireLink_P14.50mm"
 FP_EL_100U = "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm"
 FP_EL_10U = "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"
 FP_TERM2 = "TerminalBlock:TerminalBlock_bornier-2_P5.08mm"
@@ -96,6 +100,11 @@ COMPONENTS = [
     ("U2", "Regulator_Linear:LM7812_TO220", "LM7812", FP_TO220, 105, 55, 0, 1),
     ("C11", "Device:C_Polarized", "100uF/50V", FP_EL_100U, 130, 63, 0, 1),
     ("C12", "Device:C", "100nF", FP_CER, 150, 63, 0, 1),
+    # LK1 bridges the GND pour, which fills as two islands: the power corner
+    # (J4/U2/C10-C14/R9) is walled off from the rest of the board by the ring
+    # of parts around it. Closest approach is 2.70 mm beside U2.3, and nudging
+    # U2 by +/-3 mm in either axis was tested and does not merge them.
+    ("LK1", "Device:R", "0R wire link", FP_WIRELINK, 190, 63, 90, 1),
     ("R10", "Device:R", "4k7", FP_R, 170, 55, 0, 1),
     ("D1", "Device:LED", "PWR green", FP_LED3, 170, 72, 90, 1),
 
@@ -113,13 +122,13 @@ COMPONENTS = [
 
     # ---- D: left channel input -- couple, bias, sum resistor ----
     ("J1", SYM_TERM2, "IN L", FP_TERM2, 55, 160, 180, 1),
-    ("C_in1", "Device:C", "220n or 2u2", FP_CIN_MULTI, 85, 160, 90, 1),
+    ("C_in1", "Device:C", "220n or 2u2", FP_FILM_15, 85, 160, 90, 1),
     ("R_b1", "Device:R", "100k", FP_R, 112, 180, 0, 1),
     ("R1_1", "Device:R", "16k5", FP_R, 140, 160, 90, 1),
 
     # ---- E: right channel input ----
     ("J2", SYM_TERM2, "IN R", FP_TERM2, 55, 235, 180, 1),
-    ("C_in2", "Device:C", "220n or 2u2", FP_CIN_MULTI, 85, 235, 90, 1),
+    ("C_in2", "Device:C", "220n or 2u2", FP_FILM_15, 85, 235, 90, 1),
     ("R_b2", "Device:R", "100k", FP_R, 112, 255, 0, 1),
     ("R1_2", "Device:R", "16k5", FP_R, 140, 235, 90, 1),
 
@@ -204,15 +213,15 @@ TL074_UNIT_PINS = {
 NETS = [
     # ---- power ----
     ("VIN", "J4", "1"), ("VIN", "C10", "1"), ("VIN", "U2", "1"),
-    ("GND", "J4", "2"), ("GND", "C10", "2"), ("GND", "U2", "2"),
+    ("GND_LNK", "J4", "2"), ("GND_LNK", "C10", "2"), ("GND_LNK", "U2", "2"),
     ("V12", "U2", "3"), ("V12", "C11", "1"), ("V12", "C12", "1"),
-    ("GND", "C11", "2"), ("GND", "C12", "2"),
-    ("V12", "C13", "1"), ("GND", "C13", "2"),
-    ("V12", "C14", "1"), ("GND", "C14", "2"),
+    ("GND_LNK", "C11", "2"), ("GND_LNK", "C12", "2"),
+    ("V12", "C13", "1"), ("GND_LNK", "C13", "2"),
+    ("V12", "C14", "1"), ("GND_LNK", "C14", "2"),
     ("V12", "U1", "4"),                          # TL074 V+
     ("GND", "U1", "11"),                         # TL074 V- = GND (single supply)
     ("V12", "R8", "1"), ("VG_DIV", "R8", "2"),
-    ("VG_DIV", "R9", "1"), ("GND", "R9", "2"),
+    ("VG_DIV", "R9", "1"), ("GND_LNK", "R9", "2"),
     ("VG_DIV", "C15", "1"), ("GND", "C15", "2"),
 
     # ---- A3 virtual-ground buffer: VG_DIV -> follower -> VGND ----
@@ -223,6 +232,9 @@ NETS = [
     # ---- A4 spare, terminated as a follower on VGND ----
     ("VGND", "U1", "12"),                        # A4 in+
     ("SPARE_OUT", "U1", "13"), ("SPARE_OUT", "U1", "14"),
+
+    # ---- GND wire link: GND_LNK (power corner) -- LK1 -- GND (rest) ----
+    ("GND_LNK", "LK1", "1"), ("GND", "LK1", "2"),
 
     # ---- inputs, coupling, bias ----
     ("IN_L", "J1", "1"), ("GND", "J1", "2"),
@@ -286,7 +298,10 @@ NETS = [
 # lands on that pin's stub endpoint.
 PWR_FLAGS = [
     ("VIN", "C10", "1"),     # C10's stubs are clear space; U2's are not
-    ("GND", "C10", "2"),
+    # The GND wire link makes two ground nets, and each needs its own driver or
+    # ERC reports the segment as undriven.
+    ("GND_LNK", "C10", "2"),   # power-corner segment
+    ("GND", "C15", "2"),       # the rest of the board
 ]
 
 # Symbol origins are snapped to the 2.54 mm grid. Every stock symbol places its

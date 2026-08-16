@@ -140,7 +140,7 @@ supply** — this is a single-rail design with a mid-rail reference.
 > Gate 11 has not answered. 2.2 µF would move the three switch corners to
 > 88 / 127 / 192 Hz and cut the level spread between positions from 3.3 dB to
 > 1.7 dB, which matters because loudness confounds an A/B comparison. So the
-> footprint is dual-pitch and takes either. **Fit one pair of pads, not both.**
+> footprint is dual-pitch and takes either. The 15 mm footprint takes either value.
 
 ### Switched capacitors
 
@@ -223,6 +223,51 @@ fitting**.
 | JP3 | 2-pin header + shunt | across R7 | ground lift, **normally shorted** |
 | J3 | 3-pole screw terminal | pin 1 = `OUT_TIP`, pin 2 = `OUT_RING`, pin 3 = `OUT_GND` |
 
+### The GND wire link
+
+The ground pour fills as **two islands**. The power corner — `J4`, `U2`,
+`C10`–`C14`, `R9` — is walled off from the rest of the board by the ring of
+parts around it. Closest approach is 2.70 mm beside `U2.3`, and translating
+`U2` by ±3 mm in either axis was tested and does **not** merge them.
+
+`LK1` bridges the two on an insulated wire over the component side.
+
+| Ref | Value | From | To |
+|-----|-------|------|-----|
+| LK1 | 0 Ω wire link | pin 1 = `GND_LNK` | pin 2 = `GND` |
+
+| Net | Pads |
+|---|---|
+| `GND_LNK` — power corner | `J4.2 C10.2 U2.2 C11.2 C12.2 C13.2 C14.2 R9.2 LK1.1` |
+| `GND` — the rest | `C15.2 D1.1 J1.2 J2.2 J6.3 J7.2 JP3.1 R7.1 U1.11 LK1.2` |
+
+> [!danger] A wire link only works because it **splits** a net
+> If both pads carried `GND`, KiCad would have no idea the wire exists and would
+> go on reporting the two regions as an unconnected island. Two separate nets
+> joined by a physical wire is the whole mechanism — the same one the earlier
+> `V12` / `V12_LNK` link used.
+
+> [!warning] Two ground nets means **two zones**
+> The existing pour is net `GND`, and `island_removal_mode` is 0 — always remove
+> islands with no pad of the zone's net. After the split, the power corner
+> contains only `GND_LNK` pads, so the `GND` zone will *delete* that island.
+> Duplicate the zone over the same outline and set the copy's net to `GND_LNK`.
+
+> [!note] This split is placement-dependent
+> Membership above is exactly what KiCad's zone fill reported for the current
+> placement, not a guess. **Move parts around and it can change** — re-run the
+> fill, check which pads land in which island, and update both this table and
+> `verify_netlist.py` before believing the checker.
+
+Both `GND` and `GND_LNK` carry a `PWR_FLAG` (`C10.2` and `C15.2`). Each segment
+needs its own or ERC reports it as undriven.
+
+The one wart: `C13`/`C14` decouple `U1`'s supply pins but sit in the power
+corner, while `U1.11` is on the far side — so the decoupling return crosses the
+link. At 3 MHz a 20 mm wire is about 0.4 Ω, which is nothing for an audio
+filter, but **place the link near `U1` rather than out at the board edge** and
+the point is moot.
+
 ### Status LEDs
 
 Both run about 2 mA, so the LM7812 gains at most 4 mA on a 10–16 mA board and
@@ -287,7 +332,7 @@ All through-hole.
 | `C2_1` | 150 n | 5 mm | — | `Capacitor_THT:C_Rect_L7.2mm_W5.5mm_P5.00mm_FKS2_FKP2_MKS2_MKP2` |
 | `C2_2` | 120 n | 10 mm | 12.0 × 4.0 | `Capacitor_THT:C_Rect_L13.0mm_W4.0mm_P10.00mm_FKS3_FKP3_MKS4` |
 | `C2_3` | 68 n | 5 mm | — | `Capacitor_THT:C_Rect_L7.2mm_W5.5mm_P5.00mm_FKS2_FKP2_MKS2_MKP2` |
-| `C_in1/2` | 220 n | 15 mm fitted | 16.0 × 7.0 | `energy_system:C_Rect_L18.0mm_W9.0mm_P5.00mm_P15.00mm_MultiPitch` |
+| `C_in1/2` | 220 n | 15 mm | 16.0 × 7.0 | `Capacitor_THT:C_Rect_L18.0mm_W9.0mm_P15.00mm_FKS3_FKP3` |
 
 `C1_2`, `C_in1` and `C_in2` are **the same physical capacitor** — 220 nF, 15 mm
 pitch, 16 × 7 body. Three large parts wanting the same clearance. Place those
@@ -297,10 +342,13 @@ first and let the rest of the filter and input blocks fall around them.
 1.1 mm and that is 0.1 mm of slack on a 1 mm lead. `L18` drills 1.2 mm, a size
 already in the board's drill set.
 
-The `C_in` footprint is dual-pitch: 5.00 mm and 15.00 mm pads on one part, both
-centred at x = 7.5. Same-number pads share a net, so the unused pair needs no
-isolation from its sibling and the tightest pad-1-to-pad-2 channel stays 3.0 mm
-— clear for a 0.8 mm laser gap or a 1.2 mm endmill.
+`C_in` uses the plain stock 15 mm footprint — the same one rev A had, which was
+correct all along. A dual-pitch version was tried and withdrawn: its two
+same-numbered pads sat 5 mm apart with no copper between them, and stock
+multi-pitch footprints only get away with duplicate pad numbers because their
+alternate pads physically *overlap*. It was also unnecessary, since a 2.2 µF
+film is 15 mm pitch too. Only a 2.2 µF non-polarised electrolytic wants 5 mm,
+and that gets tacked on the copper side.
 
 | Part | Package notes |
 |------|---------------|
