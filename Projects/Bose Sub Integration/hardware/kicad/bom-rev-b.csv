@@ -1,0 +1,56 @@
+Section,Ref,Value,Footprint / mounting,Status,Note
+board,C10,100uF/50V,Capacitor_THT:CP_Radial_D10.0mm_P5.00mm,REUSE,Desolder from the rev A board and refit.
+board,C11,100uF/50V,Capacitor_THT:CP_Radial_D10.0mm_P5.00mm,REUSE,Desolder from the rev A board and refit.
+board,C12,100nF,Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm,REUSE,Desolder from the rev A board and refit.
+board,C13,100nF,Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm,REUSE,Desolder from the rev A board and refit.
+board,C14,100nF,Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm,REUSE,Desolder from the rev A board and refit.
+board,C15,100uF/50V,Capacitor_THT:CP_Radial_D10.0mm_P5.00mm,REUSE,Desolder from the rev A board and refit.
+board,C1_1,470nF film,Capacitor_THT:C_Rect_L7.2mm_W3.0mm_P5.00mm_FKS2_FKP2_MKS2_MKP2,BUY,"470nF film, 5.00mm pitch, body 7.5x3.0. Measured at the shop 2026-08-16 - confirm you actually bought it. Sets the 94.0 Hz corner, the lowest the board has ever reached."
+board,C1_2,220nF film,Capacitor_THT:C_Rect_L18.0mm_W7.0mm_P15.00mm_FKS3_FKP3,REUSE,Desolder from the rev A board and refit.
+board,C1_3,150nF film,Capacitor_THT:C_Rect_L11.0mm_W4.2mm_P10.00mm_MKT,REUSE,Desolder from the rev A board and refit.
+board,C2_1,150nF film,Capacitor_THT:C_Rect_L7.2mm_W5.5mm_P5.00mm_FKS2_FKP2_MKS2_MKP2,REUSE,Desolder from the rev A board and refit.
+board,C2_2,120nF film,Capacitor_THT:C_Rect_L13.0mm_W4.0mm_P10.00mm_FKS3_FKP3_MKS4,REUSE,Desolder from the rev A board and refit.
+board,C2_3,68nF film,Capacitor_THT:C_Rect_L7.2mm_W5.5mm_P5.00mm_FKS2_FKP2_MKS2_MKP2,REUSE,Desolder from the rev A board and refit.
+board,C_in1,220n or 2u2,Capacitor_THT:C_Rect_L18.0mm_W9.0mm_P15.00mm_FKS3_FKP3,REUSE,Desolder from the rev A board and refit.
+board,C_in2,220n or 2u2,Capacitor_THT:C_Rect_L18.0mm_W9.0mm_P15.00mm_FKS3_FKP3,REUSE,Desolder from the rev A board and refit.
+board,C_out1,10uF/50V,Capacitor_THT:CP_Radial_D8.0mm_P3.50mm,REUSE,Desolder from the rev A board and refit.
+board,D1,PWR green,energy_system:LED_D3.0mm_P5.08mm_LaserPads,BUY,"3mm LED, GREEN. Power lamp on V12."
+board,D2,INV amber,energy_system:LED_D3.0mm_P5.08mm_LaserPads,BUY,"3mm LED, AMBER. Lights only when the polarity switch is inverted."
+board,J1,IN L,TerminalBlock:TerminalBlock_bornier-2_P5.08mm,REUSE,Desolder from the rev A board and refit.
+board,J2,IN R,TerminalBlock:TerminalBlock_bornier-2_P5.08mm,REUSE,Desolder from the rev A board and refit.
+board,J3,OUT 3.5mm,TerminalBlock:TerminalBlock_bornier-3_P5.08mm,REUSE,Desolder from the rev A board and refit.
+board,J4,PWR IN 15V,TerminalBlock:TerminalBlock_bornier-2_P5.08mm,REUSE,Desolder from the rev A board and refit.
+board,J5,POLARITY SW,TerminalBlock:TerminalBlock_bornier-3_P5.08mm,REUSE,Desolder from the rev A board and refit.
+board,J6,LEVEL POT 10k,TerminalBlock:TerminalBlock_bornier-3_P5.08mm,REUSE,Desolder from the rev A board and refit.
+board,J7,INV LED,TerminalBlock:TerminalBlock_bornier-2_P5.08mm,BUY,"2-pole 5.08mm screw terminal. Rev A used three of these (J1/J2/J4), so this is a fourth."
+board,JP1,C1 select,Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical,REUSE,Desolder from the rev A board and refit.
+board,JP2,C2 select,Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical,REUSE,Desolder from the rev A board and refit.
+board,JP3,GND lift,Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical,REUSE,Desolder from the rev A board and refit.
+board,LK1,0R wire link,energy_system:WireLink_P14.50mm,HAVE,"Not a part - ~30mm of insulated solid hookup wire, 0.6mm. Bridges the two ground islands over the component side."
+board,R10,4k7,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,BUY,"4k7. LED series resistor, ~2mA."
+board,R11,4k7,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,BUY,"4k7. LED series resistor, ~2mA."
+board,R2,8k25,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,REUSE,Desolder from the rev A board and refit.
+board,R3,10k,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,REUSE,Desolder from the rev A board and refit.
+board,R4,10k,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,REUSE,Desolder from the rev A board and refit.
+board,R5,100R,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,REUSE,Desolder from the rev A board and refit.
+board,R6,100R,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,REUSE,Desolder from the rev A board and refit.
+board,R7,10R,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,REUSE,Desolder from the rev A board and refit.
+board,R8,10k,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,REUSE,Desolder from the rev A board and refit.
+board,R9,10k,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,REUSE,Desolder from the rev A board and refit.
+board,R1_1,16k5,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,REUSE,Desolder from the rev A board and refit.
+board,R1_2,16k5,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,REUSE,Desolder from the rev A board and refit.
+board,R_b1,100k,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,REUSE,Desolder from the rev A board and refit.
+board,R_b2,100k,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,REUSE,Desolder from the rev A board and refit.
+board,U1,TL074,Package_DIP:DIP-14_W7.62mm_LongPads,REUSE,Desolder from the rev A board and refit.
+board,U2,LM7812,energy_system:TO-220-3_Vertical_LaserPads,REUSE,Desolder from the rev A board and refit.
+off-board,SW1,2-pole 3-position rotary switch,panel,HAVE,Found at the DTU shop 2026-08-16. Commons A0/B0. STILL TO CHECK: A0-B0 must read open in every detent.
+off-board,SW2,2-pole changeover toggle,panel,CONFIRM,"Polarity, normal/inverted. Wires to J5; its SECOND pole drives D2 via J7. Design BOM listed it but it was never fitted - check whether you have it."
+off-board,VR1,10k linear potentiometer,panel,BUY,Level trim. Never fitted - Gate 10 has been deferred since bring-up because of this.
+off-board,-,Knob for SW1,panel,BUY,Must fit the rotary's shaft - measure the shaft diameter and flat.
+off-board,-,Knob for VR1,panel,BUY,Same.
+off-board,-,RCA socket x2,panel,BUY,L and R input from the preamp Y-split.
+off-board,-,3.5mm jack socket,panel,BUY,Output to the Bose control pod.
+off-board,-,DC barrel jack,panel,BUY,15V in. Match your wall wart's plug.
+off-board,-,Jumper shunt 2.54mm,board,HAVE,"One for JP3, the ground lift. JP1/JP2 shunts are freed by the rotary, so the old third-shunt problem is gone. Buy a couple of spares anyway."
+off-board,-,"Hookup wire, 8 conductors",loom,BUY,"Rotary loom. Twisted pairs, or better a short length of multi-core shielded audio cable - one wire carries N1 at ~3k to AC ground and is the most pickup-prone conductor in the build."
+off-board,-,2u2 non-polarised electrolytic x2,optional,OPTIONAL,Only if you want to try the C_in experiment after Gate 11: moves the corners to 88/127/192 Hz and halves the level spread between switch positions. Tacks on the copper side.
