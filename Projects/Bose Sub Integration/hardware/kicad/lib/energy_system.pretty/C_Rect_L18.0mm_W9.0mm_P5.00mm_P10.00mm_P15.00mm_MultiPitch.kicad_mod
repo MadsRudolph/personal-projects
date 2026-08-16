@@ -1,9 +1,9 @@
-(footprint "C_Rect_L18.0mm_W9.0mm_P5.00mm_P15.00mm_MultiPitch"
+(footprint "C_Rect_L18.0mm_W9.0mm_P5.00mm_P10.00mm_P15.00mm_MultiPitch"
 	(version 20241229)
 	(generator "hand")
 	(layer "F.Cu")
-	(descr "Film capacitor, two lead pitches on one footprint: 5.00mm and 15.00mm, both centred at x=7.5. Body envelope 18*9mm reserved for the larger part. Drawn for C_in1/C_in2 on the subxo sub-crossover board, where the choice between a 220nF/2u2-NP-electrolytic (5.00mm) and a real 2u2 film part (15.00mm) is deliberately left open until the listening test. Same-number pads share a net, so the 5mm pair and the 15mm pair may both be present in copper; only the pad1-to-pad2 gap needs isolation, and that is 3.0mm at the tighter pitch -- clear for a 0.8mm laser gap or a 1.2mm endmill channel.")
-	(tags "C Rect film multipitch 5.00mm 15.00mm Capacitor")
+	(descr "Film capacitor, two lead pitches on one footprint: 5.00mm, 10.00mm and 15.00mm, both centred at x=7.5. Body envelope 18*9mm reserved for the larger part. Drawn for C_in1/C_in2 on the subxo sub-crossover board, where the choice between a 220nF/2u2-NP-electrolytic (5.00mm) and a real 2u2 film part (15.00mm) is deliberately left open until the listening test. Same-number pads share a net, so the 5mm, 10mm and 15mm pairs may both be present in copper; only the pad1-to-pad2 gap needs isolation, and that is 3.0mm at the tighter pitch -- clear for a 0.8mm laser gap or a 1.2mm endmill channel.")
+	(tags "C Rect film multipitch 5.00mm 10.00mm 15.00mm Capacitor")
 	(property "Reference" "REF**"
 		(at 7.5 -6.25 0)
 		(layer "F.SilkS")
@@ -14,7 +14,7 @@
 			)
 		)
 	)
-	(property "Value" "C_Rect_L18.0mm_W9.0mm_P5.00mm_P15.00mm_MultiPitch"
+	(property "Value" "C_Rect_L18.0mm_W9.0mm_P5.00mm_P10.00mm_P15.00mm_MultiPitch"
 		(at 7.5 6.25 0)
 		(layer "F.Fab")
 		(effects
@@ -99,6 +99,13 @@
 		(remove_unused_layers no)
 	)
 	(pad "1" thru_hole circle
+		(at 2.5 0)
+		(size 2 2)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "1" thru_hole circle
 		(at 5 0)
 		(size 2 2)
 		(drill 1)
@@ -107,6 +114,13 @@
 	)
 	(pad "2" thru_hole circle
 		(at 10 0)
+		(size 2 2)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "2" thru_hole circle
+		(at 12.5 0)
 		(size 2 2)
 		(drill 1)
 		(layers "*.Cu" "*.Mask")

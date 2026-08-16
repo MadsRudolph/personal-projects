@@ -38,14 +38,22 @@ PROJ_UUID = "b05e5ub0-0001-0001-0001-000000000001"
 # --- footprints -------------------------------------------------------------
 FP_R = "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 FP_CER = "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm"
+# Pitches below are measured off the real parts (2026-08-16), not taken from the
+# value. Caliper inside-to-inside and outside-to-outside average to the pitch and
+# differ by the lead diameter; all three parts came out at 0.5 mm leads.
 FP_FILM_5 = "Capacitor_THT:C_Rect_L7.2mm_W5.5mm_P5.00mm_FKS2_FKP2_MKS2_MKP2"
+FP_FILM_5_TALL = "Capacitor_THT:C_Rect_L7.2mm_W7.2mm_P5.00mm_FKS2_FKP2_MKS2_MKP2"
 FP_FILM_75 = "Capacitor_THT:C_Rect_L10.3mm_W5.7mm_P7.50mm_MKS4"
 FP_FILM_10 = "Capacitor_THT:C_Rect_L13.0mm_W6.0mm_P10.00mm_FKS3_FKP3_MKS4"
-# C_in is deliberately dual-pitch: 5.00 mm takes the 220n as built (or a 2u2
-# non-polarised electrolytic), 15.00 mm takes a real 2u2 film part. Rev A had a
-# 220n splayed across a 15.00 mm footprint. Which value is right is a listening
-# question that Gate 11 has not answered yet, so the board keeps both options.
-FP_CIN_MULTI = "energy_system:C_Rect_L18.0mm_W9.0mm_P5.00mm_P15.00mm_MultiPitch"
+FP_FILM_10_THIN = "Capacitor_THT:C_Rect_L13.0mm_W4.0mm_P10.00mm_FKS3_FKP3_MKS4"
+# C_in is deliberately tri-pitch: 5.00 mm takes the 220n as built (or a 2u2
+# non-polarised electrolytic), 10.00 mm the measured shop part, 15.00 mm a large
+# 2u2 film. Rev A had a 220n splayed across a 15.00 mm footprint. Which value is
+# right is a listening question that Gate 11 has not answered yet, so the board
+# keeps every option. Same-number pads share a net, so the extra pairs cost
+# nothing in isolation -- the tightest pad-1-to-pad-2 channel is still 3.0 mm.
+FP_CIN_MULTI = ("energy_system:"
+                "C_Rect_L18.0mm_W9.0mm_P5.00mm_P10.00mm_P15.00mm_MultiPitch")
 FP_EL_100U = "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm"
 FP_EL_10U = "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"
 FP_TERM2 = "TerminalBlock:TerminalBlock_bornier-2_P5.08mm"
@@ -107,14 +115,22 @@ COMPONENTS = [
     ("R1_2", "Device:R", "16k5", FP_R, 140, 235, 90, 1),
 
     # ---- F: Sallen-Key low-pass -- C1 bank above, C2 bank below ----
-    ("C1_1", "Device:C", "470nF film", FP_FILM_10, 215, 158, 90, 1),
+    # Measured 5.0 mm pitch -- NOT the 10 mm a 470n usually wants. Body dims not
+    # yet taken, so the envelope is the generous 7.2 x 7.2 of the P5.00 family.
+    ("C1_1", "Device:C", "470nF film", FP_FILM_5_TALL, 215, 158, 90, 1),
     ("C1_2", "Device:C", "220nF film", FP_FILM_75, 215, 170, 90, 1),
-    ("C1_3", "Device:C", "150nF film", FP_FILM_75, 215, 182, 90, 1),
+    # Measured 9.5 mm -> 10.00 mm pitch. Rev A had it on 7.50 mm, which is why
+    # its leads had to be bent inward. Body dims not yet taken; W6.0 clears the
+    # 5.7 mm rev A assumed.
+    ("C1_3", "Device:C", "150nF film", FP_FILM_10, 215, 182, 90, 1),
     ("JP1", "Connector_Generic:Conn_01x06", "C1 select", FP_HDR6, 262, 170, 0, 1),
     ("R2", "Device:R", "8k25", FP_R, 215, 205, 90, 1),
     ("U1", "Amplifier_Operational:TL074", "TL074", FP_DIP14, 265, 205, 0, 1),
     ("C2_1", "Device:C", "150nF film", FP_FILM_5, 215, 245, 90, 1),
-    ("C2_2", "Device:C", "120nF film", FP_FILM_5, 215, 257, 90, 1),
+    # The odd one out: measured 9.5 mm -> 10.00 mm pitch, body 12 x 4 mm, while
+    # C2_1 and C2_3 are 5.00 mm parts. It was the substituted 120n, so the C2
+    # bank is no longer three identical footprints in a row -- place accordingly.
+    ("C2_2", "Device:C", "120nF film", FP_FILM_10_THIN, 215, 257, 90, 1),
     ("C2_3", "Device:C", "68nF film", FP_FILM_5, 215, 269, 90, 1),
     ("JP2", "Connector_Generic:Conn_01x06", "C2 select", FP_HDR6, 262, 257, 0, 1),
 
