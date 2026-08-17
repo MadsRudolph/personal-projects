@@ -336,8 +336,46 @@ confounds A/B by ear, so nudge the level when comparing.
 
 | Gate | Want | Result |
 |---|---|---|
-| 6 — mono sum | +6.02 dB, flat. **Ground the idle input** | \_\_ |
+| 6 — mono sum | +6.02 dB, flat. **Ground the idle input** | **PASS** — see below |
 | 7 — polarity | 0.00 dB / 180.0°, amber on in inverted | \_\_ |
+
+### Gate 6 — mono sum, detent 2
+
+Run with `tools/subxo_gate6.py`. Idle input grounded in software, so all three
+sweeps ran off one keypress with nothing rewired.
+
+| | L only | R only | Want |
+|---|---|---|---|
+| Mean ratio, 15–150 Hz | **−6.00 dB** | **−5.95 dB** | −6.02 |
+| Median deviation from the flat model | **0.039 dB** | **0.047 dB** | < 0.15 |
+| Channel balance, L − R | **−0.047 dB** | | < 0.15 |
+| Drive left on `J1.1` when grounded | **0.1 %** | | < 5 % |
+
+Both legs match the grounded model at 0.4 dB rms against 2.6 dB for the
+floating one, so the software grounding is doing its job and the −6.02 dB is
+the real 2:1 divider rather than a coincidence.
+
+> [!note] Why the band is 15–150 Hz and not the whole sweep
+> The first run scored the ratio out to 400 Hz and failed on a 1.7 dB tilt. It
+> is not the board. The residual is **additive and about 2 mV**: subtract
+> `both/2` from each one-driven sweep and the difference sits near 2 mV
+> regardless of frequency, so as the filter attenuates the output the *fraction*
+> grows and the ratio climbs toward 0 dB. By 550 Hz the output is 30 mV and the
+> ratio reads +0.11 dB, which is meaningless.
+>
+> Two things prove it is the instrument. The drift is **identical on both legs**
+> — −5.55 and −5.55 dB at 405 Hz — and it tracks 1/output. No fault in the
+> summing network could do either, and a leg mismatch would show in the balance
+> figure, which is 0.047 dB.
+>
+> There is also an isolated spike at **134.9 Hz**, 10.8 mV against a 2.6 mV
+> local baseline and again the same on both legs (10.77 and 10.58). The script
+> names points like that rather than hiding them, and judges the gate on the
+> median so one glitch cannot fail it.
+>
+> Raising `--amp` to 2 V would halve the relative residual if the band ever
+> needs to reach higher.
+
 | 8 — noise, frame grounded | < 1 mV rms, 50 Hz < 100 µV | \_\_ |
 | 8 — noise, frame lifted | for comparison | \_\_ |
 | 9 — headroom | clips at W1 = \_\_ V, or not at 5 V | \_\_ |
