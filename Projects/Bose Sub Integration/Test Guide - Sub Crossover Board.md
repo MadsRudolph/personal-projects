@@ -436,9 +436,16 @@ changes R1 and every corner frequency with it.
 > python tools/subxo_gate5.py --dry-run         # no AD3, exercise the maths
 > ```
 >
-> **`python`, not `py -3.13`.** `pydwf` is installed in the Python 3.14 tree,
-> so every AD3 tool here needs the bare `python` launcher. The pure-maths tools
-> — `subxo_model`, `subxo_compare`, the plotters — run under either.
+> **Use the full path: `C:\Python314\python.exe`.** This machine has several
+> Pythons — a conda base at `miniconda3`, the py launcher's 3.11 to 3.13, and a
+> bare 3.14 — and `pydwf` is installed in **only** the 3.14 one. Which
+> interpreter a bare `python` hits depends on whether conda is active in that
+> shell, so spell it out rather than trusting the PATH. Every AD3 tool here is
+> affected; the pure-maths tools (`subxo_model`, `subxo_compare`, the plotters)
+> run under any of them.
+>
+> If you get it wrong the script now says so and names the interpreter that
+> works, rather than dying on `ModuleNotFoundError`.
 >
 > It knows detent 1 is the unverified one and scores it against a ±10 % band
 > rather than a point, and if the corner lands outside that band it **back-solves

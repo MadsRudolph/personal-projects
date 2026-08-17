@@ -59,6 +59,48 @@ DETENTS = [
 C1_1_TOL = 0.10
 
 
+def pydwf_help():
+    """Say which interpreter to use, instead of a bare ModuleNotFoundError.
+
+    This machine has several Pythons -- a conda base, the py launcher's 3.11
+    through 3.13, and a bare 3.14 -- and pydwf is installed in only one of
+    them. A plain import error sends you hunting; naming the interpreter that
+    actually works does not.
+    """
+    import subprocess
+    candidates = [
+        r"C:\Python314\python.exe",
+        r"C:\Users\Mads2\miniconda3\python.exe",
+        r"C:\Users\Mads2\anaconda3\python.exe",
+    ]
+    working = []
+    for exe in candidates:
+        if not Path(exe).exists() or exe == sys.executable:
+            continue
+        try:
+            r = subprocess.run([exe, "-c", "import pydwf; print(pydwf.__version__)"],
+                               capture_output=True, text=True, timeout=25)
+            if r.returncode == 0:
+                working.append((exe, r.stdout.strip()))
+        except Exception:
+            pass
+
+    out = ["", "pydwf is not installed for this interpreter:",
+           f"    {sys.executable}", ""]
+    if working:
+        out.append("It IS installed here -- run the script with this instead:")
+        for exe, ver in working:
+            out.append(f"    {exe}    (pydwf {ver})")
+        out += ["", "e.g.", f'    & "{working[0][0]}" "{Path(__file__).resolve()}" \\',
+                '        --outdir "."']
+    else:
+        out += ["No other interpreter on the usual paths has it either.",
+                "Install it with:  <that python> -m pip install pydwf",
+                "and make sure the Digilent WaveForms SDK is present."]
+    out += ["", "Or run --dry-run, which needs no hardware and no pydwf.", ""]
+    return "\n".join(out)
+
+
 def phasor(x, fs, f0):
     """Complex amplitude at f0 by windowed single-bin DFT."""
     x = np.asarray(x, float)
@@ -235,8 +277,11 @@ def main():
 
     device = None
     if not a.dry_run:
-        from pydwf import DwfLibrary
-        from pydwf.utilities import openDwfDevice
+        try:
+            from pydwf import DwfLibrary
+            from pydwf.utilities import openDwfDevice
+        except ImportError:
+            sys.exit(pydwf_help())
         ctx = openDwfDevice(DwfLibrary())
         device = ctx.__enter__()
 
