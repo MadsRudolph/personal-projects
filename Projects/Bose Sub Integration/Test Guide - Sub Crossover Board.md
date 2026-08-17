@@ -424,6 +424,28 @@ changes R1 and every corner frequency with it.
 
 ## Gate 5 — The three rotary positions
 
+> [!tip] Run it with `tools/subxo_gate5.py` rather than by hand
+> The script drives the AD3 directly through `pydwf`, so the only manual step
+> is turning the knob. Per detent it sweeps, extracts the corner and the 63 Hz
+> level, scores both against the model, writes a CSV and prints a verdict —
+> then waits for you to click round one position.
+>
+> ```
+> py -3.13 tools/subxo_gate5.py
+> py -3.13 tools/subxo_gate5.py --detents 1 3     # just those two
+> py -3.13 tools/subxo_gate5.py --dry-run         # no AD3, exercise the maths
+> ```
+>
+> It knows detent 1 is the unverified one and scores it against a ±10 % band
+> rather than a point, and if the corner lands outside that band it **back-solves
+> `C1_1`'s actual capacitance from the measured corner** so the part becomes a
+> known quantity instead of a mystery.
+>
+> Defaults match the rig below exactly: 15 Hz–2 kHz, 70 steps, 1 V, 2 V range.
+> `--dry-run` synthesises the curves from the model, which is how the analysis
+> path was verified without hardware — including a deliberate −19 % part, which
+> it correctly failed and then identified to 0.1 %.
+
 Sweep each detent and record. **Reference each curve to its own value at 63 Hz**
 — the bottom of the module's acoustic band, and a stable reference given the
 as-built passband is not flat.
