@@ -338,6 +338,11 @@ confounds A/B by ear, so nudge the level when comparing.
 |---|---|---|
 | 6 — mono sum | +6.02 dB, flat. **Ground the idle input** | **PASS** — see below |
 | 7 — polarity | 0.00 dB / 180.0°, amber on in inverted | **PASS** — see below |
+| 8 — noise, frame grounded | < 1 mV rms, 50 Hz < 100 µV | **PASS** — 58 µV / 39 µV |
+| 8 — noise, frame lifted | for comparison | **PASS** — 75 µV / 56 µV |
+| 9 — headroom | clips at W1 = \_\_ V, or not at 5 V | **PASS** — 4.31 V peak out, 3.52 V rms in |
+| 10 — output chain at `J3` | −0.03 dB at 20 Hz, tip/ring within 0.05 dB, 0 V DC | \_\_ |
+| 11 — in situ | acoustic corner moves as predicted | \_\_ |
 
 ### Gate 6 — mono sum, detent 2
 
@@ -408,8 +413,6 @@ position.
 > The mean was also wrong for this data: a few leaked points dragged `OUT2` to
 > −1.23° while the median sat at −0.05°.
 
-| 8 — noise, frame grounded | < 1 mV rms, 50 Hz < 100 µV | **PASS** — 58 µV / 39 µV |
-| 8 — noise, frame lifted | for comparison | **PASS** — 75 µV / 56 µV |
 ### Gate 8 — noise floor, and what the frame ground is worth
 
 Inputs shorted with wire, generators off, sixteen 1-second records averaged.
@@ -454,9 +457,70 @@ so even lifted there is a 22 dB margin on broadband.
 > a raw peak did. The script now measures the peak over the middle 80% and keeps
 > one raw record so anything genuinely odd can be looked at.
 
-| 9 — headroom | clips at W1 = \_\_ V, or not at 5 V | \_\_ |
-| 10 — output chain at `J3` | −0.03 dB at 20 Hz, tip/ring within 0.05 dB, 0 V DC | \_\_ |
-| 11 — in situ | acoustic corner moves as predicted | \_\_ |
+### Gate 9 — headroom, detent 3
+
+Run with `tools/subxo_gate9.py --detent 3`. 40 Hz, both inputs driven together,
+W1 walked from 0.5 V to its 5 V maximum. Detent 3 is the loudest setting — 1.3 dB
+more passband gain than detent 2 — so it is the one that clips first.
+
+| W1 V | in V | out V pk | gain dB | THD in % | THD out % | h2 % | h3 % |
+|---|---|---|---|---|---|---|---|
+| 0.50 | 0.499 | 0.428 | −1.32 | 0.112 | 0.096 | 0.054 | 0.027 |
+| 1.00 | 0.997 | 0.856 | −1.33 | 0.068 | 0.073 | 0.035 | 0.030 |
+| 1.50 | 1.495 | 1.282 | −1.33 | 0.098 | 0.087 | 0.024 | 0.066 |
+| 2.00 | 1.992 | 1.710 | −1.32 | 0.144 | 0.137 | 0.018 | 0.133 |
+| 2.50 | 2.493 | 2.140 | −1.33 | 0.093 | 0.061 | 0.008 | 0.045 |
+| 3.00 | 2.991 | 2.567 | −1.33 | 0.055 | 0.060 | 0.029 | 0.038 |
+| 3.50 | 3.490 | 2.995 | −1.33 | 0.047 | 0.064 | 0.043 | 0.042 |
+| 4.00 | 3.987 | 3.428 | −1.31 | 0.054 | **0.217** | 0.129 | 0.128 |
+| 4.50 | 4.486 | 3.868 | −1.29 | 0.050 | **0.744** | 0.447 | 0.441 |
+| 5.00 | 4.984 | **4.313** | −1.26 | 0.040 | **1.158** | 0.798 | 0.697 |
+
+Small-signal gain **−1.33 dB**, against the model's −1.26 — and flat to ±0.01 dB
+across a sevenfold change in drive, which is the linearity result underneath the
+headroom one.
+
+| | |
+|---|---|
+| First distortion above the floor | W1 = 4.0 V, **3.43 V peak out**, 2.82 V rms in |
+| 1% THD | W1 = 5.0 V, **4.31 V peak out**, **3.52 V rms in** |
+| Detent 2, for comparison | 3.71 V peak at full drive, never reached 1% |
+
+> [!success] The clipping point is exactly where the rails say it should be
+> 4.31 V peak on a 6 V virtual ground swings between **1.69 V and 10.31 V** —
+> 1.69 V from each rail. A TL074 on a 12 V single supply typically gives up
+> about 1.5 V at each end, so the onset lands within 0.2 V of the datasheet.
+> Nothing here is a fault; the op-amp is doing what a TL074 does.
+>
+> `h2` and `h3` arrive together and stay comparable (0.80% / 0.70% at the top)
+> rather than `h3` dominating, so the limiting is asymmetric — both rails
+> involved, not one clean symmetric clip.
+
+> [!note] The 0.05–0.14% "THD floor" is the instrument, not the board
+> It is an *absolute* residual of roughly 2 mV on the ±25 V range, which is why
+> it falls as a percentage while the signal grows: 0.112% at 0.5 V drive down to
+> 0.040% at 5 V. The input channel proves the output reading is real — the AD3
+> resolved 0.040% at 5 V on the same range, so the 1.158% at OUT1 is the board's
+> own and not the measurement's.
+
+> [!warning] The first run was at the wrong detent
+> It was labelled detent 3 but read −2.59 dB at 40 Hz, which is *detent 2's*
+> figure to 0.06 dB — and matched Gate 7's detent 2 sweep to 0.001 dB. The knob
+> had not been turned. `--detent` only sets the label; the script cannot see the
+> switch. It now scores the small-signal gain against the model and refuses to
+> report a detent the gain does not support.
+
+One loose end, left alone deliberately: the gain rises 0.07 dB over the last
+three points instead of drooping, which is not what compression does. It is
+below any audible threshold and below the accuracy this rig is being trusted
+for. The plausible mechanism is `VGND` moving slightly under load — channel 2 is
+referenced to it, so a virtual ground that sags in antiphase reads as extra
+output. Worth remembering if `VGND` is ever suspected of anything else.
+
+**Practical answer:** 3.52 V rms in before 1% distortion, at the worst detent.
+A 2 V rms source through a unity-gain preamp leaves 4.9 dB of margin. In active
+mode the Saga has gain and could exceed this at maximum volume — but that is far
+above any level this system will be listened at.
 
 ---
 
