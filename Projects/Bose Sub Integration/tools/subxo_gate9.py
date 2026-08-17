@@ -40,6 +40,7 @@ from pathlib import Path
 
 import numpy as np
 
+import subxo_model as m
 from subxo_gate5 import BUFFER, DETENTS, phasor, pydwf_help
 
 RANGES = (5.0, 50.0)         # AD3 spans: +/-2.5 V and +/-25 V
@@ -101,13 +102,17 @@ def step(device, hz, amp, rng_hint):
     raise RuntimeError("unreachable")
 
 
-def fake(hz, amp, clip_at, seed):
+def fake(hz, amp, clip_at, seed, gain_db):
     """A board that soft-clips once the output passes clip_at volts peak."""
     rng = np.random.default_rng(seed)
     fs = BUFFER / (CYCLES / hz)
     t = np.arange(BUFFER) / fs
     drive = amp * np.sin(2 * np.pi * hz * t)
-    want = drive * 10 ** (-2.0 / 20)               # ~-2 dB passband gain
+    # The AD3's generator is not clean either -- about 0.1% second harmonic,
+    # which a linear filter passes straight through. Synthesising it here means
+    # the dry run shows the same instrument floor a real run does.
+    drive = drive + 0.001 * amp * np.sin(2 * np.pi * 2 * hz * t)
+    want = drive * 10 ** (gain_db / 20)            # this detent's passband gain
     out = clip_at * np.tanh(want / clip_at) if clip_at else want
     out += rng.normal(0, 60e-6, BUFFER)
     return drive, out, fs, 50.0, float(np.max(np.abs(out)))
@@ -126,7 +131,7 @@ def main():
     a = ap.parse_args()
 
     dry = a.dry_run or a.dry_run_clean
-    n, label, _c1, _c2, _ = next(d for d in DETENTS if d[0] == a.detent)
+    n, label, c1, c2, _ = next(d for d in DETENTS if d[0] == a.detent)
     outdir = Path(a.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
@@ -155,30 +160,43 @@ def main():
 
     rows, hint = [], RANGES[0]
     try:
+        # Input THD is shown beside output THD because the AD3's own generator
+        # has distortion of its own, and a linear filter passes it straight
+        # through. Without the input column a floor that belongs to the
+        # instrument reads as if it belonged to the board. h2 and h3 are split
+        # out because they say different things: h3 with fundamental droop is
+        # symmetric clipping, h2 alone is one rail being approached -- which is
+        # what a single-supply board does first.
         print(f"  {'W1 V':>6} {'in V':>8} {'out Vpk':>9} {'gain dB':>9} "
-              f"{'THD %':>8} {'range':>7}")
-        print("  " + "-" * 52)
+              f"{'THDin %':>8} {'THD %':>8} {'h2 %':>7} {'h3 %':>7} "
+              f"{'range':>6}")
+        print("  " + "-" * 76)
         for amp in a.amps:
             if dry:
                 ch1, ch2, fs, rng, peak = fake(
-                    a.hz, amp, None if a.dry_run_clean else 3.4, seed=900)
+                    a.hz, amp, None if a.dry_run_clean else 3.4, seed=900,
+                    gain_db=float(m.db(m.response(a.hz, c1, c2))))
             else:
                 ch1, ch2, fs, rng, peak = step(device, a.hz, amp, hint)
                 hint = rng
-            vin, _, _ = analyse(ch1, fs, a.hz)
+            vin, thd_in, _ = analyse(ch1, fs, a.hz)
             vout, thd, harm = analyse(ch2, fs, a.hz)
             gain = 20 * math.log10(vout / vin) if vin > 1e-9 else float("nan")
-            rows.append(dict(amp=amp, vin=vin, vout=vout, gain=gain, thd=thd,
+            h2, h3 = (harm[0] / vout, harm[1] / vout) if vout > 1e-9 else (0, 0)
+            rows.append(dict(amp=amp, vin=vin, vout=vout, gain=gain,
+                             thd_in=thd_in, thd=thd, h2=h2, h3=h3,
                              peak=peak, rng=rng))
             print(f"  {amp:6.2f} {vin:8.3f} {vout:9.3f} {gain:+9.2f} "
-                  f"{thd * 100:8.3f} {rng:7.0f}")
+                  f"{thd_in * 100:8.3f} {thd * 100:8.3f} "
+                  f"{h2 * 100:7.3f} {h3 * 100:7.3f} {rng:6.0f}")
     finally:
         if ctx is not None:
             ctx.__exit__(None, None, None)
 
     with (outdir / "gate9_headroom.csv").open("w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=["amp", "vin", "vout", "gain",
-                                           "thd", "peak", "rng"])
+                                           "thd_in", "thd", "h2", "h3",
+                                           "peak", "rng"])
         w.writeheader()
         w.writerows(rows)
 
@@ -187,9 +205,29 @@ def main():
     clip = next((r for r in rows
                  if r["gain"] < ref - TOL_COMPRESS or r["thd"] > TOL_THD), None)
 
+    floor = float(np.median([r["thd"] for r in rows]))
+    floor_in = float(np.median([r["thd_in"] for r in rows]))
     print(f"\n  small-signal gain      {ref:+.2f} dB")
     print(f"  largest output         {max(r['vout'] for r in rows):.3f} V peak")
+    print(f"  THD floor, in / out    {floor_in * 100:.3f} / {floor * 100:.3f} %")
     print(f"  worst THD              {max(r['thd'] for r in rows) * 100:.3f} %")
+    if floor_in > 0.5 * floor:
+        print(f"    -- the floor is the generator, not the board: the input is "
+              f"already at {floor_in * 100:.3f} %")
+
+    # The script cannot see the knob, so it infers which detent was really
+    # selected by scoring the small-signal gain against the model. Getting this
+    # wrong is silent otherwise, and it matters here: the detents differ by over
+    # a dB of passband gain, so the loudest one is the one that clips first.
+    guess = min(DETENTS, key=lambda d: abs(
+        float(m.db(m.response(a.hz, d[2], d[3]))) - ref))
+    if guess[0] != n:
+        want = float(m.db(m.response(a.hz, c1, c2)))
+        print(f"\n  !! WRONG DETENT. {ref:+.2f} dB at {a.hz:.0f} Hz is detent "
+              f"{guess[0]} ({guess[1]}); detent {n} would read "
+              f"{want:+.2f} dB.")
+        print(f"     The knob was not on {n}. Turn it and run again -- these "
+              f"numbers describe detent {guess[0]}.")
 
     if clip is None:
         top = rows[-1]
