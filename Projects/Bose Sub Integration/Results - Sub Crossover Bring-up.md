@@ -341,7 +341,7 @@ confounds A/B by ear, so nudge the level when comparing.
 | 8 — noise, frame grounded | < 1 mV rms, 50 Hz < 100 µV | **PASS** — 58 µV / 39 µV |
 | 8 — noise, frame lifted | for comparison | **PASS** — 75 µV / 56 µV |
 | 9 — headroom | clips at W1 = \_\_ V, or not at 5 V | **PASS** — 4.31 V peak out, 3.52 V rms in |
-| 10 — output chain at `J3` | −0.03 dB at 20 Hz, tip/ring within 0.05 dB, 0 V DC | \_\_ |
+| 10 — output chain at `J3` | −0.03 dB at 20 Hz, tip/ring within 0.05 dB, 0 V DC | **FAIL — open chain, see below** |
 | 11 — in situ | acoustic corner moves as predicted | \_\_ |
 
 ### Gate 6 — mono sum, detent 2
@@ -521,6 +521,66 @@ output. Worth remembering if `VGND` is ever suspected of anything else.
 A 2 V rms source through a unity-gain preamp leaves 4.9 dB of margin. In active
 mode the Saga has gain and could exceed this at maximum volume — but that is far
 above any level this system will be listened at.
+
+### Gate 10 — output chain: FAIL, open somewhere after `POT_W`
+
+Two runs, the second after re-seating the pot and turning it to maximum. Both
+show effectively nothing arriving at the jack.
+
+| | Run 1 | Run 2 |
+|---|---|---|
+| Pot at max vs `OUT1`, 20 Hz | −80.6 dB | −69.3 dB |
+| Pot at max vs `OUT1`, 60–200 Hz | −70.5 dB | −65.5 dB |
+| Ring vs tip | +0.667 dB, −1.51° | +0.519 dB, +0.87° |
+| DC at tip / ring | +2.8 / +2.9 mV | +2.9 / +6.1 mV |
+
+> [!danger] The tip/ring mismatch is the diagnosis, not the level
+> `R5` and `R6` are 100 Ω each and both land on `POT_W`, so tip and ring are
+> joined through **200 Ω regardless of what the pot does** — even with the wiper
+> completely open. Against the scope's 1 MΩ that forces the two nodes to agree
+> within about 0.001 dB.
+>
+> They disagree by 0.5–0.7 dB with the phase wandering, and in run 2 the ring
+> swung 20 dB between adjacent frequencies (82 µV at 15 Hz, 1930 µV at 53 Hz,
+> 242 µV at 184 Hz). Two independent floating nodes picking up mains, not one
+> node feeding two resistors. **The break is at `R5`/`R6`/`J3`, downstream of
+> the pot** — which is why re-seating the pot changed nothing.
+>
+> Run 1's tip rose at roughly 6 dB/octave, the signature of ~0.5 pF of stray
+> capacitance into a high-impedance node. Confirms floating rather than
+> attenuated.
+
+> [!warning] The DC pass is meaningless so far
+> Both runs "passed" the DC check while measuring a floating node. `C_out` has
+> not been tested. That check is the one protecting the driver at power-on, so
+> **it does not count until the chain is continuous.**
+
+Next session, power off, DMM on ohms. The first row decides it:
+
+| From | To | Expect | Tests |
+|---|---|---|---|
+| `J3.1` | `J3.2` | **200 Ω** | R5 + R6 both present — the decisive one |
+| `J3.1` | `J6.2` | 100 Ω | R5 and its traces |
+| `J3.2` | `J6.2` | 100 Ω | R6 and its traces |
+| `J3.3` | `J1.2` | 0 Ω (JP3 in) / 10 Ω (out) | `OUT_GND` return |
+| `J6.1` | `C_out1` − | 0 Ω | C_out to `POT_TOP` |
+| `C_out1` + | `J5.3` | 0 Ω | `SW_COM` return from the switch |
+| `J6.1` | `J6.3` | 10 kΩ | pot fitted |
+| `J6.1` | `J6.2` | ~0 Ω at max | wiper reaches the top |
+
+Visual first: are `R5` and `R6` actually populated, and is `J3` soldered on all
+three pins? A lifted pad or an uncut isolation channel is easy to miss on a
+single-sided milled board.
+
+> [!note] This is the least-verified copper on the board
+> Gates 5–9 all stop at `OUT1`, upstream of `C_out`. Gate 10 was deferred on
+> rev A for want of a pot, so `C_out1`, `R5`, `R6`, `R7`, `JP3`, `J3` and `J6`
+> have never carried a verified signal in either revision. A fabrication fault
+> here would have gone unnoticed until exactly this point.
+
+Gate 0's `J3.3`→`J1.2` continuity row and Gate 2's `POT_TOP` / `OUT_TIP` /
+`OUT_RING` DC rows would have caught this cold. Their `Measured` columns are
+still empty — worth filling in while the meter is out.
 
 ---
 
