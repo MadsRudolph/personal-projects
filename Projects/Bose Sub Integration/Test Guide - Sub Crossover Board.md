@@ -721,6 +721,26 @@ earning its keep, and whether the JP3 lift is ever needed.
 
 ## Gate 9 — Headroom
 
+> [!tip] `tools/subxo_gate9.py` — one setup, walks the amplitude itself
+> ```
+> & "C:\Python314\python.exe" tools/subxo_gate9.py
+> & "C:\Python314\python.exe" tools/subxo_gate9.py --detent 3   # most output
+> ```
+>
+> Drives 40 Hz and steps W1 from 0.5 V to its 5 V maximum, measuring the
+> fundamental and the 2nd through 5th harmonics at each step. Clipping is caught
+> two ways — gain compression against the small-signal value, and THD — because
+> a soft clip bends the gain before it looks like distortion.
+>
+> **The scope auto-ranges.** At 5 V drive the output reaches ~3.5 V peak, which
+> does not fit the ±2.5 V range the earlier gates used.
+>
+> Remove the Gate 8 input shorts first. Both outcomes are a pass; the script
+> prints the maximum input in V rms either way, which is the number to compare
+> against the Saga.
+
+
+
 Drive **40 Hz** (well inside the passband on every setting). Raise W1 from 0.5 V
 amplitude to its **5 V maximum** while watching `OUT1` on the scope for
 flat-topping, and the Spectrum Analyzer for harmonics rising out of the floor.
@@ -741,6 +761,27 @@ active mode has gain and the board is on a single 12 V rail.
 ---
 
 ## Gate 10 — Output chain
+
+> [!tip] `tools/subxo_gate10.py` — the gate that has been empty since rev A
+> ```
+> & "C:\Python314\python.exe" tools/subxo_gate10.py
+> & "C:\Python314\python.exe" tools/subxo_gate10.py --dry-run-dc
+> ```
+>
+> Three sweeps: `OUT1` as reference, then tip and ring at `J3`. It checks the
+> `C_out` high-pass (about −0.03 dB at 20 Hz, nothing above 60), the tip-to-ring
+> match at 0.05 dB, and **the DC at the jack**, which it measures directly by
+> switching the generators off between sweeps.
+>
+> The DC check is the one that protects hardware. Any DC at the jack thumps the
+> driver at power-on, and `C_out` is the only thing between 6 V and the module.
+> `--dry-run-dc` synthesises a leaky cap to prove the check fires.
+>
+> **The 3.5 mm jack need not be fitted** — `J3` is a screw terminal, clip onto
+> it. And turn the pot end to end by hand afterwards, listening for crackle or a
+> dead spot; no instrument catches that.
+
+
 
 **Deferred through all of rev A because the pot was never bought. It can finally
 run.** The 10 kΩ pot is on `J6` (pin 1 top, pin 2 wiper, pin 3 ground) and the
