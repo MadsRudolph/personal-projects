@@ -6,8 +6,11 @@ three settings on one pair of axes, with the as-built model overlaid so the
 agreement is visible rather than merely asserted. Each corner is marked where
 the curve passes 3 dB below its own 63 Hz level -- the definition Gate 5 uses.
 
-    python plot_gate5.py --out gate5_light.png
-    python plot_gate5.py --out gate5_dark.png --theme dark
+Figures belong beside the other plots at the top of the project folder, where
+Obsidian can embed them -- not in tools/ next to this script. From there:
+
+    python tools/plot_gate5.py --dir tools --out gate5-bode.png
+    python tools/plot_gate5.py --dir tools --out gate5-bode-dark.png --theme dark
 
 Runs under any interpreter with numpy and matplotlib -- no pydwf, no hardware.
 Styling follows plot_impedance.py so the figures sit together in the log.

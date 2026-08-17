@@ -301,6 +301,24 @@ deviations point the same way, and one parameter explains them.
 > shape errors of 0.04, 0.17 and 0.09 dB. The board was never at fault; the
 > model was wrong about one capacitor.
 
+![[gate5-bode.png]]
+
+*Points measured on the AD3, lines are the as-built model. Corners marked where
+each curve passes 3 dB below its own 63 Hz level. Shaded band is the 20–120 Hz
+the Companion 5 module actually plays. A dark version is at
+`gate5-bode-dark.png`; regenerate either with:*
+
+```
+python tools/plot_gate5.py --dir tools --out gate5-bode.png
+python tools/plot_gate5.py --dir tools --out gate5-bode-dark.png --theme dark
+```
+
+### Repeatability
+
+Swept twice. Corners came back at 94.9 / 136.9 / 179.0 Hz and 94.9 / 136.9 /
+178.9 Hz — **within 0.1 Hz** across the whole gate, which says the rotary
+contacts and the loom are stable and that neither run was a fluke.
+
 ### The operating table, rev B
 
 | Detent | Corner | Level at 63 Hz | Step |
