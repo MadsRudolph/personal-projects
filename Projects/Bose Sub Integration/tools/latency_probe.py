@@ -22,13 +22,16 @@ Wiring (NO reference resistor -- W1 drives the aux jack directly):
 Delay is found by cross-correlating the two captures, which locates the
 alignment to a fraction of a sample rather than by eye on a cursor.
 
-    py -3.13 latency_probe.py                  # tip only
-    py -3.13 latency_probe.py --label tip+ring # after tying red to tip
+    python latency_probe.py                  # tip only
+    python latency_probe.py --label tip+ring # after tying red to tip
 
 Verdict thresholds:
     < 0.2 ms   analog path, no DSP          -> gate 2 passes
     0.2-3 ms   borderline, 0.4 decides
     > 3 ms     digitiser present            -> gate 2 fails, pivot
+Needs pydwf, which lives in the Python 3.14 install -- run this with
+``python``, not ``py -3.13``. The pure-maths tools (subxo_model,
+subxo_compare, plot_*) run under either.
 """
 
 import argparse

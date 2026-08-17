@@ -431,10 +431,14 @@ changes R1 and every corner frequency with it.
 > then waits for you to click round one position.
 >
 > ```
-> py -3.13 tools/subxo_gate5.py
-> py -3.13 tools/subxo_gate5.py --detents 1 3     # just those two
-> py -3.13 tools/subxo_gate5.py --dry-run         # no AD3, exercise the maths
+> python tools/subxo_gate5.py
+> python tools/subxo_gate5.py --detents 1 3     # just those two
+> python tools/subxo_gate5.py --dry-run         # no AD3, exercise the maths
 > ```
+>
+> **`python`, not `py -3.13`.** `pydwf` is installed in the Python 3.14 tree,
+> so every AD3 tool here needs the bare `python` launcher. The pure-maths tools
+> — `subxo_model`, `subxo_compare`, the plotters — run under either.
 >
 > It knows detent 1 is the unverified one and scores it against a ±10 % band
 > rather than a point, and if the corner lands outside that band it **back-solves

@@ -9,9 +9,9 @@ Per detent it sweeps, extracts the corner and the 63 Hz level, scores them
 against ``subxo_model``, writes a CSV, and prints a verdict. Then it waits for
 you to click round one detent and does it again.
 
-    py -3.13 subxo_gate5.py                     # all three, prompting between
-    py -3.13 subxo_gate5.py --detents 1 3       # just those two
-    py -3.13 subxo_gate5.py --dry-run           # no hardware: exercise the maths
+    python subxo_gate5.py                     # all three, prompting between
+    python subxo_gate5.py --detents 1 3       # just those two
+    python subxo_gate5.py --dry-run           # no hardware: exercise the maths
 
 Rig -- identical to rev A's so the numbers stay comparable:
 
@@ -28,6 +28,9 @@ about 20 dB of stopband resolution.
 
 The AD3 cannot power this board -- its supplies are +/-5 V and the LM7812 needs
 14 V in. Korad at 15.0 V.
+Needs pydwf, which lives in the Python 3.14 install -- run this with
+``python``, not ``py -3.13``. The pure-maths tools (subxo_model,
+subxo_compare, plot_*) run under either.
 """
 
 import argparse

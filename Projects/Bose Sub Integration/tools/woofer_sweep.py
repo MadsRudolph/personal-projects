@@ -28,12 +28,15 @@ Wiring W2 to the ring means the summing test needs no rewiring: run once
 without --both (tip only) and once with (both channels driven), and compare
 the passband gain.
 
-    py -3.13 woofer_sweep.py --out woofer_tip.csv
-    py -3.13 woofer_sweep.py --out woofer_both.csv --both
+    python woofer_sweep.py --out woofer_tip.csv
+    python woofer_sweep.py --out woofer_both.csv --both
 
 Start with the default 50 mV and raise only if the script says the signal is
 too small. It auto-ranges channel 2 and refuses to report a result it thinks
 is clipped.
+Needs pydwf, which lives in the Python 3.14 install -- run this with
+``python``, not ``py -3.13``. The pure-maths tools (subxo_model,
+subxo_compare, plot_*) run under either.
 """
 
 import argparse

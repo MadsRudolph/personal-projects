@@ -13,8 +13,11 @@ ch1 near zero  -> 1+ and 1- are at the same potential. Either 1+ is not in
 ch2 near ch1   -> DUT open (enamelled conductor, or wrong row).
 ch2 near zero  -> DUT shorted.
 
-    py -3.13 rig_check.py
-    py -3.13 rig_check.py --hz 1000 --amp 0.5
+    python rig_check.py
+    python rig_check.py --hz 1000 --amp 0.5
+Needs pydwf, which lives in the Python 3.14 install -- run this with
+``python``, not ``py -3.13``. The pure-maths tools (subxo_model,
+subxo_compare, plot_*) run under either.
 """
 
 import argparse

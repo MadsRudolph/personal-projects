@@ -25,13 +25,16 @@ tone -- hum, its harmonics, broadband noise -- is rejected.
 
 Usage:
 
-    py -3.13 aux_impedance.py --ref 9800 --out ring_open.csv
-    py -3.13 aux_impedance.py --ref 9800 --out ring_grounded.csv
+    python aux_impedance.py --ref 9800 --out ring_open.csv
+    python aux_impedance.py --ref 9800 --out ring_grounded.csv
 
 What we are looking for: |Z| flat from 20 Hz to 1 kHz means no input coupling
 capacitor, which is what we need. |Z| climbing toward low frequency with the
 phase going capacitive (negative) means a series cap is high-passing the input,
 and where |Z| has risen 3 dB is the corner. A corner above ~20 Hz fails gate 1.
+Needs pydwf, which lives in the Python 3.14 install -- run this with
+``python``, not ``py -3.13``. The pure-maths tools (subxo_model,
+subxo_compare, plot_*) run under either.
 """
 
 import argparse
