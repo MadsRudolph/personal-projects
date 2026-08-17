@@ -608,6 +608,28 @@ makes it a clean test — any tilt at all is diagnostic.
 
 ## Gate 7 — Polarity switch
 
+> [!tip] `tools/subxo_gate7.py` — four sweeps, the blue lead moves twice
+> ```
+> & "C:\Python314\python.exe" tools/subxo_gate7.py
+> & "C:\Python314\python.exe" tools/subxo_gate7.py --no-switch
+> ```
+>
+> Rev A could only test the op-amp because the changeover was never fitted. The
+> script does both halves: `OUT2` against `OUT1` for A2 itself, then `SW_COM` in
+> each lever position for the switch and its wiring.
+>
+> It distinguishes a **constant offset from a drift**. A wrong `R3`/`R4` or a
+> backwards switch shows as a fixed error; only genuine frequency-dependence is
+> reported as A2 slewing. And a switch wired backwards still measures 0 dB and
+> 180° on the pair — it just does it in the wrong positions — so there is an
+> explicit check on the sense, verified with `--dry-run-swapped`.
+>
+> The amber lamp is the one thing it cannot see. Confirm by eye that it lights
+> in **inverted**; if it is reversed, move the `J7` pin 1 wire to the other
+> throw. The audio is right either way, only the lamp lies.
+
+
+
 Move `2+` from J5 pin 1 to **J5 pin 2** (`OUT2`) and re-sweep.
 
 | Check | Expect |
@@ -636,6 +658,33 @@ either way; only the indication is wrong.
 ---
 
 ## Gate 8 — Noise and hum floor
+
+> [!tip] `tools/subxo_gate8.py` — run it twice
+> ```
+> & "C:\Python314\python.exe" tools/subxo_gate8.py --label frame-grounded
+> & "C:\Python314\python.exe" tools/subxo_gate8.py --label frame-lifted
+> ```
+>
+> Not a sweep. Both generators are switched off and the output is recorded with
+> nothing driving it, then averaged into a power spectrum — sixteen 1-second
+> records at 1 Hz resolution. It reports the broadband RMS over 10 Hz–1 kHz,
+> the 50 Hz line, and 100/150 Hz, and **names any other line sticking up** so a
+> rogue tone cannot hide inside a broadband figure that happens to pass.
+>
+> **Short the inputs with wire, not in software.** Gate 6's trick of grounding
+> through an enabled generator is wrong here: that generator has its own noise,
+> and noise is what is being measured. The script disables both outputs.
+>
+> Mains lines are measured over a ±2 Hz window, because 50 Hz is never exactly
+> 50.000 and a tone straddling two bins would otherwise read low. The
+> normalisation was checked against synthesised tones of known amplitude — a
+> 40 µV injection reads 39.7 µV.
+>
+> The two labelled runs are the point. Their difference is what grounding that
+> switch frame is worth, and it decides whether the printed enclosure needs a
+> conductive coating.
+
+
 
 Short **both** inputs to ground (J1.1→J1.2, J2.1→J2.2). W1 off. Scope on `OUT1`
 against `VGND`, ±2 V range, and run the Spectrum Analyzer 10 Hz – 1 kHz.

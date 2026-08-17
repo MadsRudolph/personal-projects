@@ -120,9 +120,13 @@ def sweep(device, freqs, amp1, amp2, rng, cycles, max_window, settle):
         if max(float(np.max(np.abs(ch1 - ch1.mean()))),
                float(np.max(np.abs(ch2 - ch2.mean())))) > limit:
             clipped += 1
-        rows.append(dict(hz=float(hz),
-                         v1=abs(phasor(ch1, fs, float(hz))),
-                         v2=abs(phasor(ch2, fs, float(hz)))))
+        # Phase is not used by Gate 6 but Gate 7 lives or dies on it, and
+        # sharing one sweep keeps both gates on an identical rig.
+        p1, p2 = phasor(ch1, fs, float(hz)), phasor(ch2, fs, float(hz))
+        h = p2 / p1 if abs(p1) > 1e-9 else complex(0)
+        rows.append(dict(hz=float(hz), v1=abs(p1), v2=abs(p2),
+                         mag_db=20 * math.log10(abs(h)) if abs(h) > 0 else -200.0,
+                         phase=math.degrees(np.angle(h))))
     for ch in (0, 1):
         wavegen.configure(ch, False)
     return rows, clipped
@@ -139,8 +143,11 @@ def fake(freqs, c1, c2, amp, which, floating, seed):
         v2 = both / (10 ** (np.asarray(ratio) / 20))
         v1 = np.full(len(freqs), amp if which == "left" else amp * 0.004)
     n = rng.normal(1, 0.0015, len(freqs))
-    return [dict(hz=float(f), v1=float(a), v2=float(b * g))
-            for f, a, b, g in zip(freqs, v1, v2, n)], 0
+    ph = np.degrees(np.angle(m.response(freqs, c1, c2)))
+    return [dict(hz=float(f), v1=float(a), v2=float(b * g),
+                 mag_db=float(20 * np.log10(b * g / a)) if a > 0 else -200.0,
+                 phase=float(q))
+            for f, a, b, g, q in zip(freqs, v1, v2, n, ph)], 0
 
 
 def ratio_db(one, both):
@@ -217,7 +224,8 @@ def main():
                 print(f"    !! {clip} points near full scale -- raise --range")
             got[which] = rows
             with (outdir / f"gate6_{which}.csv").open("w", newline="") as fh:
-                w = csv.DictWriter(fh, fieldnames=["hz", "v1", "v2"])
+                w = csv.DictWriter(fh, fieldnames=["hz", "v1", "v2",
+                                                   "mag_db", "phase"])
                 w.writeheader()
                 w.writerows(rows)
     finally:
