@@ -270,15 +270,49 @@ always read ~6 V because `J6` was empty.
 Detents 2 and 3 use capacitors measured to ±0.3 % on rev A, so they are the
 verdict on the build. Detent 1 gets a band because `C1_1` is a new ±10 % part.
 
-| Detent | C1 / C2 | Corner expected | Corner measured | g(63) expected | g(63) measured |
-|---|---|---|---|---|---|
-| 1 | 470n / 150n | **91.6 – 96.7** | \_\_ | −4.2 to −4.4 | \_\_ |
-| 2 | 150n / 120n | **135.5** | \_\_ | −3.18 | \_\_ |
-| 3 | 220n / 68n | **189.2** | \_\_ | −1.02 | \_\_ |
+Swept 2026-08-17 with `tools/subxo_gate5.py`, 15 Hz–2 kHz, 70 steps, 1 V.
 
-If detent 1 falls outside its band, back `C1_1`'s real value out from the
-measured corner rather than assuming a fault — the same method that pinned
-`C2_3` at −6.2 % out-of-sample.
+| Detent | C1 / C2 | Corner pred | **Corner meas** | g(63) pred | **g(63) meas** | Verdict |
+|---|---|---|---|---|---|---|
+| 1 | 470n / 150n | 94.0 | **94.9** | −4.29 | **−4.36** | PASS |
+| 2 | 150n / 120n | 135.5 | **136.9** | −3.18 | **−3.05** | PASS |
+| 3 | 220n / 68n | 189.2 | **179.0** | −1.02 | **−1.23** | *see below* |
+
+Detent 3 initially failed on shape — 0.59 dB at 222 Hz against a 0.5 dB
+tolerance — with the corner 5.4 % low and the 63 Hz level 0.2 dB down. Both
+deviations point the same way, and one parameter explains them.
+
+> [!important] `C2_3` is not the capacitor rev A measured
+> Fitting the one unknown in each detent against its own 30–400 Hz shape:
+>
+> | Part | Rev A | Rev B fit | rms | Reading |
+> |---|---|---|---|---|
+> | `C1_3` | 143.2 nF | **145.2 nF** | 0.052 dB | +1.4 %, inside rev A's ±1.0σ — same part |
+> | `C1_1` | never fitted | **451.6 nF** | 0.019 dB | −3.9 % on its marked 470n, an ordinary part |
+> | `C2_3` | 63.8 nF ±0.3 % | **68.40 nF** | 0.043 dB | **+7.2 %** — far outside that confidence |
+>
+> `C1_3` agreeing to 1.4 % is what makes this conclusive: the measurement is not
+> drifting, that one part has changed. And 68.40 nF is **+0.6 % of marked 68 nF**
+> — so rev A's headline anomaly, the capacitor that sat 6.2 % low and was
+> confirmed out-of-sample against a held-out setting, is simply no longer in the
+> board. A different 68n went in during the rebuild.
+>
+> Rescored against 451.6 nF and 68.4 nF, **all three detents pass** with worst
+> shape errors of 0.04, 0.17 and 0.09 dB. The board was never at fault; the
+> model was wrong about one capacitor.
+
+### The operating table, rev B
+
+| Detent | Corner | Level at 63 Hz | Step |
+|---|---|---|---|
+| 1 | **94.9 Hz** | −4.36 dB | — |
+| 2 | **136.9 Hz** | −3.05 dB | ×1.443, 0.53 oct |
+| 3 | **179.0 Hz** | −1.23 dB | ×1.308, 0.39 oct |
+
+Span 1.89×, against the 2.01× predicted before `C2_3` turned out to be nominal.
+Slightly narrower and slightly less even, and not worth changing anything for.
+Level spread across the three is 3.13 dB — the pot absorbs it, but it still
+confounds A/B by ear, so nudge the level when comparing.
 
 ## Gates 6–11
 

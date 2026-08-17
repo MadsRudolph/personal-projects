@@ -48,13 +48,24 @@ from subxo_compare import measured_corner, REF_HZ, SHAPE_LO, SHAPE_HI, SHAPE_TOL
 BUFFER = 16384
 
 # (detent, label, C1, C2, c1_is_unverified)
-# C1_2/C1_3 and all three C2 come from rev A's five-parameter fit, residual
-# 0.96 sigma. C1_1 is a new part nobody has measured, so detent 1 is scored
-# against a +/-10% band instead of a point.
+# C1_2, C1_3, C2_1 and C2_2 come from rev A's five-parameter fit, residual
+# 0.96 sigma, and rev B's sweeps corroborate them -- fitting C1_3 against
+# detent 2 alone lands within 1.4% of rev A's value.
+#
+# Two changed. C1_1 was never fitted at all on rev A because it was not
+# populated; detent 1 puts it at 451.6 nF, -3.9% on its marked 470n. And C2_3
+# is no longer the part rev A measured: rev A fitted it to 63.8 nF at +/-0.3%
+# and confirmed that out-of-sample, while rev B's detent 3 wants 68.4 nF. A
+# 7.2% move is far outside that confidence, so a different 68n capacitor went
+# in during the rebuild -- and this one sits +0.6% of its marking, so rev A's
+# headline anomaly has simply left the board.
+#
+# Both are now measured quantities, so every detent is scored against a point
+# and a tolerance band rather than a guess.
 DETENTS = [
-    (1, "470n / 150n", 470.0e-9, 150.7e-9, True),
+    (1, "470n / 150n", 451.6e-9, 150.7e-9, False),
     (2, "150n / 120n", 143.2e-9, 121.2e-9, False),
-    (3, "220n / 68n", 221.7e-9, 63.8e-9, False),
+    (3, "220n / 68n", 221.7e-9, 68.4e-9, False),
 ]
 C1_1_TOL = 0.10
 
@@ -128,6 +139,13 @@ def sweep(device, freqs, amp, rng, cycles, max_window, settle):
         scope.channelRangeSet(ch, rng)
     scope.acquisitionModeSet(DwfAcquisitionMode.Single)
 
+    # The AD3 snaps to its own ranges -- ask for 2 V and you get the +/-2.5 V
+    # one, a 5 V span. Judge headroom against what the device actually set, and
+    # against peak amplitude rather than peak-to-peak: comparing a 2 Vpp drive
+    # to 0.9 x a 2 V requested span flags every point on every sweep.
+    actual = float(scope.channelRangeGet(0))
+    limit = 0.45 * actual
+
     rows, clipped = [], 0
     for hz in freqs:
         wavegen.nodeFrequencySet(0, DwfAnalogOutNode.Carrier, float(hz))
@@ -144,7 +162,9 @@ def sweep(device, freqs, amp, rng, cycles, max_window, settle):
         ch1 = np.array(scope.statusData(0, BUFFER))
         ch2 = np.array(scope.statusData(1, BUFFER))
 
-        if max(np.ptp(ch1), np.ptp(ch2)) > 0.9 * rng:
+        peak = max(float(np.max(np.abs(ch1 - ch1.mean()))),
+                   float(np.max(np.abs(ch2 - ch2.mean()))))
+        if peak > limit:
             clipped += 1
 
         v1, v2 = phasor(ch1, fs, float(hz)), phasor(ch2, fs, float(hz))
