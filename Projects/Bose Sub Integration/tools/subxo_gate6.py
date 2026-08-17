@@ -165,7 +165,11 @@ def main():
     ap.add_argument("--steps", type=int, default=50)
     ap.add_argument("--amp", type=float, default=1.0)
     ap.add_argument("--range", type=float, default=2.0)
-    ap.add_argument("--cycles", type=float, default=16.0)
+    # 128, not 16 -- see Gate 7. A short window cannot separate a 50 Hz mains
+    # harmonic from a drive frequency sitting near it, and the leak lands in the
+    # measurement bin. The 134.9 Hz outlier in the first Gate 6 run was exactly
+    # that: 15 Hz from the 150 Hz harmonic, with an 8.4 Hz bin.
+    ap.add_argument("--cycles", type=float, default=128.0)
     ap.add_argument("--max-window", type=float, default=1.0)
     ap.add_argument("--settle", type=float, default=0.05)
     ap.add_argument("--outdir", default=".")
