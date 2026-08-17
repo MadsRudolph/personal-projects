@@ -337,7 +337,7 @@ confounds A/B by ear, so nudge the level when comparing.
 | Gate | Want | Result |
 |---|---|---|
 | 6 — mono sum | +6.02 dB, flat. **Ground the idle input** | **PASS** — see below |
-| 7 — polarity | 0.00 dB / 180.0°, amber on in inverted | \_\_ |
+| 7 — polarity | 0.00 dB / 180.0°, amber on in inverted | **PASS** — see below |
 
 ### Gate 6 — mono sum, detent 2
 
@@ -375,6 +375,38 @@ the real 2:1 divider rather than a coincidence.
 >
 > Raising `--amp` to 2 V would halve the relative residual if the band ever
 > needs to reach higher.
+
+### Gate 7 — polarity, detent 2
+
+`tools/subxo_gate7.py`, 128-cycle windows, judged over 15–200 Hz.
+
+| | Magnitude | Phase |
+|---|---|---|
+| `OUT2` against `OUT1` | **−0.002 dB** | **180.08°** |
+| `SW_COM` normal against `OUT1` — *the null* | −0.017 dB | −0.25° |
+| `SW_COM` inverted against `OUT2` | −0.005 dB | −0.09° |
+
+A2 is a textbook inverter and the switch selects the right output in each lever
+position.
+
+> [!note] The null is what makes the number believable
+> `SW_COM` in NORMAL is `OUT1` reached through a closed contact — the same node
+> measured twice — so anything it shows is the rig. It scatters 0.32° with a
+> worst point of 2.88°, which puts the guide's ±0.5° figure right at the edge of
+> what this setup resolves between separate sweeps. `OUT2`'s 0.08° error is
+> comfortably inside that, and the two remaining outliers at 126.6 and 162.7 Hz
+> appear in the null too.
+
+> [!warning] The first attempt failed, and the board was never the problem
+> A 16-cycle window at 305 Hz is 19 Hz wide, so the 300 Hz mains harmonic landed
+> inside the measurement bin. Every bad point — 52.6, 304.6, 391.5, 570, 831,
+> 1211, 1556 Hz — sat within two bin widths of a multiple of 50 Hz. Lengthening
+> the window to 128 cycles resolves them apart; the same change fixed Gate 6's
+> lone 134.9 Hz outlier, which was 15 Hz from the 150 Hz harmonic with an 8.4 Hz
+> bin.
+>
+> The mean was also wrong for this data: a few leaked points dragged `OUT2` to
+> −1.23° while the median sat at −0.05°.
 
 | 8 — noise, frame grounded | < 1 mV rms, 50 Hz < 100 µV | \_\_ |
 | 8 — noise, frame lifted | for comparison | \_\_ |
