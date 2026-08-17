@@ -8,9 +8,9 @@ tags:
   - crossover
   - measurement
   - active-project
-status: Board populated, not yet powered
+status: Rev B built and wired; bring-up outstanding
 started: 2026-08-14
-updated: 2026-08-14
+updated: 2026-08-16
 ---
 
 # Test Guide - Sub Crossover Board
@@ -24,6 +24,32 @@ updated: 2026-08-14
 >
 > Gates run in order. **A failed gate stops the run** — do not carry a fault
 > forward into a measurement and then try to interpret the result.
+
+---
+
+## This is now the rev B procedure
+
+Rev A was built, measured through Gate 5 and characterised in
+[[Results - Sub Crossover Bring-up]]. Rev B is a new board with the panel
+hardware wired. **Four things have never been powered**, so this is a fresh
+bring-up rather than a re-test:
+
+| New in rev B | Why it changes the procedure |
+|---|---|
+| `C1_1` fitted at **470 nF** | Rev A left it out. Its value is unverified, so position 1's corner gets a *band*, not a point |
+| **`LK1` ground link** | The GND pour fills as two islands and this wire bridges them. Without it the board has no supply return at all — new Gate 0 check |
+| **`D1`/`D2` status LEDs** | Adds ~2.13 mA each, so every current figure in Gate 1 moved |
+| **Rotary switch on `JP1`/`JP2`** | Three ganged positions replace nine jumper combinations, and the loom is the most likely new source of hum |
+
+Also now fitted, where rev A ran without them: the **10 kΩ pot** on `J6` (which
+is why Gate 10 was deferred), and the **polarity switch** on `J5`, whose second
+pole drives `D2`.
+
+> [!warning] Two instructions elsewhere in this document are stale
+> Gate 0 item 7 said *"JP1 pos 1 stays open for the whole run, C1_1 is not
+> fitted."* That is no longer true. And Gate 2's long warning about `POT_TOP`
+> floating to 6 V applied only while `J6` was empty. Both are corrected in place
+> below; this note exists in case you are reading an older copy.
 
 ---
 
@@ -106,9 +132,9 @@ anyway, so it likely costs level rather than shape — and the pot absorbs level
 | **Working AD3** | Not the one in [[AD3 Repair]] — that unit's analog supply is still faulty |
 | **Korad KD3005D** | Set to **15.0 V**, current limit **50 mA** for first power-up |
 | DMM | Continuity and DC survey |
-| 2× jumper leads with the 6-pin headers | JP1 / JP2 shunts |
-| Short wire links | For J5 and J6 — the switch and pot are off-board |
-| 10 kΩ pot, 2-pole changeover switch | Only needed from Gate 9 onward |
+| **Panel hardware, already wired** | Rotary on `JP1`/`JP2`, polarity switch on `J5` + `J7`, 10 kΩ pot on `J6`. All fitted for rev B |
+| 1 jumper shunt | `JP3` only. The rotary frees `JP1`/`JP2`, so the old third-shunt problem is gone |
+| *(optional)* spare shunts | To fall back to jumper selection if the rotary misbehaves |
 
 > [!danger] J4 has no reverse-polarity protection
 > `VIN` goes straight from J4 pin 1 into `C10` (100 µF electrolytic) and the
@@ -141,25 +167,46 @@ no need to probe the DIP or the SMD-free copper anywhere.
 | **`OUT1` — filter output** | **J5 pin 1** | 6.0 V |
 | `OUT2` — inverted | J5 pin 2 | 6.0 V |
 | `SW_COM` | J5 pin 3 | 6.0 V (link fitted) |
-| `POT_TOP` — after C_out | J6 pin 1 | **0 V** |
+| `POT_TOP` — after C_out | J6 pin 1 | **0 V** (pot now fitted, so this is real) |
 | `POT_W` — wiper | J6 pin 2 | 0 V |
 | `OUT_TIP` / `OUT_RING` | J3 pin 1 / pin 2 | 0 V |
 | `OUT_GND` | J3 pin 3 | 0 V |
+| **`GND_LNK`** — power-corner ground | J4 pin 2 | 0 V, and **~0 Ω to J1 pin 2** |
+| `PWR_A` — green LED anode | junction of R10 / D1 | ~2 V |
+| `INV_K` — amber LED cathode | J7 pin 1 | 0 V inverted, ~10 V normal |
 
 > [!important] JP1 and JP2 even pins are **not** the same net
 > JP2 pins 2/4/6 are `VGND` — the 6 V reference, and the right place to clip a
 > scope negative. JP1 pins 2/4/6 are `N1` — a live filter node. Clipping a scope
 > ground to JP1 shorts the filter.
 
-### Jumper settings
+### Capacitor selection — now a rotary, not jumpers
 
-- **JP1 selects C1.** Pin 1 ↔ `C1_1` (**not fitted — leave open**), pin 3 ↔
-  `C1_2` 220n, pin 5 ↔ `C1_3` 150n. Shunt bridges the odd pin to its even
-  neighbour. **Both pos2 and pos3 fitted = 220n ∥ 150n = 370 nF.**
-- **JP2 selects C2.** Pin 1 ↔ `C2_1` 150n, pin 3 ↔ `C2_2` **120n** (as built),
-  pin 5 ↔ `C2_3` 68n. Exactly one shunt.
+- **JP1 selects C1.** Pin 1 ↔ `C1_1` **470n (fitted on rev B)**, pin 3 ↔ `C1_2`
+  220n, pin 5 ↔ `C1_3` 150n. Even pins are `N1`.
+- **JP2 selects C2.** Pin 1 ↔ `C2_1` 150n, pin 3 ↔ `C2_2` 120n, pin 5 ↔ `C2_3`
+  68n. Even pins are `VGND`.
 - **JP3 is the ground lift.** Shunt fitted = input and output grounds hard-tied.
   Removed = joined only through R7's 10 Ω. **Fit it for all bench testing.**
+
+A 2-pole 3-position rotary now drives both headers, one pole each:
+
+| Detent | `JP1` even ↔ | C1 | `JP2` even ↔ | C2 | Corner |
+|---|---|---|---|---|---|
+| 1 | pin 1 | 470n | pin 1 | 150n | ~94 Hz |
+| 2 | pin 5 | 150n | pin 3 | 120n | 135.5 Hz |
+| 3 | pin 3 | 220n | pin 5 | 68n | 189.2 Hz |
+
+> [!danger] Never wire one header pin to two switch lugs
+> Splitting a wire ties those lugs together permanently — the rotary isolates
+> common from lugs, not lugs from each other. Every position then collapses to
+> the same capacitance and you measure three identical curves. This is why
+> `C1_1` is fitted rather than paralleling `C1_2 ∥ C1_3` on one lug, which is
+> what rev A did with two shunts.
+
+Jumper selection still works as a fallback if the rotary has to come off — with
+`C1_1` fitted there are nine combinations again, but the values differ from
+rev A's, so re-derive rather than reusing the old table.
 
 ---
 
@@ -182,11 +229,41 @@ parts.
    pin 2, `V12` pin 3.
 6. **Ground lift.** Continuity J3 pin 3 → J1 pin 2: **0 Ω with the JP3 shunt
    fitted, 10 Ω without.** Both readings prove R7 and JP3 are both real.
-7. **JP1 pos 1 stays open** for the whole run. `C1_1` is not fitted.
+7. **LED orientation.** Square pad is the cathode on both. `D1` green, `D2`
+   amber.
+
+### Gate 0b — the two rev B checks
+
+> [!danger] `LK1` first, before anything else
+> Meter **J4 pin 2 → J1 pin 2**. Must be **~0 Ω**.
+>
+> Those are `GND_LNK` and `GND`, two separate nets bridged only by the `LK1`
+> wire link. Power enters the board at `J4.2` and the TL074's ground pin is on
+> the other side, so with `LK1` open or cold-jointed the board has **no supply
+> return at all**. It will look stone dead while measuring a healthy 12 V on the
+> rail — the most confusing possible failure, and a five-second check.
+
+**Verify the rotary cold.** This catches every loom error before power is
+applied. For each detent, probe a `JP1` even pin against each odd pin, then the
+same on `JP2`:
+
+| Detent | `JP1` even ↔ | `JP2` even ↔ |
+|---|---|---|
+| 1 | pin **1** only | pin **1** only |
+| 2 | pin **5** only | pin **3** only |
+| 3 | pin **3** only | pin **5** only |
+
+**"Only" is the whole point.** Continuity to two odd pins in one detent means
+lugs are tied together and all three positions will measure the same.
+
+Also confirm **`A0` ↔ `B0` open in every detent** — a wafer that busses its
+commons would tie `N1` to `VGND` and silence the filter. And if the switch frame
+is grounded, confirm the frame reads open to all eight lugs first.
 
 > [!success] Gate 0 passes when
-> No short on either rail, every electrolytic the right way round, and JP3
-> switching cleanly between 0 Ω and 10 Ω.
+> No short on either rail, every electrolytic the right way round, JP3 switching
+> cleanly between 0 Ω and 10 Ω, **`LK1` reading ~0 Ω**, and the rotary selecting
+> exactly one capacitor per pole per detent.
 
 ---
 
@@ -194,11 +271,17 @@ parts.
 
 **U1 out of its socket.** Korad at **15.0 V, 50 mA limit**.
 
+> [!important] Every current figure below includes the new LEDs
+> `D1` and `D2` each draw **(12 − 2.0) / 4700 = 2.13 mA**. `D1` is always lit;
+> `D2` only in the inverted position. Rev A's 4–8 and 10–16 mA bands no longer
+> apply.
+
 | Check | Expect |
 |---|---|
-| Supply current | **4–8 mA** (LM7812 quiescent + the 10k/10k divider) |
+| Supply current, switch NORMAL | **6–10 mA** (LM7812 + divider + `D1`) |
 | `V12` | **12.0 V ± 0.25** |
 | `VG_DIV` | **6.0 V ± 0.1** |
+| Green LED | Lit |
 | LM7812 temperature | Cold. It drops 3 V at ~10 mA = 36 mW |
 
 If the Korad current-limits, kill it. Something is shorted that Gate 0 missed.
@@ -207,12 +290,24 @@ Power down. **Insert U1**, notch correct. Power up again.
 
 | Check | Expect |
 |---|---|
-| Supply current | **10–16 mA** |
+| Supply current, NORMAL | **12–18 mA** |
+| Supply current, INVERTED | **14–20 mA** |
 | `V12` | unchanged, 12.0 V ± 0.25 |
 
+**Flip the polarity switch and watch the current.** It should step by about
+**2 mA** as the amber LED comes on. That one observation verifies `D2`, `R11`,
+`J7` and the whole second pole of the switch at once.
+
+> [!warning] If the amber lamp lights in the NORMAL position
+> The lamp pole is phased backwards. Move the `J7` pin 1 wire from the bottom
+> lug to the top lug of that pole. Harmless — the two poles are electrically
+> independent, so the audio is unaffected either way. It just lies to you about
+> which mode you are in.
+
 > [!success] Gate 1 passes when
-> Current lands in the 10–16 mA band and the rail holds 12 V. Anything above
-> ~25 mA means an op-amp section is oscillating or a pin is shorted.
+> Current lands in the 12–18 mA band, steps ~2 mA with the polarity switch, and
+> the rail holds 12 V. Anything above ~30 mA means an op-amp section is
+> oscillating or a pin is shorted.
 
 ---
 
@@ -230,26 +325,23 @@ at exactly 6.00 V because **no DC current flows through the filter** — `C1` an
 | `OUT1` (J5 pin 1) | 6.00 ± 0.05 V | **At a rail = A1 has no DC path. Check R_b.** |
 | `OUT2` (J5 pin 2) | 6.00 ± 0.05 V | A2 or R3/R4 |
 | `SPARE_OUT` (U1 pin 14) | 6.00 ± 0.05 V | A4 not terminated — it will oscillate into its neighbours |
-| `POT_TOP` (J6 pin 1) | **0.00 ± 0.01 V** — *only with the pot fitted* | C_out leaky or backwards |
+| `POT_TOP` (J6 pin 1) | **0.00 ± 0.01 V** | C_out leaky or backwards, **or the pot is not connected** |
+| `OUT_TIP` / `OUT_RING` (J3 pins 1, 2) | **0.00 V** | DC here thumps the driver at power-on |
 
-> [!warning] `POT_TOP` reads ~6 V, not 0 V, if J6 is empty
-> That 0 V expectation assumes the 10 kΩ pot is on J6 holding the node down.
-> With J6 unconnected, `POT_TOP` is a floating plate: `C_out` self-discharges
-> through its own leakage, the capacitor voltage collapses, and the node drifts
-> **up to `SW_COM` — about 6 V**. That is correct behaviour for an unloaded
-> coupling cap, not a fault.
+> [!note] This is the first run where `POT_TOP` should genuinely read 0 V
+> Rev A always measured ~6 V there and the old guide carried a long explanation
+> of why: with `J6` empty, `POT_TOP` is a floating plate and drifts up to
+> `SW_COM`. The 10 kΩ pot is fitted now, so it holds the node at 0 V and the
+> reading is real.
 >
-> Meter it and the DMM's own 10 MΩ becomes the load, so it will crawl toward
-> 0 V with a **100 s time constant** — minutes to settle. Do not read a slow
-> drift as a leaky capacitor.
->
-> To get a real reading without the pot, put any **10 kΩ resistor from J6 pin 1
-> to J6 pin 3**. That is the pot's bottom leg, it pins the node at 0 V, and
-> `R3`/`R4`/`R8`/`R9` are all 10 kΩ so the value is already in stock.
+> **If it still sits near 6 V, the pot is not connected** — check `J6` pin 3
+> reaches the pot's bottom leg. That is now a wiring fault, not expected
+> behaviour.
 
 > [!success] Gate 2 passes when
-> Every signal node is 6.00 V and `POT_TOP` is 0 V. This single table proves the
-> bias network, all four op-amp sections, and the output coupling cap.
+> Every signal node is 6.00 V, `POT_TOP` is 0 V, and there is no DC at the
+> output terminals. This single table proves the bias network, all four op-amp
+> sections, the output coupling cap and the pot wiring.
 
 ---
 
@@ -288,22 +380,24 @@ It should read −3.01 dB and −45.0° at 159 Hz.
    2− (blue/wht)   ──► JP2 pin 6  VGND     the 6 V reference
 ```
 
-Board links for the sweeps, standing in for the off-board hardware:
+Board state for the sweeps:
 
 - **JP3 shunt fitted.**
-- **J5 and J6 can both stay empty.** Gates 5–9 all probe `OUT1` at J5 pin 1,
-  which is upstream of the switch, `C_out` and the pot. Nothing downstream loads
-  it or changes it.
-- Fit **J5 pin 1 ↔ pin 3** only when you want the signal to reach the output
-  chain. (Pin 2 ↔ pin 3 selects the inverted output instead.)
-- Fit **J6 pin 1 ↔ pin 2** only for Gate 10, to stand in for a pot at maximum.
+- **Rotary fitted** on `JP1`/`JP2`, verified cold at Gate 0b.
+- **Polarity switch on `J5` and `J7`**, pot on `J6` — all real hardware now, no
+  stand-in links needed.
+- Set the polarity switch to **normal** for Gates 5, 6, 8 and 9. Gate 7 is where
+  it gets exercised.
 
-> [!note] No pot yet? Run Gates 5–9 and defer Gate 10
-> The nine transfer functions, the mono sum, the polarity check, the noise floor
-> and the headroom test need nothing on J6. **Only Gate 10 does.** Come back to
-> it when the pot arrives — or substitute a plain 10 kΩ resistor across J6 pins
-> 1→3 plus a link 1→2, which reproduces "pot at maximum" exactly and lets Gate
-> 10 run in full.
+> [!note] Gates 5–9 do not care what is downstream
+> They all probe `OUT1` at `J5` pin 1, which is upstream of the polarity switch,
+> `C_out` and the pot. Nothing below that point loads it or changes it, so the
+> results are directly comparable with rev A's.
+
+> [!important] The 3.5 mm jack is not needed for any electrical gate
+> `J3` is a screw terminal, so **Gate 10 runs by clipping straight onto it** —
+> `2+` on `J3` pin 1, `2−` on `J3` pin 3. Only Gate 11, the acoustic run into
+> the module, needs the jack and cable.
 
 > [!important] Why channel 2 references `VGND`, not ground
 > `OUT1` sits at 6 V DC and the AD3 has no AC coupling. Referenced to ground you
@@ -328,11 +422,39 @@ changes R1 and every corner frequency with it.
 
 ---
 
-## Gate 5 — The nine transfer functions
+## Gate 5 — The three rotary positions
 
-For each JP1 × JP2 combination, sweep and record. **Reference each curve to its
-own value at 63 Hz** — the bottom of the module's acoustic band, and a stable
-reference given the as-built passband is not flat.
+Sweep each detent and record. **Reference each curve to its own value at 63 Hz**
+— the bottom of the module's acoustic band, and a stable reference given the
+as-built passband is not flat.
+
+### What to expect, rev B
+
+| Detent | C1 / C2 | Corner | Gain at 63 Hz | Confidence |
+|---|---|---|---|---|
+| 2 | 150n / 120n | **135.5 Hz** | −3.18 dB | tight — both caps measured |
+| 3 | 220n / 68n | **189.2 Hz** | −1.02 dB | tight — both caps measured |
+| 1 | 470n / 150n | **91.6 – 96.7 Hz** | −4.2 to −4.4 dB | **band, not a point** |
+
+> [!important] Judge the build on detents 2 and 3, not detent 1
+> Those two use capacitors already measured to ±0.3 % during rev A's fit, so
+> they should land within a few tenths of a percent. They are the verdict on
+> whether this build is sound.
+>
+> Detent 1 gets a band because `C1_1` is a **new part at ±10 % that nobody has
+> measured**. 94.0 Hz is nominal; 91.6 Hz is +10 %, 96.7 Hz is −10 %. Anywhere
+> in that span is a good capacitor, not a fault.
+>
+> If detent 1 lands outside the band, back the real value out from the measured
+> corner — the model inverts cleanly, and this is exactly how `C2_3` was pinned
+> down at −6.2 % out-of-sample during rev A.
+
+Three settings, not nine: the rotary gangs `JP1` and `JP2` together. The nine
+individual combinations below remain physically reachable with shunts if the
+loom ever has to come off, but the values differ from rev A's now that `C1_1`
+is fitted, so re-derive rather than reusing the numbers.
+
+### Rev A reference — the nine jumper combinations
 
 ### Predicted corner, and the tolerance band it may legitimately land in
 
@@ -436,8 +558,20 @@ Move `2+` from J5 pin 1 to **J5 pin 2** (`OUT2`) and re-sweep.
 A2 is a unity inverter around `VGND`, so this should be near-perfect. Drift with
 frequency means A2 is slewing or R3/R4 is wrong.
 
-Then fit the real changeover switch to J5 and confirm it selects pin 1 in one
-position and pin 2 in the other, with pin 3 as common.
+### Then the switch itself
+
+The changeover is fitted on rev B, so test it rather than simulate it. Probe
+`2+` on **`J5` pin 3** (`SW_COM`) and sweep in both lever positions:
+
+| Lever | Expect at `SW_COM` | Amber LED |
+|---|---|---|
+| normal | matches `OUT1`, 0° | **off** |
+| inverted | matches `OUT2`, 180° | **on** |
+
+**The lamp is part of this test.** Its pole and the audio pole share one shaft,
+so if the amber lights in the position that measures 0° the lamp pole is phased
+backwards — move the `J7` pin 1 wire to the other throw. The audio is correct
+either way; only the indication is wrong.
 
 ---
 
@@ -455,6 +589,19 @@ against `VGND`, ±2 V range, and run the Spectrum Analyzer 10 Hz – 1 kHz.
 Record the number. It is the baseline for the same measurement once the board is
 in its enclosure — that comparison is what tells you whether the enclosure is
 earning its keep, and whether the JP3 lift is ever needed.
+
+> [!important] On rev B this is the gate that matters most
+> It is the first noise measurement with the **rotary loom** fitted, and that
+> loom is by far the most likely way this build got worse than rev A. One of its
+> wires carries `N1`, about 3 kΩ to AC ground at 50 Hz — the highest-impedance
+> conductor in the whole thing, now on a flying lead instead of a 2.54 mm shunt.
+>
+> Measure it **twice**: once with the rotary's frame ground connected, once with
+> it lifted. The difference is the value of shielding that switch, and it tells
+> you whether the plastic enclosure needs a conductive coating. Record both.
+>
+> Rev A never measured this gate at all, so there is no prior number to compare
+> against — the <1 mV rms and <100 µV at 50 Hz targets are the only reference.
 
 > [!note] Denmark is 50 Hz
 > The 100 k bias resistors make `A_L`/`A_R` the highest-impedance nodes on the
@@ -486,12 +633,13 @@ active mode has gain and the board is on a single 12 V rail.
 
 ## Gate 10 — Output chain
 
-**Needs hardware on J6.** Fit the 10 kΩ pot (pin 1 top, pin 2 wiper, pin 3
-ground) and the changeover switch to J5. Probe `2+` on **J3 pin 1** (tip), `2−`
-on **J3 pin 3** (`OUT_GND`).
+**Deferred through all of rev A because the pot was never bought. It can finally
+run.** The 10 kΩ pot is on `J6` (pin 1 top, pin 2 wiper, pin 3 ground) and the
+changeover is on `J5`.
 
-Without the pot, a **10 kΩ resistor across J6 pins 1→3 and a link 1→2** gives
-"pot at maximum" and covers every row below except the sweep test.
+Probe `2+` on **J3 pin 1** (tip), `2−` on **J3 pin 3** (`OUT_GND`). `J3` is a
+screw terminal, so **the 3.5 mm jack does not need to be fitted** — clip
+directly onto it.
 
 | Check | Expect |
 |---|---|

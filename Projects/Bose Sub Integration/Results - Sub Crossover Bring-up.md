@@ -7,9 +7,9 @@ tags:
   - subwoofer
   - crossover
   - measurement
-status: In progress
+status: Rev A gates 0-5 complete; rev B bring-up outstanding
 started: 2026-08-15
-updated: 2026-08-15
+updated: 2026-08-16
 ---
 
 # Results - Sub Crossover Bring-up
@@ -21,6 +21,11 @@ Rig: W1 → J1.1 + J2.1 (both inputs driven), C1 ref at J1.1, C2 differential
 across J5.1 (`OUT1`) → JP2 even pin (`VGND`). 15 Hz–2 kHz, 70 steps, 1 V, log.
 Supply 15.0 V from the Korad. Pot not yet fitted — J6 left open, Gate 10
 deferred.
+
+> [!info] Everything below this line is **rev A**
+> Rev B is a new board with the panel hardware wired. Its results go in the
+> section at the end, so rev A's data stays intact as the reference the model
+> was fitted against. Procedure: [[Test Guide - Sub Crossover Board]].
 
 ---
 
@@ -211,6 +216,81 @@ stress it are the **370n** ones, where the parallel combination is assumed, and
    C_in. Mostly below where the module plays, so it likely costs level rather
    than shape. Decide after Gate 11, not before.
 3. **Headroom on a single 12 V rail.** The AD3 may not be able to clip it at all.
+
+---
+
+---
+
+# Rev B — new board, panel hardware wired
+
+Fill in as you go. Four things have never been powered: `C1_1` at 470 nF, the
+`LK1` ground link, `D1`/`D2`, and the rotary on `JP1`/`JP2`. Pot and polarity
+switch are fitted, so Gate 10 can finally run.
+
+## Gate 0 — cold checks
+
+| Check | Expect | Measured |
+|---|---|---|
+| `J4` 1→2 | rises, settles > 10 kΩ | \_\_ |
+| `V12` → `GND` | settles high | \_\_ |
+| **`LK1`: J4.2 → J1.2** | **~0 Ω** | \_\_ |
+| Ground lift J3.3 → J1.2, JP3 in / out | 0 Ω / 10 Ω | \_\_ / \_\_ |
+| Rotary detent 1 | `JP1` even↔1 only, `JP2` even↔1 only | \_\_ |
+| Rotary detent 2 | `JP1` even↔5 only, `JP2` even↔3 only | \_\_ |
+| Rotary detent 3 | `JP1` even↔3 only, `JP2` even↔5 only | \_\_ |
+| `A0` ↔ `B0`, all detents | open | \_\_ |
+| Switch frame ↔ all 8 lugs | open | \_\_ |
+
+## Gate 1 — staged power-up
+
+| Check | Expect | Measured |
+|---|---|---|
+| `U1` out, NORMAL | 6–10 mA | \_\_ |
+| `V12` | 12.0 ± 0.25 V | \_\_ |
+| `VG_DIV` | 6.0 ± 0.1 V | \_\_ |
+| `U1` in, NORMAL | 12–18 mA | \_\_ |
+| `U1` in, INVERTED | 14–20 mA | \_\_ |
+| Step when switching | ~2 mA | \_\_ |
+| Amber lights in | inverted | \_\_ |
+
+## Gate 2 — DC survey
+
+All signal nodes 6.00 ± 0.05 V. `POT_TOP` **0.00 V for the first time** — rev A
+always read ~6 V because `J6` was empty.
+
+| Node | Expect | Measured |
+|---|---|---|
+| `VGND`, `A_L`, `A_R`, `N1`, `N2` | 6.00 V | \_\_ |
+| `OUT1`, `OUT2`, `SPARE_OUT` | 6.00 V | \_\_ |
+| `POT_TOP` (J6.1) | **0.00 V** | \_\_ |
+| `OUT_TIP` / `OUT_RING` | 0.00 V | \_\_ |
+
+## Gate 5 — the three rotary positions
+
+Detents 2 and 3 use capacitors measured to ±0.3 % on rev A, so they are the
+verdict on the build. Detent 1 gets a band because `C1_1` is a new ±10 % part.
+
+| Detent | C1 / C2 | Corner expected | Corner measured | g(63) expected | g(63) measured |
+|---|---|---|---|---|---|
+| 1 | 470n / 150n | **91.6 – 96.7** | \_\_ | −4.2 to −4.4 | \_\_ |
+| 2 | 150n / 120n | **135.5** | \_\_ | −3.18 | \_\_ |
+| 3 | 220n / 68n | **189.2** | \_\_ | −1.02 | \_\_ |
+
+If detent 1 falls outside its band, back `C1_1`'s real value out from the
+measured corner rather than assuming a fault — the same method that pinned
+`C2_3` at −6.2 % out-of-sample.
+
+## Gates 6–11
+
+| Gate | Want | Result |
+|---|---|---|
+| 6 — mono sum | +6.02 dB, flat. **Ground the idle input** | \_\_ |
+| 7 — polarity | 0.00 dB / 180.0°, amber on in inverted | \_\_ |
+| 8 — noise, frame grounded | < 1 mV rms, 50 Hz < 100 µV | \_\_ |
+| 8 — noise, frame lifted | for comparison | \_\_ |
+| 9 — headroom | clips at W1 = \_\_ V, or not at 5 V | \_\_ |
+| 10 — output chain at `J3` | −0.03 dB at 20 Hz, tip/ring within 0.05 dB, 0 V DC | \_\_ |
+| 11 — in situ | acoustic corner moves as predicted | \_\_ |
 
 ---
 
