@@ -557,6 +557,33 @@ unusable, and the measurement will say whether it is.
 
 ## Gate 6 — Mono sum
 
+> [!tip] Run it with `tools/subxo_gate6.py` — no rewiring at all
+> ```
+> & "C:\Python314\python.exe" tools/subxo_gate6.py
+> & "C:\Python314\python.exe" tools/subxo_gate6.py --dry-run-floating
+> ```
+>
+> W1 goes to `J1.1` and W2 to `J2.1`, and the idle input is grounded **in
+> software** by setting its generator to zero amplitude while leaving it
+> enabled — an active AD3 output is about 0.5 Ω, which against 16k5 is a short.
+> So all three sweeps run back to back off one Enter.
+>
+> **The channel must stay enabled.** Disable it and the output may go
+> high-impedance, which is the floating case this gate exists to avoid.
+>
+> Rather than only checking the number, it scores the measurement against
+> *both* predictions — `subxo_model.mono_sum_ratio()` gives the grounded and
+> floating cases — and says which one the data matches. A floating input reads
+> −3.5 dB with a 2 dB tilt and is called out as a rig error rather than a board
+> fault. `--dry-run-floating` synthesises exactly that, which is how the check
+> was verified.
+>
+> It also watches channel 1 during the L-grounded sweep. That should collapse
+> to a few percent of the drive; if it does not, W1 is not pulling `J1.1` down
+> and "grounded" is not grounded.
+
+
+
 Three sweeps at one setting (220n / 120n is fine):
 
 1. **Both driven** — W1 to J1.1 and J2.1. Reference.
