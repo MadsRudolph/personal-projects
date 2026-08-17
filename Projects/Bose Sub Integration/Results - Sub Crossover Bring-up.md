@@ -408,8 +408,52 @@ position.
 > The mean was also wrong for this data: a few leaked points dragged `OUT2` to
 > −1.23° while the median sat at −0.05°.
 
-| 8 — noise, frame grounded | < 1 mV rms, 50 Hz < 100 µV | \_\_ |
-| 8 — noise, frame lifted | for comparison | \_\_ |
+| 8 — noise, frame grounded | < 1 mV rms, 50 Hz < 100 µV | **PASS** — 58 µV / 39 µV |
+| 8 — noise, frame lifted | for comparison | **PASS** — 75 µV / 56 µV |
+### Gate 8 — noise floor, and what the frame ground is worth
+
+Inputs shorted with wire, generators off, sixteen 1-second records averaged.
+Detent 2, polarity normal.
+
+| Band | Frame grounded | Frame lifted | Penalty |
+|---|---|---|---|
+| 5–10 Hz | 13.8 µV | 29.2 µV | **+6.5 dB** |
+| 10–45 Hz | 20.1 µV | 28.6 µV | +3.1 dB |
+| 45–55 Hz (mains) | **39.4 µV** | **56.5 µV** | **+3.1 dB** |
+| 55–200 Hz | 21.1 µV | 24.0 µV | +1.1 dB |
+| 200 Hz–1 kHz | 30.7 µV | 31.4 µV | +0.2 dB |
+| 1–2 kHz | 29.9 µV | 28.8 µV | −0.4 dB |
+| **10 Hz–1 kHz total** | **57.9 µV** | **74.7 µV** | **+2.2 dB** |
+
+Both pass comfortably: the targets are < 1 mV broadband and < 100 µV at 50 Hz,
+so even lifted there is a 22 dB margin on broadband.
+
+> [!success] Ground the switch frame — it is worth 3 dB at mains
+> The penalty for lifting it is concentrated exactly where a shield should
+> matter: **+6.5 dB below 10 Hz and +3.1 dB at mains**, tapering to nothing by
+> 200 Hz and vanishing above it. That is the signature of electric-field pickup
+> on a high-impedance node, which is precisely what `N1` on a flying lead is.
+> Above 200 Hz the two runs are identical, because there the floor is the
+> instrument rather than the board.
+
+> [!note] These numbers are an upper bound on the board, not a measurement of it
+> The floor from 200 Hz upward is about **1.1 µV/√Hz** in both runs. The board's
+> own output noise should be nearer 0.05 µV/√Hz — a TL074's 18 nV/√Hz plus
+> 12 nV/√Hz of thermal noise from the 8k25 seen by the filter, through a
+> unity-gain follower. So what is being measured up there is the AD3's own input
+> noise, roughly twenty times the board's.
+>
+> The board is quieter than the instrument can see. Worth knowing before anyone
+> tries to improve on 58 µV.
+
+> [!warning] Ignore the peak-sample figure from the first run
+> It read 366 mV against a 58 µV RMS signal, which is impossible — a transient
+> that size would have put ~5.6 µV in every bin and the measured floor is
+> 1.1 µV. It was the AD3 settling at the start of each acquisition: a Hanning
+> window is nearly zero at the record edges, so the spectrum never saw it while
+> a raw peak did. The script now measures the peak over the middle 80% and keeps
+> one raw record so anything genuinely odd can be looked at.
+
 | 9 — headroom | clips at W1 = \_\_ V, or not at 5 V | \_\_ |
 | 10 — output chain at `J3` | −0.03 dB at 20 Hz, tip/ring within 0.05 dB, 0 V DC | \_\_ |
 | 11 — in situ | acoustic corner moves as predicted | \_\_ |

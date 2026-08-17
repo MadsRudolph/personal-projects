@@ -156,8 +156,17 @@ def main():
     mains = line_rms(f, psd, MAINS)
     h2 = line_rms(f, psd, 2 * MAINS)
     h3 = line_rms(f, psd, 3 * MAINS)
-    peak_v = max(float(np.max(np.abs(r - r.mean()))) for r in recs)
+    # Peak over the middle 80% of each record. The AD3 settles for a moment at
+    # the start of an acquisition, and a Hanning window is ~zero at the edges --
+    # so an edge transient never reaches the spectrum but would dominate a naive
+    # peak, making the range look inadequate when it is fine.
+    edge = len(recs[0]) // 10
+    peak_v = max(float(np.max(np.abs(r[edge:-edge] - r[edge:-edge].mean())))
+                 for r in recs)
+    peak_edge = max(float(np.max(np.abs(r - r.mean()))) for r in recs)
 
+    np.savetxt(outdir / f"gate8_{a.label}_record.csv", recs[0],
+               delimiter=",", header="volts", comments="")
     with (outdir / f"gate8_{a.label}.csv").open("w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["hz", "v_rms_per_rthz"])
@@ -173,8 +182,11 @@ def main():
           f"{WANT_MAINS * 1e6:9.0f} uV")
     print(f"  {'100 Hz':30s} {h2 * 1e6:9.1f} uV {'< 50 Hz':>12s}")
     print(f"  {'150 Hz':30s} {h3 * 1e6:9.1f} uV {'< 50 Hz':>12s}")
-    print(f"  {'peak sample':30s} {peak_v * 1e3:9.2f} mV "
+    print(f"  {'peak, middle 80%':30s} {peak_v * 1e6:9.1f} uV "
           f"{'(range ' + format(rng_used, '.1f') + ' V)':>12s}")
+    if peak_edge > 5 * peak_v:
+        print(f"  {'peak including edges':30s} {peak_edge * 1e3:9.2f} mV "
+              f"{'settling, ignored':>12s}")
 
     fails = []
     if total > WANT_RMS:
