@@ -53,12 +53,40 @@ TOL_DC = 0.010               # volts at the jack
 DEAD_DB = -20.0
 BAND = (15.0, 200.0)
 LF_HZ = 20.0                 # where C_out's high-pass is just visible
+# The chain level is a CROSS-REFERENCE comparison: OUT1 is measured against
+# VGND, the jack against real ground. Measured on a healthy board, the ratio
+# drifts from +0.1 dB at 100 Hz to +0.6 dB at 200 Hz as the filter rolls OUT1
+# off and a small fixed VGND contamination becomes a larger fraction of it.
+# So judge the level where OUT1 is still strong, and only to what a
+# cross-reference comparison supports. Tip against ring shares one reference
+# and stays tight at TOL_TIPRING_MAG.
+PB = (60.0, 120.0)
+TOL_CHAIN = 0.30             # dB
+CFIT = (15.0, 100.0)         # band for the phase fit
+C_OUT_RANGE = (4e-6, 40e-6)  # a 10 uF electrolytic is -20/+80%
 
 STEPS = [
     ("out1", "2+ on J5.1 (OUT1),  2- on JP2 even pin"),
     ("tip", "2+ on J3.1 (tip),   2- on J3.3 (OUT_GND),  POT AT MAXIMUM"),
     ("ring", "2+ on J3.2 (ring),  2- on J3.3 (OUT_GND)"),
 ]
+
+
+def fit_cout(f, dphase_deg, rload=10e3 * 1e6 / (10e3 + 1e6)):
+    """C_out from the tip-vs-OUT1 phase lead, plus that lead at LF_HZ.
+
+    Magnitude cannot settle this. The OUT1 sweep is referenced to VGND and the
+    jack sweeps to real ground, so any gain difference between those two
+    conditions lands directly on the ratio -- and a small fixed contamination on
+    VGND grows as a fraction of OUT1 once the filter rolls it off, drifting the
+    ratio upward above the corner. Phase carries none of that: a first-order
+    high-pass leads by arctan(fc/f) whatever the gains are.
+    """
+    b = (f >= CFIT[0]) & (f <= CFIT[1])
+    cs = np.logspace(-7, -2, 4001)
+    err = [np.sqrt(np.mean((dphase_deg[b] - np.degrees(
+        np.arctan(1 / (2 * np.pi * f[b] * rload * c)))) ** 2)) for c in cs]
+    return float(cs[int(np.argmin(err))]), float(np.interp(LF_HZ, f, dphase_deg))
 
 
 def read_dc(device, seconds=0.25):
@@ -105,7 +133,7 @@ def fake(freqs, which, leaky, seed, dead=False):
         s = 1j * 2 * np.pi * f
         h = s * 10e-6 * 10e3 / (1 + s * 10e-6 * 10e3)
         mag = 20 * np.log10(np.abs(h)) + rng.normal(0, 0.004, len(f))
-        ph = rng.normal(0, 0.05, len(f))
+        ph = np.degrees(np.angle(h)) + rng.normal(0, 0.05, len(f))
         v2 = OUT1_V * 10 ** (mag / 20)
     dc = 0.35 if (leaky and which != "out1") else 0.0008
     return ([dict(hz=float(a), v1=1.0, v2=float(d), mag_db=float(b),
@@ -195,15 +223,20 @@ def main():
     lvl = {k: np.array([r["v2"] for r in q]) for k, q in got.items()}
     fails = []
 
-    pb = (f >= 60) & (f <= 200)
+    pb = (f >= PB[0]) & (f <= PB[1])
     d_tip = m["tip"] - m["out1"]
+    d_pht = wrap180(p["tip"] - p["out1"])
     lf = float(np.interp(LF_HZ, f, d_tip))
     hf = float(np.median(d_tip[pb]))
     tip_uv = float(np.median(lvl["tip"][pb])) * 1e6
+    c_fit, c_lead = fit_cout(f, d_pht)
     print(f"\n  {'pot at max vs OUT1, 20 Hz':32s} {lf:+7.3f} dB   "
           f"want about -0.03")
-    print(f"  {'pot at max vs OUT1, 60-200 Hz':32s} {hf:+7.3f} dB   want 0.00")
+    print(f"  {'pot at max vs OUT1, ' + '%.0f-%.0f Hz' % PB:32s} "
+          f"{hf:+7.3f} dB   want 0.00")
     print(f"  {'tip level, passband median':32s} {tip_uv:7.0f} uV")
+    print(f"  {'phase lead at 20 Hz':32s} {c_lead:+7.2f} deg  "
+          f"-> C_out {c_fit * 1e6:.1f} uF")
 
     # One silence, one failure. Reporting the level, the tip/ring match and the
     # DC separately when nothing is arriving yields three complaints that all
@@ -219,12 +252,17 @@ def main():
                      "itself -- a capacitor has no DC path, so no ohmmeter "
                      "test of this chain ever went through it")
     else:
-        if hf < -0.20 or hf > 0.10:
-            fails.append(f"the output chain loses {abs(hf):.2f} dB in the "
-                         f"passband -- expected nothing above 60 Hz")
-        if lf > 0.02:
-            fails.append(f"no high-pass visible at 20 Hz ({lf:+.3f} dB) -- "
-                         f"C_out may be shorted or far larger than 10 uF")
+        if abs(hf) > TOL_CHAIN:
+            fails.append(f"the output chain is {hf:+.2f} dB across "
+                         f"{PB[0]:.0f}-{PB[1]:.0f} Hz -- want 0.00 "
+                         f"+/- {TOL_CHAIN}")
+        if c_fit < C_OUT_RANGE[0]:
+            fails.append(f"C_out fits {c_fit * 1e6:.2f} uF from the phase, far "
+                         f"under its 10 uF nominal -- wrong part, or a joint "
+                         f"that is not making")
+        elif c_fit > C_OUT_RANGE[1]:
+            fails.append(f"C_out fits {c_fit * 1e6:.0f} uF from the phase -- no "
+                         f"high-pass at all, so C_out may be shorted")
 
     d_mag = m["ring"] - m["tip"]
     d_ph = wrap180(p["ring"] - p["tip"])
