@@ -1,0 +1,144 @@
+ERC report (2026-08-18T09:11:48, Encoding UTF8)
+Report includes: Errors, Warnings
+
+***** Sheet /
+[pin_not_connected]: Pin not connected
+    ; error
+    @(1300 mils, 1600 mils): Symbol #PWR002 Pin 1 [Power output, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(1500 mils, 1600 mils): Symbol C10 Pin 1 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(1500 mils, 1900 mils): Symbol C10 Pin 2 [Passive, Line]
+[power_pin_not_driven]: Input Power pin not driven by any Output Power pins
+    ; error
+    @(1900 mils, 1600 mils): Symbol U2 Pin 1 [VI, Power input, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(2000 mils, 4900 mils): Symbol R_b1 Pin 1 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(2000 mils, 5700 mils): Symbol R_b2 Pin 1 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(2100 mils, 1900 mils): Symbol #PWR001 Pin 1 [Power output, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(2200 mils, 1900 mils): Symbol U2 Pin 2 [GND, Power input, Line]
+[power_pin_not_driven]: Input Power pin not driven by any Output Power pins
+    ; error
+    @(2200 mils, 1900 mils): Symbol U2 Pin 2 [GND, Power input, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(2600 mils, 1600 mils): Symbol C11 Pin 1 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(2600 mils, 1900 mils): Symbol C11 Pin 2 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(3100 mils, 1600 mils): Symbol C12 Pin 1 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(3100 mils, 1900 mils): Symbol C12 Pin 2 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(3600 mils, 1600 mils): Symbol C13 Pin 1 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(3600 mils, 1900 mils): Symbol C13 Pin 2 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(4000 mils, 9600 mils): Symbol #PWR012 Pin 1 [Power input, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(4100 mils, 1600 mils): Symbol C14 Pin 1 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(4100 mils, 1900 mils): Symbol C14 Pin 2 [Passive, Line]
+[label_dangling]: Label not connected
+    ; error
+    @(4600 mils, 5200 mils): Label 'N2'
+[pin_not_connected]: Pin not connected
+    ; error
+    @(4900 mils, 4100 mils): Symbol C1_2 Pin 1 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(4900 mils, 5800 mils): Symbol C2_2 Pin 1 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(5600 mils, 4100 mils): Symbol C1_1 Pin 1 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(7900 mils, 1750 mils): Symbol C15 Pin 1 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(8500 mils, 1700 mils): Symbol U1 Pin 10 [+, Input, Line]
+[pin_not_driven]: Input pin not driven by any Output pins
+    ; error
+    @(8500 mils, 1700 mils): Symbol U1 Pin 10 [+, Input, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(8750 mils, 6200 mils): Symbol R4 Pin 2 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(9000 mils, 5700 mils): Symbol U1 Pin 6 [-, Input, Line]
+[pin_not_driven]: Input pin not driven by any Output pins
+    ; error
+    @(9000 mils, 5700 mils): Symbol U1 Pin 6 [-, Input, Line]
+[unconnected_wire_endpoint]: Unconnected wire endpoint
+    ; warning
+    @(2000 mils, 4750 mils): Vertical Wire, length 150 mils
+[unconnected_wire_endpoint]: Unconnected wire endpoint
+    ; warning
+    @(2000 mils, 5550 mils): Vertical Wire, length 150 mils
+[unconnected_wire_endpoint]: Unconnected wire endpoint
+    ; warning
+    @(3200 mils, 5200 mils): Horizontal Wire, length 750 mils
+[unconnected_wire_endpoint]: Unconnected wire endpoint
+    ; warning
+    @(4600 mils, 5200 mils): Vertical Wire, length 500 mils
+[unconnected_wire_endpoint]: Unconnected wire endpoint
+    ; warning
+    @(4900 mils, 4100 mils): Vertical Wire, length 100 mils
+[unconnected_wire_endpoint]: Unconnected wire endpoint
+    ; warning
+    @(4900 mils, 5800 mils): Vertical Wire, length 100 mils
+[unconnected_wire_endpoint]: Unconnected wire endpoint
+    ; warning
+    @(5600 mils, 4100 mils): Vertical Wire, length 100 mils
+[lib_symbol_mismatch]: Symbol 'TL074' doesn't match copy in library 'Amplifier_Operational'
+    ; warning
+    @(5700 mils, 5300 mils): Symbol U1 [TL074]
+[unconnected_wire_endpoint]: Unconnected wire endpoint
+    ; warning
+    @(7400 mils, 1700 mils): Horizontal Wire, length 1100 mils
+[unconnected_wire_endpoint]: Unconnected wire endpoint
+    ; warning
+    @(7900 mils, 1750 mils): Vertical Wire, length 50 mils
+[unconnected_wire_endpoint]: Unconnected wire endpoint
+    ; warning
+    @(8200 mils, 5700 mils): Horizontal Wire, length 800 mils
+[lib_symbol_mismatch]: Symbol 'TL074' doesn't match copy in library 'Amplifier_Operational'
+    ; warning
+    @(8600 mils, 8800 mils): Symbol U1 [TL074]
+[lib_symbol_mismatch]: Symbol 'TL074' doesn't match copy in library 'Amplifier_Operational'
+    ; warning
+    @(8800 mils, 1800 mils): Symbol U1 [TL074]
+[lib_symbol_mismatch]: Symbol 'TL074' doesn't match copy in library 'Amplifier_Operational'
+    ; warning
+    @(9300 mils, 5600 mils): Symbol U1 [TL074]
+[unconnected_wire_endpoint]: Unconnected wire endpoint
+    ; warning
+    @(9800 mils, 5600 mils): Vertical Wire, length 600 mils
+[lib_symbol_mismatch]: Symbol 'TL074' doesn't match copy in library 'Amplifier_Operational'
+    ; warning
+    @(10300 mils, 1700 mils): Symbol U1 [TL074]
+
+ ** ERC messages: 44  Errors 28  Warnings 16
+
+ ** Ignored checks:
+    - Global label only appears once in the schematic
+    - Four connection points are joined together
+    - SPICE model issue
+    - Assigned footprint doesn't match footprint filters

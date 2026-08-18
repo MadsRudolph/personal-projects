@@ -1,0 +1,27 @@
+ERC report (2026-08-18T09:21:14, Encoding UTF8)
+Report includes: Errors, Warnings
+
+***** Sheet /
+[lib_symbol_mismatch]: Symbol 'TL074' doesn't match copy in library 'Amplifier_Operational'
+    ; warning
+    @(5700 mils, 5300 mils): Symbol U1 [TL074]
+[lib_symbol_mismatch]: Symbol 'TL074' doesn't match copy in library 'Amplifier_Operational'
+    ; warning
+    @(8600 mils, 8800 mils): Symbol U1 [TL074]
+[lib_symbol_mismatch]: Symbol 'TL074' doesn't match copy in library 'Amplifier_Operational'
+    ; warning
+    @(8800 mils, 1800 mils): Symbol U1 [TL074]
+[lib_symbol_mismatch]: Symbol 'TL074' doesn't match copy in library 'Amplifier_Operational'
+    ; warning
+    @(9300 mils, 5600 mils): Symbol U1 [TL074]
+[lib_symbol_mismatch]: Symbol 'TL074' doesn't match copy in library 'Amplifier_Operational'
+    ; warning
+    @(10300 mils, 1700 mils): Symbol U1 [TL074]
+
+ ** ERC messages: 5  Errors 0  Warnings 5
+
+ ** Ignored checks:
+    - Global label only appears once in the schematic
+    - Four connection points are joined together
+    - SPICE model issue
+    - Assigned footprint doesn't match footprint filters
