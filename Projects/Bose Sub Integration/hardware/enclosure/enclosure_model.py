@@ -35,6 +35,8 @@ Retention therefore only ever touches GND pour, and never goes deeper than
 
 import bpy
 import bmesh
+import io
+import json
 import math
 import os
 from mathutils import Vector, Matrix
@@ -61,6 +63,19 @@ from mathutils import Vector, Matrix
 GLB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                         "pcb3d", "subxo_board.glb")
 
+# ---------------------------------------------------------------------------
+# The top plate is LASER-CUT ACRYLIC, not printed. That makes it a flat sheet:
+# no locating rails, no LED counterbores, nothing blind - a laser cuts through
+# or not at all. The deliverable is a 2D profile (DXF/SVG), not an STL.
+# Set False to go back to a printed lid with rails and counterbored windows.
+# ---------------------------------------------------------------------------
+LID_LASER_CUT = True
+
+# Clear or smoked acrylic needs no LED windows at all - D1/D2 simply glow
+# through the sheet, which also fixes their 19 mm standoff looking dim.
+# Set False for tinted/clear stock and the two holes disappear.
+CUT_LED_HOLES = True
+
 # ===========================================================================
 # PARAMETERS
 # ===========================================================================
@@ -74,7 +89,8 @@ P = {
     # --- FDM print settings ------------------------------------------------
     "wall":             2.4,    # 6 perimeters at 0.4 mm
     "floor_th":         2.4,
-    "lid_th":           2.4,
+    "lid_th":           3.0,   # laser-cut acrylic. 3 mm is the common
+                                # stock size; set to your actual sheet
     "fit_clear":        0.3,    # lid lip sliding fit
     "hole_clear":       0.4,    # added to every panel hole diameter
 
@@ -542,41 +558,41 @@ paint(base, M_CASE)
 
 lid = box("Lid", out_x0, out_x1, out_y1, out_y0, lid_z0, lid_z1, coll)
 
-# locating lip: LEFT AND RIGHT RAILS ONLY. A full perimeter lip would collide
-# with the rotary switch body across the front.
 lw, lh = P["lip_w"], P["lip_h"]
 fc = P["fit_clear"]
 OVER = 0.5   # cutters always overshoot the face they break through. A cutter
              # ending exactly ON a face produces coincident geometry, and the
              # EXACT solver leaves non-manifold edges behind - which slices badly.
 
-# Rails are stopped short of the screw bosses rather than being cut around
-# them afterwards. Same result, one less boolean, no coincident faces.
-rail_y0 = (in_y1 + _bi) + P["boss_r"] + 1.0
-rail_y1 = (in_y0 - _bi) - P["boss_r"] - 1.0
-rails = [
-    box("_railL", in_x0 + fc, in_x0 + fc + lw, rail_y0, rail_y1, lid_z0 - lh, lid_z0, coll),
-    box("_railR", in_x1 - fc - lw, in_x1 - fc, rail_y0, rail_y1, lid_z0 - lh, lid_z0, coll),
-]
-fuse(lid, rails)
+if LID_LASER_CUT:
+    lh = 0.0          # a flat sheet has no rails; the four screws locate it
+else:
+    # locating lip: LEFT AND RIGHT RAILS ONLY. A full perimeter lip would
+    # collide with the rotary switch body across the front. Rails stop short
+    # of the screw bosses rather than being cut around them afterwards.
+    rail_y0 = (in_y1 + _bi) + P["boss_r"] + 1.0
+    rail_y1 = (in_y0 - _bi) - P["boss_r"] - 1.0
+    fuse(lid, [
+        box("_railL", in_x0 + fc, in_x0 + fc + lw, rail_y0, rail_y1,
+            lid_z0 - lh, lid_z0, coll),
+        box("_railR", in_x1 - fc - lw, in_x1 - fc, rail_y0, rail_y1,
+            lid_z0 - lh, lid_z0, coll),
+    ])
 
 lidcuts = []
 
-# LED windows above D1 and D2. Counterbored from the inside: the LEDs sit
-# ~19 mm below the lid, so a plain 4 mm hole would read very dim off-axis.
-# The counterbore's top face is deliberately exact - it forms the web - but
-# its bottom overshoots through the lid underside.
-cb_top = lid_z1 - P["led_web"]
-cb_bot = lid_z0 - OVER
-for nm, lx, ly in (("D1", P["d1_x"], P["d1_y"]), ("D2", P["d2_x"], P["d2_y"])):
-    lidcuts.append(
-        cyl("_ledc_" + nm, lx, -ly, (cb_top + cb_bot) / 2,
-            P["led_cbore"], cb_top - cb_bot, coll)
-    )
-    lidcuts.append(
-        cyl("_led_" + nm, lx, -ly, lid_z0 + P["lid_th"] / 2,
-            P["led_hole"], P["lid_th"] + 2 * OVER, coll)
-    )
+# LED windows above D1 and D2.
+if CUT_LED_HOLES:
+    for nm, lx, ly in (("D1", P["d1_x"], P["d1_y"]), ("D2", P["d2_x"], P["d2_y"])):
+        if not LID_LASER_CUT:
+            # printed: counterbore from inside to widen the acceptance cone,
+            # because the LEDs sit ~19 mm below. Top face exact - it is the web.
+            cb_top = lid_z1 - P["led_web"]
+            cb_bot = lid_z0 - OVER
+            lidcuts.append(cyl("_ledc_" + nm, lx, -ly, (cb_top + cb_bot) / 2,
+                               P["led_cbore"], cb_top - cb_bot, coll))
+        lidcuts.append(cyl("_led_" + nm, lx, -ly, lid_z0 + P["lid_th"] / 2,
+                           P["led_hole"], P["lid_th"] + 2 * OVER, coll))
 
 # screw clearance holes, straight through - no counterbore, see the P dict
 for i, (bx, by) in enumerate(BOSS):
@@ -584,6 +600,31 @@ for i, (bx, by) in enumerate(BOSS):
                        P["screw_clear"], P["lid_th"] + lh + 4 * OVER, coll))
 
 cut(lid, lidcuts)
+
+# --- 2D profile for the laser ----------------------------------------------
+# Sheet coordinates: origin at the plate's bottom-left corner, X right, Y up.
+# Nominal geometry, NOT kerf-compensated - let the laser software do that.
+# render_and_export.py turns this into DXF and SVG.
+_ox, _oy = out_x0, out_y1
+lid_profile = {
+    "units": "mm",
+    "thickness": P["lid_th"],
+    "kerf_compensated": False,
+    "outline_w": round(out_x1 - out_x0, 3),
+    "outline_h": round(out_y0 - out_y1, 3),
+    "circles": [
+        {"tag": "screw_M3", "d": P["screw_clear"],
+         "x": round(bx - _ox, 3), "y": round(by - _oy, 3)}
+        for bx, by in BOSS
+    ] + ([
+        {"tag": "led_" + k.upper(), "d": P["led_hole"],
+         "x": round(P[k + "_x"] - _ox, 3), "y": round(-P[k + "_y"] - _oy, 3)}
+        for k in ("d1", "d2")
+    ] if CUT_LED_HOLES else []),
+}
+with io.open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "lid_profile.json"), "w", encoding="utf-8") as _f:
+    _f.write(json.dumps(lid_profile, indent=2))
 paint(lid, M_LID)
 
 # ---------------------------------------------------------------------------

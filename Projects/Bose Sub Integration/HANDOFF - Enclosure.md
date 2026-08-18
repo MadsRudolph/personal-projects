@@ -8,7 +8,7 @@ tags:
   - crossover
   - enclosure
   - blender
-status: Modelled and dimensionally settled; STLs ready to slice
+status: Settled. Base STL ready to slice, lid DXF ready to cut
 started: 2026-08-16
 updated: 2026-08-16
 ---
@@ -207,7 +207,9 @@ tall parts, so clearances can be seen. It does not need to be a detailed board.
 | `hardware/enclosure/enclosure_model.py` | The model. All dimensions live in the `P` dict at the top; re-run the file in Blender to rebuild |
 | `hardware/enclosure/render_and_export.py` | Renders + STL export. Run after the model script |
 | `hardware/enclosure/subxo-enclosure.blend` | Saved scene |
-| `hardware/enclosure/stl/` | `subxo_base.stl`, `subxo_lid.stl` — 1 unit = 1 mm, verified by reading the exported files back |
+| `hardware/enclosure/stl/` | `subxo_base.stl` — 1 unit = 1 mm, verified by reading the exported file back. `subxo_lid.stl` is reference only now |
+| `hardware/enclosure/laser/` | **`subxo_lid.dxf` / `.svg`** — the top plate, for the laser |
+| `hardware/enclosure/lid_profile.json` | The 2D profile the DXF and SVG are generated from |
 | `hardware/enclosure/pcb3d/subxo_board.glb` | The real board, exported from KiCad. The model imports this — there is no stand-in geometry anywhere in the scene |
 | `hardware/enclosure/pcb3d/make_model_shim.py` | Builds the 3D-model overlay the export needs. Run before re-exporting |
 | `hardware/enclosure/pcb3d/models/` | The overlay. `TerminalBlock.3dshapes/` holds the two hand-placed substitutes |
@@ -286,12 +288,12 @@ right to within 0.14 mm. The loom still sets the height at 30.6 mm internal.
 
 | Question | Decision |
 |---|---|
-| Manufacture | **FDM 3D print.** 2.4 mm walls / floor / lid (6 perimeters at 0.4 mm), 0.4 mm added to every panel hole, 0.3 mm lid-lip fit clearance |
+| Manufacture | **Base FDM printed**, 2.4 mm walls and floor, 0.4 mm added to every panel hole. **Top plate laser-cut from 3 mm acrylic** |
 | LEDs | **Holes in the lid** above `D1` and `D2`. See the caveat below |
 | Retention | **Corner clips.** Rear two corners are rigid L-ledges, front two are flexing snap fingers |
 | Material | **Plastic, unshielded.** Recorded here so the Gate 8 noise floor is read against an unshielded box |
 | Rear panel | Inputs are a **salvaged 4-pair RCA plate**, clipped to one pair and laid on its side. Plate stays inside; the two barrels press out through a pair of round holes |
-| External size | Minimal. **117.8 × 139.8 × 35.4 mm** |
+| External size | Minimal. **117.8 × 139.8 × 36.0 mm** (33.0 printed base + 3.0 acrylic lid) |
 | Rotary switch | AliExpress 20 mm metal selector, M9×0.75, 18-tooth knurl shaft. **Order the 2P6T variant** |
 
 ### Verified against the board, not assumed
@@ -513,13 +515,40 @@ this cannot regress quietly.
 
 ### Two caveats to be aware of
 
-> [!caution] The lid LED windows are 19.4 mm above the LEDs
-> Because the rotary switch forced the box to 31 mm internal, `D1`/`D2` sit a
-> long way below the lid. A plain 4 mm hole would read dim and only close to
-> straight-on. The windows are therefore counterbored from the inside — 7 mm
-> down to a 1.2 mm web, then 4 mm through — to widen the acceptance cone.
-> If that still reads badly, the cheap fix is a 4 mm clear acrylic rod dropped
-> into each window as a light pipe. That is a retrofit, not a reprint.
+### The top plate is laser-cut acrylic
+
+3 mm cast acrylic, cut from `laser/subxo_lid.dxf` (or the `.svg`). A flat
+sheet, so two features that existed on the printed lid are gone:
+
+- **No locating rails.** The four M3 screws locate the plate on their own.
+- **No LED counterbores.** A laser cuts through or not at all, so the windows
+  are plain 4 mm holes.
+
+Sheet is **117.8 × 139.8 mm** with six holes, origin at the bottom-left corner:
+
+| | X | Y | ⌀ |
+|---|---|---|---|
+| M3 clearance ×4 | 3.9 / 113.9 | 3.9 / 135.9 | 3.4 |
+| `D1` window | 24.49 | 45.87 | 4.0 |
+| `D2` window | 14.89 | 45.87 | 4.0 |
+
+> [!important] The DXF is nominal, not kerf-compensated
+> Every laser package applies its own kerf offset. Doing it here as well would
+> make each hole a kerf oversize and the outline a kerf undersize. Set the
+> offset in LightBurn / XCS, not in the file.
+
+> [!tip] Clear or smoked acrylic makes the LED windows unnecessary
+> `D1`/`D2` sit 19 mm below the plate, which is why the printed lid needed
+> counterbores to widen the acceptance cone — a problem a laser cannot solve.
+> Transparent stock removes it instead: the LEDs simply glow through, and
+> smoked acrylic diffuses them while hiding the interior. Set
+> `CUT_LED_HOLES = False` and re-run, and the two holes disappear.
+
+> [!caution] Acrylic is brittle — do not run the screws down hard
+> Cast acrylic cracks readily around a hole under a screw head, and there is
+> only 2.2 mm of material between each hole and the edge. Use nylon washers
+> under the M3 pan heads and nip them up gently. With a 3 mm plate, M3 × 12
+> gives about 9 mm of thread into the boss, which is plenty.
 
 > [!caution] Corner clips are the weak point in FDM
 > The two front snap fingers bend about their root, and on a base printed

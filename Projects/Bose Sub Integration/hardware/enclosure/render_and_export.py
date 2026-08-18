@@ -14,6 +14,8 @@ all saved and put back at the end.
 """
 
 import bpy
+import io
+import json
 import os
 import math
 import struct
@@ -177,6 +179,73 @@ for objname, fname in (("Base", "subxo_base.stl"), ("Lid", "subxo_lid.stl")):
     p = export(objname, fname)
     stls[fname] = stl_bbox(p)
 
+
+# --- 2D profile for the laser-cut acrylic lid ------------------------------
+# Driven by lid_profile.json, which enclosure_model.py writes from the same
+# parameters that build the 3D lid, so the sheet and the box cannot drift.
+#
+# Geometry is NOMINAL and deliberately not kerf-compensated: every laser
+# package applies its own kerf offset, and doing it twice makes every hole
+# oversize. Set the offset in LightBurn / XCS, not here.
+
+def write_lid_2d():
+    prof_path = os.path.join(HERE, "lid_profile.json")
+    if not os.path.exists(prof_path):
+        return None
+    with io.open(prof_path, encoding="utf-8") as f:
+        prof = json.load(f)
+    W, H = prof["outline_w"], prof["outline_h"]
+    circles = prof["circles"]
+    outdir = os.path.join(HERE, "laser")
+    os.makedirs(outdir, exist_ok=True)
+
+    NL = chr(10)   # DXF group codes are newline separated; chr(10)
+                   # keeps the escaping unambiguous
+
+    def g(code, val):
+        return "%s%s%s%s" % (code, NL, val, NL)
+
+    def line(x1, y1, x2, y2):
+        return (g(0, "LINE") + g(8, "CUT")
+                + g(10, "%.4f" % x1) + g(20, "%.4f" % y1) + g(30, "0.0")
+                + g(11, "%.4f" % x2) + g(21, "%.4f" % y2) + g(31, "0.0"))
+
+    # DXF R12: LINE + CIRCLE only, which every laser package reads.
+    d = [g(0, "SECTION"), g(2, "HEADER"), g(9, "$INSUNITS"), g(70, 4),
+         g(0, "ENDSEC"), g(0, "SECTION"), g(2, "ENTITIES"),
+         line(0, 0, W, 0), line(W, 0, W, H), line(W, H, 0, H), line(0, H, 0, 0)]
+    for c in circles:
+        d.append(g(0, "CIRCLE") + g(8, "CUT")
+                 + g(10, "%.4f" % c["x"]) + g(20, "%.4f" % c["y"]) + g(30, "0.0")
+                 + g(40, "%.4f" % (c["d"] / 2.0)))
+    d += [g(0, "ENDSEC"), g(0, "EOF")]
+    dxf = os.path.join(outdir, "subxo_lid.dxf")
+    with io.open(dxf, "w", encoding="utf-8", newline=NL) as f:
+        f.write("".join(d))
+
+    # SVG for previewing / packages that prefer it. Y is flipped: SVG grows
+    # downward, the DXF and the model grow upward.
+    svg_parts = ['<svg xmlns="http://www.w3.org/2000/svg" '
+                 'width="%.3fmm" height="%.3fmm" viewBox="0 0 %.3f %.3f">'
+                 % (W, H, W, H),
+                 '<g fill="none" stroke="#000000" stroke-width="0.1">',
+                 '<rect x="0" y="0" width="%.3f" height="%.3f"/>' % (W, H)]
+    for c in circles:
+        svg_parts.append('<circle cx="%.3f" cy="%.3f" r="%.3f"/>'
+                         % (c["x"], H - c["y"], c["d"] / 2.0))
+    svg_parts += ["</g>", "</svg>"]
+    svg = os.path.join(outdir, "subxo_lid.svg")
+    with io.open(svg, "w", encoding="utf-8", newline=NL) as f:
+        f.write(NL.join(svg_parts))
+
+    return {"dxf": dxf, "svg": svg, "sheet_mm": [W, H],
+            "thickness_mm": prof["thickness"],
+            "holes": [{"tag": c["tag"], "d": c["d"], "x": c["x"], "y": c["y"]}
+                      for c in circles]}
+
+
+laser = write_lid_2d()
+
 # --- restore ---------------------------------------------------------------
 scene.camera = orig["camera"]
 scene.world = orig["world"]
@@ -186,5 +255,5 @@ scene.render.filepath = orig["filepath"]
 for n, v in orig["hide"].items():
     bpy.data.objects[n].hide_render = v
 
-result = {"renders": made, "stl": stls}
+result = {"renders": made, "stl": stls, "laser": laser}
 print(result)
