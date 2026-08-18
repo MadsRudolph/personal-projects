@@ -35,8 +35,11 @@ OP = "Amplifier_Operational:TL074"
 def build():
     # symcache supplies stock KiCad definitions, which keeps ERC's
     # lib_symbol_mismatch quiet; donors remain as a fallback only.
+    # Inherit the root-sheet uuid the project already records, so the symbol
+    # instance paths resolve when the sheet is opened as part of the project.
+    PRO = SUB.replace("subxo.kicad_sch", "subxo.kicad_pro")
     sh = Sheet(paper="A3", title="Bose Companion 5 sub crossover",
-               project="subxo")
+               project="subxo", project_file=PRO)
 
     def R(ref, at, value, rot=0):
         return sh.place("Device:R", ref, at=at, rot=rot, value=value)
