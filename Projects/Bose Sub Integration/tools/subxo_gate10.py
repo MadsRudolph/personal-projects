@@ -48,6 +48,9 @@ from subxo_gate7 import wrap180
 TOL_TIPRING_MAG = 0.05       # dB, R5 and R6 are both 100R
 TOL_TIPRING_PH = 0.5         # degrees, judged against the rig's own null
 TOL_DC = 0.010               # volts at the jack
+# Below this the tip carries no signal worth the name, and every comparison
+# made against it becomes a comparison of the AD3's own noise.
+DEAD_DB = -20.0
 BAND = (15.0, 200.0)
 LF_HZ = 20.0                 # where C_out's high-pass is just visible
 
@@ -79,21 +82,35 @@ def read_dc(device, seconds=0.25):
     return float(np.mean(np.array(scope.statusData(1, BUFFER))))
 
 
-def fake(freqs, which, leaky, seed):
+OUT1_V = 0.83                # plausible OUT1 level, for the synthetic cases
+
+
+def fake(freqs, which, leaky, seed, dead=False):
     rng = np.random.default_rng(seed)
     f = np.asarray(freqs)
     if which == "out1":
-        mag = np.zeros(len(f))
+        mag = np.zeros(len(f)) + rng.normal(0, 0.004, len(f))
+        ph = rng.normal(0, 0.05, len(f))
+        v2 = OUT1_V * 10 ** (mag / 20)
+    elif dead:
+        # Nothing arrives. What is left is a couple of hundred microvolts of
+        # stray pickup plus the AD3's per-bin noise -- the levels the real
+        # board produced on 2026-08-18. The scatter between tip and ring is the
+        # point of this case: it must read as silence, not as an R5/R6 fault.
+        v2 = 215e-6 * (1 + rng.normal(0, 0.07, len(f)))
+        mag = 20 * np.log10(v2 / OUT1_V)
+        ph = rng.normal(0, 30.0, len(f))
     else:
         # C_out 10 uF into the 10k pot: a high-pass at 1.59 Hz.
         s = 1j * 2 * np.pi * f
         h = s * 10e-6 * 10e3 / (1 + s * 10e-6 * 10e3)
-        mag = 20 * np.log10(np.abs(h))
-    mag = mag + rng.normal(0, 0.004, len(f))
-    ph = np.zeros(len(f)) + rng.normal(0, 0.05, len(f))
+        mag = 20 * np.log10(np.abs(h)) + rng.normal(0, 0.004, len(f))
+        ph = rng.normal(0, 0.05, len(f))
+        v2 = OUT1_V * 10 ** (mag / 20)
     dc = 0.35 if (leaky and which != "out1") else 0.0008
-    return ([dict(hz=float(a), v1=1.0, v2=1.0, mag_db=float(b), phase=float(c))
-             for a, b, c in zip(f, mag, ph)], 0), dc
+    return ([dict(hz=float(a), v1=1.0, v2=float(d), mag_db=float(b),
+                  phase=float(c))
+             for a, b, c, d in zip(f, mag, ph, v2)], 0), dc
 
 
 def main():
@@ -111,9 +128,11 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--dry-run-dc", action="store_true",
                     help="synthesise DC at the jack, to test that check")
+    ap.add_argument("--dry-run-dead", action="store_true",
+                    help="synthesise an open chain, to test that diagnosis")
     a = ap.parse_args()
 
-    dry = a.dry_run or a.dry_run_dc
+    dry = a.dry_run or a.dry_run_dc or a.dry_run_dead
     n, label, _c1, _c2, _ = next(d for d in DETENTS if d[0] == a.detent)
     freqs = np.logspace(math.log10(a.start), math.log10(a.stop), a.steps)
     outdir = Path(a.outdir)
@@ -139,12 +158,14 @@ def main():
 
     got, dcs = {}, {}
     try:
-        for key, instruction in STEPS:
+        for i, (key, instruction) in enumerate(STEPS):
             print("=" * 62)
             print(f"  {instruction}")
             print("=" * 62)
             if dry:
-                (rows, _), dc = fake(freqs, key, a.dry_run_dc, seed=1000)
+                (rows, _), dc = fake(freqs, key, a.dry_run_dc,
+                                     seed=1000 + i,
+                                     dead=a.dry_run_dead)
             else:
                 try:
                     input("  press Enter when the leads are set ")
@@ -169,33 +190,63 @@ def main():
 
     f = np.array([r["hz"] for r in got["out1"]])
     band = (f >= BAND[0]) & (f <= BAND[1])
-    m = {k: np.array([r["mag_db"] for r in v]) for k, v in got.items()}
-    p = {k: np.array([r["phase"] for r in v]) for k, v in got.items()}
+    m = {k: np.array([r["mag_db"] for r in q]) for k, q in got.items()}
+    p = {k: np.array([r["phase"] for r in q]) for k, q in got.items()}
+    lvl = {k: np.array([r["v2"] for r in q]) for k, q in got.items()}
     fails = []
 
+    pb = (f >= 60) & (f <= 200)
     d_tip = m["tip"] - m["out1"]
     lf = float(np.interp(LF_HZ, f, d_tip))
-    hf = float(np.median(d_tip[(f >= 60) & (f <= 200)]))
+    hf = float(np.median(d_tip[pb]))
+    tip_uv = float(np.median(lvl["tip"][pb])) * 1e6
     print(f"\n  {'pot at max vs OUT1, 20 Hz':32s} {lf:+7.3f} dB   "
           f"want about -0.03")
     print(f"  {'pot at max vs OUT1, 60-200 Hz':32s} {hf:+7.3f} dB   want 0.00")
-    if hf < -0.20 or hf > 0.10:
-        fails.append(f"the output chain loses {abs(hf):.2f} dB in the passband "
-                     f"-- expected nothing above 60 Hz")
-    if lf > 0.02:
-        fails.append(f"no high-pass visible at 20 Hz ({lf:+.3f} dB) -- C_out "
-                     f"may be shorted or far larger than 10 uF")
+    print(f"  {'tip level, passband median':32s} {tip_uv:7.0f} uV")
+
+    # One silence, one failure. Reporting the level, the tip/ring match and the
+    # DC separately when nothing is arriving yields three complaints that all
+    # describe the same break -- and two of them accuse innocent parts.
+    dead = hf < DEAD_DB
+    if dead:
+        fails.append(f"nothing reaches the jack -- the tip is {abs(hf):.0f} dB "
+                     f"below OUT1, {tip_uv:.0f} uV. Bisect with the scope: "
+                     f"J5.3 (SW_COM), then J6.1 (POT_TOP), then J6.2 (POT_W); "
+                     f"the first dead node sits just after the break")
+        fails.append("note the two links a DC continuity check cannot see: the "
+                     "polarity switch (J5.1 -> switch -> J5.3), and C_out1 "
+                     "itself -- a capacitor has no DC path, so no ohmmeter "
+                     "test of this chain ever went through it")
+    else:
+        if hf < -0.20 or hf > 0.10:
+            fails.append(f"the output chain loses {abs(hf):.2f} dB in the "
+                         f"passband -- expected nothing above 60 Hz")
+        if lf > 0.02:
+            fails.append(f"no high-pass visible at 20 Hz ({lf:+.3f} dB) -- "
+                         f"C_out may be shorted or far larger than 10 uF")
 
     d_mag = m["ring"] - m["tip"]
     d_ph = wrap180(p["ring"] - p["tip"])
     mm, pm = float(np.median(d_mag[band])), float(np.median(d_ph[band]))
     print(f"  {'ring vs tip':32s} {mm:+7.3f} dB  {pm:+6.2f} deg   "
           f"want 0.00 / 0.0")
-    if abs(mm) > TOL_TIPRING_MAG:
-        fails.append(f"tip and ring differ by {mm:+.3f} dB -- R5 or R6 is off "
-                     f"value, or one has a cold joint")
-    if abs(pm) > TOL_TIPRING_PH:
-        fails.append(f"tip and ring differ by {pm:+.2f} deg")
+    if dead:
+        # R5 and R6 tie tip and ring through 200 ohm, which against the scope's
+        # 1 Mohm would hold them within about 0.001 dB of each other -- but only
+        # while there is a signal. At a couple of hundred microvolts the AD3's
+        # own per-bin noise is a few microvolts, so a few tenths of a dB of
+        # scatter is the instrument. Judging it here reads as a fault in R5/R6
+        # and sends the search to the wrong end of the board.
+        print(f"    (not judged: at {tip_uv:.0f} uV that difference is the "
+              f"AD3's noise floor, not R5 or R6)")
+    else:
+        if abs(mm) > TOL_TIPRING_MAG:
+            fails.append(f"tip and ring differ by {mm:+.3f} dB -- with signal "
+                         f"present that means R5 or R6 is open, or J3 is not "
+                         f"gripping on one pin")
+        if abs(pm) > TOL_TIPRING_PH:
+            fails.append(f"tip and ring differ by {pm:+.2f} deg")
 
     print()
     for k in ("tip", "ring"):
@@ -205,6 +256,10 @@ def main():
             fails.append(f"{dcs[k] * 1000:+.0f} mV of DC at the {k} -- C_out is "
                          f"leaky or backwards. This thumps the driver at "
                          f"power-on; do not connect the module")
+    if dead:
+        print("    (proves nothing while the chain is dead -- a quiet reading")
+        print("     at a node the signal never reaches says nothing about")
+        print("     C_out. This check does not count until the jack sees it.)")
 
     print()
     if fails:
