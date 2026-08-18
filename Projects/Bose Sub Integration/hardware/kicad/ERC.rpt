@@ -1,4 +1,4 @@
-ERC report (2026-08-18T09:48:29, Encoding UTF8)
+ERC report (2026-08-18T09:52:04, Encoding UTF8)
 Report includes: Errors, Warnings
 
 ***** Sheet /
@@ -86,30 +86,18 @@ Report includes: Errors, Warnings
 [pin_not_driven]: Input pin not driven by any Output pins
     ; error
     @(9000 mils, 5700 mils): Symbol U1 Pin 6 [-, Input, Line]
-[lib_symbol_mismatch]: Symbol 'PWR_FLAG' doesn't match copy in library 'power'
-    ; warning
-    @(1300 mils, 1600 mils): Symbol #PWR002 [PWR_FLAG]
 [unconnected_wire_endpoint]: Unconnected wire endpoint
     ; warning
     @(2000 mils, 4750 mils): Vertical Wire, length 150 mils
 [unconnected_wire_endpoint]: Unconnected wire endpoint
     ; warning
     @(2000 mils, 5550 mils): Vertical Wire, length 150 mils
-[lib_symbol_mismatch]: Symbol 'PWR_FLAG' doesn't match copy in library 'power'
-    ; warning
-    @(2100 mils, 1900 mils): Symbol #PWR001 [PWR_FLAG]
-[lib_symbol_mismatch]: Symbol 'LM7812_TO220' doesn't match copy in library 'Regulator_Linear'
-    ; warning
-    @(2200 mils, 1600 mils): Symbol U2 [LM7812_TO220]
 [unconnected_wire_endpoint]: Unconnected wire endpoint
     ; warning
     @(3200 mils, 5200 mils): Horizontal Wire, length 750 mils
 [unconnected_wire_endpoint]: Unconnected wire endpoint
     ; warning
     @(4600 mils, 5200 mils): Vertical Wire, length 500 mils
-[lib_symbol_mismatch]: Symbol 'PWR_FLAG' doesn't match copy in library 'power'
-    ; warning
-    @(4700 mils, 2300 mils): Symbol #PWR004 [PWR_FLAG]
 [unconnected_wire_endpoint]: Unconnected wire endpoint
     ; warning
     @(4900 mils, 4100 mils): Vertical Wire, length 100 mils
@@ -147,7 +135,7 @@ Report includes: Errors, Warnings
     ; warning
     @(10300 mils, 1700 mils): Symbol U1 [TL074]
 
- ** ERC messages: 48  Errors 28  Warnings 20
+ ** ERC messages: 44  Errors 28  Warnings 16
 
  ** Ignored checks:
     - Global label only appears once in the schematic
