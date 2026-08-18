@@ -1,4 +1,4 @@
-ERC report (2026-08-18T09:44:40, Encoding UTF8)
+ERC report (2026-08-18T09:48:29, Encoding UTF8)
 Report includes: Errors, Warnings
 
 ***** Sheet /
@@ -56,6 +56,9 @@ Report includes: Errors, Warnings
 [pin_not_connected]: Pin not connected
     ; error
     @(4100 mils, 1900 mils): Symbol C14 Pin 2 [Passive, Line]
+[label_dangling]: Label not connected
+    ; error
+    @(4600 mils, 5200 mils): Label 'N2'
 [pin_not_connected]: Pin not connected
     ; error
     @(4900 mils, 4100 mils): Symbol C1_2 Pin 1 [Passive, Line]
@@ -144,7 +147,7 @@ Report includes: Errors, Warnings
     ; warning
     @(10300 mils, 1700 mils): Symbol U1 [TL074]
 
- ** ERC messages: 47  Errors 27  Warnings 20
+ ** ERC messages: 48  Errors 28  Warnings 20
 
  ** Ignored checks:
     - Global label only appears once in the schematic
