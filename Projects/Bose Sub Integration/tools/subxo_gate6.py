@@ -129,7 +129,35 @@ def sweep(device, freqs, amp1, amp2, rng, cycles, max_window, settle):
                          phase=math.degrees(np.angle(h))))
     for ch in (0, 1):
         wavegen.configure(ch, False)
+    warn_reference(rows, amp1)
     return rows, clipped
+
+
+# The drive reference v1 is the divisor under every magnitude this rig reports,
+# so when it moves, every number moves with it -- plausibly, and in the wrong
+# direction. A loose J1 terminal cost four Gate 10 runs before the pattern was
+# spotted in the CSVs, so say it out loud instead. Healthy runs sit at 0.998 of
+# the requested amplitude with a standard deviation under 0.003; the bad ones
+# ran 0.93 +/- 0.04.
+REF_STD = 0.005              # fraction of the mean
+REF_LOW = 0.05               # fraction below the requested amplitude
+
+
+def warn_reference(rows, amp):
+    v1 = np.array([r["v1"] for r in rows])
+    if len(v1) < 4 or v1.mean() <= 0:
+        return
+    mean, sd = float(v1.mean()), float(v1.std())
+    bad = []
+    if sd > REF_STD * mean:
+        bad.append(f"scatter {sd / mean * 100:.1f}% (want < {REF_STD * 100:.1f})")
+    if amp and mean < (1 - REF_LOW) * amp:
+        bad.append(f"mean {mean:.3f} V against {amp:.3f} requested")
+    if bad:
+        print(f"  !! DRIVE REFERENCE UNSTABLE: {', '.join(bad)}")
+        print(f"     Every magnitude divides by this, so the results below are")
+        print(f"     not trustworthy. Reseat J1.1 and J1.2, and clip 1+/1- onto")
+        print(f"     the W1/W2 wires clear of the screw terminals.")
 
 
 def fake(freqs, c1, c2, amp, which, floating, seed):
