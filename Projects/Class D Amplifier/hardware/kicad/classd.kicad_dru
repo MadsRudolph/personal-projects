@@ -1,0 +1,41 @@
+(version 1)
+
+# Custom DRC rules for the CNC-milled Class D amplifier board.
+#
+# Copper is isolation-milled with an 0.8 mm flat end mill, so 0.8 mm is the hard
+# floor on any copper-to-copper gap: the tool cannot enter anything narrower, and
+# a gap it cannot enter stays shorted. The Default netclass asks for 0.85 mm, which
+# leaves every routed track ~0.025 mm of copper either side of the cut as margin
+# for runout and registration.
+#
+# Every footprint on this board was audited against that floor. Only one family
+# sits between the tool diameter and the netclass clearance:
+#
+#   Q1..Q4  TO-220-3_Vertical_LaserPads  -> 0.84 mm pad-to-pad
+#
+# The stock TO-220 footprint is 0.64 mm and is genuinely unbuildable here; the
+# _LaserPads variant narrows the pads to 1.7 mm to reach 0.84 mm. That gap is set
+# by the transistor's own 2.54 mm leg pitch, not by anything we cut, and it still
+# clears the tool in a single pass. The rules below relax the clearance ONLY
+# between two items that both belong to that one footprint. The full 0.85 mm stays
+# in force between different components and for every track.
+#
+# Needing no exception: DIP-8/14/16 LongPads 0.94 mm, the Bourns 3296W trimmer
+# 1.10 mm, the CA14V pot 7.66 mm, the bornier terminals 2.08 mm, and every
+# axial/radial passive at 1.9 mm or wider.
+
+(rule "Q1_intra_pad_clearance"
+	(condition "A.memberOfFootprint('Q1') && B.memberOfFootprint('Q1')")
+	(constraint clearance (min 0.8mm)))
+
+(rule "Q2_intra_pad_clearance"
+	(condition "A.memberOfFootprint('Q2') && B.memberOfFootprint('Q2')")
+	(constraint clearance (min 0.8mm)))
+
+(rule "Q3_intra_pad_clearance"
+	(condition "A.memberOfFootprint('Q3') && B.memberOfFootprint('Q3')")
+	(constraint clearance (min 0.8mm)))
+
+(rule "Q4_intra_pad_clearance"
+	(condition "A.memberOfFootprint('Q4') && B.memberOfFootprint('Q4')")
+	(constraint clearance (min 0.8mm)))

@@ -39,7 +39,7 @@ def G(n):
     return round(n * GRID, 4)
 
 
-sh = Sheet(paper="A3", title="Class D amplifier - mono BTL, 12 V, 4 ohm",
+sh = Sheet(paper="A2", title="Class D amplifier - mono BTL, 12 V, 4 ohm",
            project="classd", version=10, uuid=SHEET_UUID)
 
 R = "Device:R"
@@ -479,6 +479,68 @@ sh.note((G(120), G(220)), "L1/L2 are hand-wound on shop toroids: the stocked "
         size=1.27)
 
 # ===========================================================================
+# Footprints.  Through-hole throughout, sized for isolation milling with an
+# 0.8 mm end mill: DIP parts take the LongPads variants, and the TO-220s, the
+# LED and the hand-wound toroids take the narrowed-pad footprints vendored in
+# lib/.  Applied per refdes after the sheet is built, so every unit of a
+# multi-unit package (U1 has five, U5 has seven) carries the same value --
+# ERC treats a disagreement between units as an error.
+# ===========================================================================
+R_AXIAL = "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+C_DISC = "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm"
+
+FOOTPRINTS = {
+    # resistors: all E96 1/4 W axial except the Zobel, which is a 5 W wirewound
+    **{f"R{n}": R_AXIAL for n in range(1, 22)},
+    "R22": "Resistor_THT:R_Axial_Power_L25.0mm_W9.0mm_P30.48mm",
+    "RV1": "Potentiometer_THT:Potentiometer_Bourns_3296W_Vertical",
+    # the RK09K's 0.70 mm pin gap is below the 0.8 mm end mill and cannot be
+    # isolated; the CA14V's 5 mm pitch clears it easily.  Measure the pot the
+    # shop actually supplies before committing copper.
+    "RV2": "Potentiometer_THT:Potentiometer_ACP_CA14V-15_Vertical",
+
+    # ceramics: decoupling, both bootstraps, and the oscillator timing cap
+    **{f"C{n}": C_DISC for n in (2, 5, 6, 7, 8, 9, 10, 11, 12)},
+    "C1": "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm",
+    "C4": "Capacitor_THT:CP_Radial_D18.0mm_P7.50mm",
+    "C3": "Capacitor_THT:C_Rect_L13.0mm_W5.0mm_P10.00mm_FKS3_FKP3_MKS4",
+    "C13": "Capacitor_THT:C_Rect_L16.5mm_W5.0mm_P15.00mm_MKT",
+    "C14": "Capacitor_THT:C_Rect_L7.0mm_W3.5mm_P5.00mm",
+
+    "D1": "energy_system:LED_D3.0mm_P5.08mm_LaserPads",
+    **{f"D{n}": "Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal" for n in (2, 3)},
+    **{f"Q{n}": "energy_system:TO-220-3_Vertical_LaserPads" for n in range(1, 5)},
+    **{f"L{n}": "energy_system:"
+                "L_Toroid_Vertical_L34.5mm_W15.0mm_P28.20mm_LaserPads"
+       for n in (1, 2)},
+
+    # every IC is socketed - never solder these directly
+    "U1": "Package_DIP:DIP-14_W7.62mm_LongPads",
+    **{f"U{n}": "Package_DIP:DIP-8_W7.62mm_LongPads" for n in (2, 3, 4)},
+    **{f"U{n}": "Package_DIP:DIP-16_W7.62mm_LongPads" for n in (5, 6)},
+
+    **{f"J{n}": "TerminalBlock:TerminalBlock_bornier-2_P5.08mm"
+       for n in (1, 2, 3)},
+    # solder lugs (shop "Loddeflig 3MM")
+    **{f"TP{n}": "TestPoint:TestPoint_THTPad_2.5x2.5mm_Drill1.2mm"
+       for n in range(1, 6)},
+}
+
+
+def apply_footprints():
+    missing = set()
+    for part in sh.parts:
+        if getattr(part, "is_power_port", False):
+            continue
+        fp = FOOTPRINTS.get(part.ref)
+        if fp is None:
+            missing.add(part.ref)
+        else:
+            part.footprint = fp
+    return missing
+
+
+# ===========================================================================
 # What the drawing is supposed to say, node by node.
 # ===========================================================================
 TARGET = {
@@ -595,6 +657,9 @@ def move_fields(path, ref, ref_at, val_at, n=0):
 
 
 def main():
+    missing_fp = apply_footprints()
+    if missing_fp:
+        print("  NO FOOTPRINT for:", ", ".join(sorted(missing_fp)))
     problems = sh.check()
     for p in problems:
         print("  CHECK:", p)
@@ -602,6 +667,8 @@ def main():
     nets = sh.netlist()
     print(f"  {len(sh.parts)} symbols, {len(sh.wires)} wires, "
           f"{len(sh.labels)} labels, {len(nets)} nets")
+    print(f"  {len({p.ref for p in sh.parts if p.footprint})} refdes "
+          f"carry a footprint")
     out = KICAD / "classd.kicad_sch"
     sh.emit(str(out))
     move_fields(out, "U6", (G(46), G(171)), (G(46), G(174)))
@@ -611,7 +678,7 @@ def main():
         move_fields(out, _r, (G(_x + 3), _y), (G(_x + 6), _y))
     write_project(KICAD / "classd.kicad_pro", SHEET_UUID, "classd")
     print(f"  wrote {out}")
-    return 0 if (ok and not problems) else 1
+    return 0 if (ok and not problems and not missing_fp) else 1
 
 
 if __name__ == "__main__":

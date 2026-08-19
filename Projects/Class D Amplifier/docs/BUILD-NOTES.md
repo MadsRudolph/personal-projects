@@ -123,6 +123,39 @@ the filter or the bridge.
 The integrator is unaffected: its input sits at the virtual ground and does not
 track the audio.
 
+## Footprints
+
+All through-hole, sized for isolation milling with an 0.8 mm end mill. Every
+footprint was audited for its smallest pad-to-pad gap before being assigned,
+because a gap the tool cannot enter is never isolated and ships as a short.
+
+Two results worth keeping:
+
+- **The stock `Potentiometer_Alps_RK09K_Single_Vertical` is unbuildable here**
+  at 0.70 mm pad-to-pad. `RV2` uses `Potentiometer_ACP_CA14V-15_Vertical`
+  instead, which has a 5 mm pin pitch and 7.66 mm of clearance. The shop's
+  pot is not specified beyond "10k", so **measure the real part** before
+  committing copper — this is a plausible stand-in, not a confirmed match.
+- **The stock TO-220 footprint is 0.64 mm and also unbuildable.** `Q1..Q4` use
+  the vendored `energy_system:TO-220-3_Vertical_LaserPads`, whose pads are
+  narrowed to 1.7 mm to reach 0.84 mm. That still clears the tool but sits
+  under the 0.85 mm netclass clearance, so `classd.kicad_dru` carries a
+  per-footprint exception for those four parts and nothing else.
+
+Everything else clears comfortably: DIP-8/14/16 LongPads at 0.94 mm, the
+Bourns 3296W trimmer at 1.10 mm, the bornier terminals at 2.08 mm, and every
+axial or radial passive at 1.9 mm or wider.
+
+Two libraries are vendored into `hardware/kicad/lib/` and registered in
+`fp-lib-table`, because KiCad 10 does not ship them: the `bornier` screw
+terminals it deleted from the stock `TerminalBlock` library, and the
+mill-specific `energy_system` parts (narrowed TO-220 and LED, and the measured
+hand-wound toroid).
+
+Values still taken on trust and worth checking against the physical parts: the
+2200 uF bulk cap footprint (D18 mm / 7.5 mm pitch), the 820 nF film filter cap
+(15 mm pitch), and the 10R 5 W Zobel resistor (30.48 mm pitch).
+
 ## Still unknown, and it is the same one the brief flagged
 
 **The toroid cores.** The shop CSV lists three toroid sizes with no material
