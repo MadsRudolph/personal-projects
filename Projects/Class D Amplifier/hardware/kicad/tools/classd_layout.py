@@ -300,11 +300,11 @@ sh.label((G(282), G(120)), "B_HI")
 
 # the two spare sections: inputs tied off, outputs open
 sh.seg(U5E.pin("11"), (G(226), G(142)))
-sh.seg((G(226), G(142)), (G(226), G(150)))
+sh.seg((G(226), G(142)), (G(226), G(148)))
 sh.seg(U5F.pin("14"), (G(250), G(142)))
-sh.seg((G(250), G(142)), (G(250), G(150)))
-sh.seg((G(226), G(150)), (G(250), G(150)))
-sh.gnd((G(238), G(150)), drop=G(4))
+sh.seg((G(250), G(142)), (G(250), G(148)))
+sh.seg((G(226), G(148)), (G(250), G(148)))
+sh.gnd((G(238), G(148)), drop=G(4))
 sh.nc(U5E.pin("12"))
 sh.nc(U5F.pin("15"))
 
@@ -477,6 +477,80 @@ sh.note((G(120), G(216)), "No output DC blocking cap and no speaker ground - "
 sh.note((G(120), G(220)), "L1/L2 are hand-wound on shop toroids: the stocked "
                           "radial chokes saturate below the 3 A peak.",
         size=1.27)
+
+# ===========================================================================
+# Spread the blocks over the A2 sheet.
+#
+# The eight blocks were composed to A3 proportions.  Rather than re-derive
+# every coordinate for the larger sheet, each block is translated bodily into
+# its place on A2: the geometry inside a block -- which is the part that was
+# actually designed -- is untouched, and only the gaps between blocks grow.
+#
+# This is safe precisely because no wire crosses a block boundary; every
+# cross-block connection on this sheet is a net label.  The transform asserts
+# that (no wire may straddle a cut) and `verify_against()` re-checks the whole
+# netlist afterwards, so a mis-drawn region cannot pass silently.
+#
+# How far it can go is capped by the drawing, not the sheet: 71 parts spread
+# across the whole of A2 fall below sch_score's 0.05 parts/cm2 floor, which is
+# the scorer correctly observing that A2 is a bigger sheet than this board
+# needs.  These offsets take the parts from 36% to 57% of the page, which is
+# as far as that gate allows.
+# ===========================================================================
+BAND_CUT = (95.0, 194.0)                     # y, between the three bands
+COL_CUT = {                                   # x cuts within each band
+    0: (110.0, 290.0),                        # A | B | H
+    1: (160.0, 270.0),                        # C | D | E1
+    2: (185.0, 302.0),                        # E2 | F | G
+}
+OFFSET = {                                    # (dx, dy) per (band, column)
+    (0, 0): (0, 0),          (0, 1): (G(32), 0),        (0, 2): (G(66), 0),
+    (1, 0): (0, G(25)),      (1, 1): (G(44), G(25)),    (1, 2): (G(35), G(25)),
+    (2, 0): (0, G(50)),      (2, 1): (G(51), G(50)),    (2, 2): (G(42), G(50)),
+}
+GLOBAL = (G(52), G(26))                       # centre the result on the sheet
+
+
+def spread_pt(x, y):
+    """Where a pre-spread point ends up. Post-emit tweaks must go through this."""
+    dx, dy = OFFSET[_region(x, y)]
+    return (round(x + dx + GLOBAL[0], 4), round(y + dy + GLOBAL[1], 4))
+
+
+def _region(x, y):
+    band = 0 if y < BAND_CUT[0] else (1 if y < BAND_CUT[1] else 2)
+    cuts = COL_CUT[band]
+    col = 0 if x < cuts[0] else (1 if x < cuts[1] else 2)
+    return band, col
+
+
+def spread():
+    """Translate each block into its place on A2. Raises if a wire straddles."""
+    for i, (a, b) in enumerate(sh.wires):
+        ra, rb = _region(*a), _region(*b)
+        if ra != rb:
+            raise SystemExit(f"wire {a} -> {b} straddles blocks {ra} and {rb}; "
+                             f"move a cut or the wire")
+
+    # Round every translated coordinate the same way. Wire endpoints are
+    # stored rounded, so a pin left at 419.09999999999997 no longer lands on
+    # the wire that ends at 419.1 and the connection silently comes apart.
+    def shift(pt):
+        return spread_pt(pt[0], pt[1])
+
+    for part in sh.parts:
+        ox, oy = part.x, part.y
+        nx, ny = spread_pt(ox, oy)
+        dx, dy = nx - ox, ny - oy
+        part.x, part.y = nx, ny
+        for pin in part._pins:
+            pin.x, pin.y = round(pin.x + dx, 4), round(pin.y + dy, 4)
+
+    sh.wires = [(shift(a), shift(b)) for a, b in sh.wires]
+    sh.labels = [(t, *shift((x, y)), r, k) for (t, x, y, r, k) in sh.labels]
+    sh.texts = [(t, *shift((x, y)), sz) for (t, x, y, sz) in sh.texts]
+    sh.no_connects = [shift(pt) for pt in sh.no_connects]
+
 
 # ===========================================================================
 # Footprints.  Through-hole throughout, sized for isolation milling with an
@@ -657,6 +731,7 @@ def move_fields(path, ref, ref_at, val_at, n=0):
 
 
 def main():
+    spread()
     missing_fp = apply_footprints()
     if missing_fp:
         print("  NO FOOTPRINT for:", ", ".join(sorted(missing_fp)))
@@ -671,11 +746,14 @@ def main():
           f"carry a footprint")
     out = KICAD / "classd.kicad_sch"
     sh.emit(str(out))
-    move_fields(out, "U6", (G(46), G(171)), (G(46), G(174)))
-    move_fields(out, "U1", (G(52), G(58)), (G(52), G(61)), n=1)   # power unit
+    move_fields(out, "U6", spread_pt(G(46), G(171)),
+                spread_pt(G(46), G(174)))
+    move_fields(out, "U1", spread_pt(G(52), G(58)),
+                spread_pt(G(52), G(61)), n=1)                     # power unit
     for _r, _x in (("D1", 248), ("D3", 100), ("D2", 112)):        # rotated 90
         _y = G(36) if _r == "D1" else G(168)
-        move_fields(out, _r, (G(_x + 3), _y), (G(_x + 6), _y))
+        move_fields(out, _r, spread_pt(G(_x + 3), _y),
+                    spread_pt(G(_x + 6), _y))
     write_project(KICAD / "classd.kicad_pro", SHEET_UUID, "classd")
     print(f"  wrote {out}")
     return 0 if (ok and not problems and not missing_fp) else 1
