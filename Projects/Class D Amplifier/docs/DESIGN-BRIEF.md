@@ -3,8 +3,10 @@
 **Target:** one mono Class D amplifier board driving a 4 Ω speaker, built **twice**
 for stereo. Every part comes from the DTU component shop
 (`components-inventory/dtu_component_shop(1).csv`, 1464 lines, verified against
-this design). Board process is the existing CNC-milled single-sided
-through-hole flow (see the `kicad-laser-pcb` skill).
+this design). Board process is **double-sided CNC isolation milling** with a ground pour on
+the top layer, built on the existing `kicad-laser-pcb` flow. The design is kept
+within the mill's rules so the same files can be sent to a fab later without
+rework.
 
 | | |
 |---|---|
@@ -13,6 +15,7 @@ through-hole flow (see the `kicad-laser-pcb` skill).
 | Topology | **BTL full bridge**, fixed-frequency PWM |
 | Switching | ~**250 kHz** |
 | Channels | mono per board; build two identical boards |
+| Layers | 2 — routing on B.Cu, ground pour on F.Cu, hand-wired vias |
 
 ## Why this topology
 
@@ -30,11 +33,12 @@ supply, which makes it far harder to measure, to filter, and to explain. A
 triangle carrier and a comparator give a fixed, known switching frequency you
 can point an oscilloscope at.
 
-**Two boards rather than one stereo board.** On a single-sided milled board
-with no ground plane, two switching bridges sharing one piece of copper is a
-serious layout problem: crosstalk through the shared ground, and two carriers
-beating against each other. Two identical mono boards remove that entirely and
-halve the milling risk, at the cost of a second build.
+**Two boards rather than one stereo board.** Two switching bridges sharing one
+piece of copper is a serious layout problem even with a ground pour: crosstalk
+through the shared return, and two independent carriers beating against each
+other. Two identical mono boards remove that entirely and halve the milling
+risk, at the cost of a second build. It also makes each board small enough to
+be cheap if you later have them fabbed.
 
 ## Signal chain
 
@@ -114,8 +118,11 @@ line in ─ AC couple ─ level pot ─ buffer ─┬─────────
   3 A, which is exactly what you want: low conduction loss and easy drive.
   `IRL530` is the logic-level alternative but is unnecessary here, since the
   HIP4082 delivers a full 12 V gate drive.
-- `10 Ω` gate resistors in series with each gate; `10 kΩ` gate-to-source
-  pulldowns so nothing floats on at power-up.
+- **`22 Ω` gate resistors** in series with each gate; `10 kΩ` gate-to-source
+  pulldowns so nothing floats on at power-up. 22 Ω rather than 10 Ω slows the
+  switching edges, which cuts radiated noise and gate ringing noticeably. At
+  12 W the extra switching loss is irrelevant — this is the cheapest EMI lever
+  on the board. Drop to 10 Ω only if you later measure efficiency and care.
 - Each FET on a `TO-220 Heatsink` with a mica or silicon thermal pad and an
   isolation bushing — all in the shop. At 12 W output the dissipation is
   modest, but the tabs are at switching-node potential and **must not** share
@@ -148,6 +155,93 @@ one on an LCR meter and match the pair.
   PWM_A, both switching nodes, and the filtered output. On a milled board these
   cost nothing and make bring-up far easier.
 
+## Board construction — two layers on the mill
+
+**B.Cu carries all routing. F.Cu is a ground pour and nothing else.** Keeping
+every signal and power trace on the bottom lets the top stay a near-solid
+plane, which is the entire reason for going double-sided.
+
+Why it matters for *this* circuit specifically: the `LM311`s compare a 4 Vpp
+triangle against audio, so **any ground bounce beneath the comparator becomes a
+PWM timing error**, which is distortion. The bridge switches ~3 A in tens of
+nanoseconds, roughly 60 A/µs. A return path routed the long way round on one
+layer can easily be 100 nH, which turns that into ~6 V of transient difference
+between "ground" at the bridge and "ground" at the modulator. Over a pour the
+same loop is nearer 10 nH. That order of magnitude is the whole argument.
+
+### Vias are hand-soldered wire — so budget them
+
+Milling gives no plated through-holes. Every layer-to-layer connection is a
+short wire threaded through a hole and soldered on both faces. Two consequences:
+
+- **A component lead is not a via.** You cannot reach the top pad of anything
+  with a body over it — TO-220s, electrolytics, IC sockets. Place **dedicated
+  via holes** (0.8–1.0 mm) with a short B.Cu trace from the pad, positioned in
+  clear space where an iron can reach.
+- **Group grounds locally, then stitch once or twice per group.** Connect the
+  local ground net on B.Cu as you would on a single-sided board, and tie each
+  group to the pour with its own via. That keeps the count to roughly:
+
+| group | vias |
+|---|---|
+| power loop — bulk cap −, both low-side sources, driver `COM` | 2–3 (this one matters most) |
+| driver decoupling | 1 |
+| analog — TL074, both LM311s, virtual-ground divider | 2 |
+| output filter / Zobel / speaker return | 1–2 |
+| input connector ground | 1 |
+
+**Around 8–12 wire vias per board.** That is an evening's fiddly work, not a
+week's. Resist the temptation to via every ground pad individually.
+
+**Do not split the pour.** With a solid plane, control return currents by
+*placement*, not by cutting moats — a split plane usually makes mixed-signal
+noise worse, not better, because it forces return current to detour. Put the
+modulator physically away from the bridge and let the plane be continuous. This
+replaces the single-point `LK1` star-ground idea used on the sub crossover
+board, which is the right approach only when there is no plane.
+
+### Registration
+
+Milling both faces means the flip has to land within about 0.1 mm or the
+top-layer clearances will not line up with the holes.
+
+- Two 3 mm alignment holes outside the board outline, drilled in the first
+  setup, with dowel pins in the spoilboard.
+- Flip about the X axis so the pins re-enter the same holes.
+- **Cut a test coupon first** — a few pads and holes — and check the clearances
+  line up before committing the real board.
+
+### Rules to design to
+
+Design to the mill and the same files fab without rework. The reverse is not
+true, so use the mill's numbers throughout:
+
+- Track width ≥ 0.8 mm signal, **≥ 2.5 mm for the supply and bridge output**
+  (~3 A peak).
+- Clearance ≥ 0.8 mm everywhere, including pour-to-pad on F.Cu — the pour must
+  clear every hole, or a lead will short to ground when you solder the bottom.
+- Keep the **power loop** — bulk cap → high FET → low FET → back to the cap —
+  physically as small as you can draw it. This single loop dominates radiated
+  noise, more than anything else on the board.
+- Bulk cap and the driver's decoupling go **at the bridge**, not near the input
+  terminal.
+- Gate traces short and paired with their return; the gate loop is the second
+  worst offender after the power loop.
+
+### If you later have it fabbed
+
+Nothing in the design needs to change. You gain plated vias (the wire stitching
+disappears, and you can stitch far more generously), solder mask, and silkscreen.
+Two things become available that are worth taking:
+
+- Stitch the pour liberally around the power stage, since vias are now free.
+- Bare milled copper oxidises and bridges easily; a fabbed board with mask is
+  markedly easier to solder and to rework.
+
+If you fab, consider building one milled prototype first anyway — the bring-up
+below will find the design errors, and it is much cheaper to find them before
+paying for a panel.
+
 ## Bill of materials — per board
 
 | Qty | Part | Shop reference | Role |
@@ -168,11 +262,12 @@ one on an LCR meter and match the pair.
 | 1 | 10 kΩ pot | Resistor / Potentiometer | level |
 | 1 | 10 kΩ trimmer | Resistor / Trimmer | carrier frequency |
 | ~12 | E96 1/4 W | Resistor / E96 | gate, pull-up, bias, divider |
-| 4 | 10 Ω | Resistor / E96 | gate resistors |
+| 4 | 22 Ω | Resistor / E96 | gate resistors |
 | 2 | 2-pole screw terminal | Connector / Terminal | supply in, speaker out |
 | 1 | 2-pole screw terminal | Connector / Terminal | line in |
 | 4 | TO-220 heatsink + mica + bushing | Hardware | FET cooling |
 | 1 | DIP20 + 2 × DIP8 + DIP14 + DIP16 sockets | Connector / IC Socket | never solder these ICs directly |
+| ~10 | offcut wire | — | hand-soldered vias between B.Cu and the F.Cu pour |
 
 Everything above was checked against the shop CSV and exists.
 
@@ -182,18 +277,19 @@ Everything above was checked against the shop CSV and exists.
    are unspecified in the shop list. Wind, measure, and check for saturation at
    3 A before trusting the filter. Get this wrong and the amplifier distorts
    badly at high level or destroys the FETs.
-2. **Single-sided milled copper has no ground plane.** This is the hardest part
-   of the whole project. Keep the bridge's switching loop physically tiny, run
-   wide (≥ 2 mm) power traces, and use a star ground with the analog section
-   joined to power ground at exactly one point — the same `LK1` link idea as the
-   sub crossover board.
+2. **Registration between the two milled sides is the new risk.** Isolation
+   milling both faces needs the flip to land within ~0.1 mm, or the top-layer
+   clearances will not line up with the holes. Cut a test coupon before
+   committing the real board.
 3. **Dead-time must be verified from the datasheet, not assumed.** Shoot-through
    in a 12 V bridge will destroy MOSFETs quickly and quietly.
 4. **Bring it up on a current-limited supply into a dummy load**, never a
    speaker. The shop's 5 W power resistors are too small for a 12 W dummy load;
    use an external load resistor.
-5. **250 kHz on a milled board will radiate.** Expect to hear it on nearby AM
-   radio. That is normal for this construction and not a fault.
+5. **250 kHz will still radiate**, even with the pour. Expect to hear it on a
+   nearby AM radio. That is normal for this construction and not a fault — the
+   pour reduces coupling *into your own modulator*, which is what protects the
+   audio; it does not make the board quiet to the outside world.
 
 ## Bring-up order
 
@@ -223,6 +319,14 @@ band 1   A power in + rails      B triangle oscillator     H indicators / test p
 band 2   C input stage           D PWM comparators         E gate driver
 band 3   F output bridge         G output filter + Zobel + speaker
 ```
+
+**The board is now 2-layer**, which the `kicad-laser-pcb` flow does not assume.
+That skill's router treats `F.Cu` as *wire bridges for crossings that are
+impossible single-sided*, and runs a two-stage route that pushes leftovers
+there. For this board `F.Cu` is a ground pour instead, so that stage needs
+rethinking rather than reusing: route everything on `B.Cu`, then pour `F.Cu` as
+ground and place the stitching vias by hand. Read `references/routing.md`
+before assuming the existing pipeline applies.
 
 Two things to know before writing any file:
 
