@@ -548,6 +548,20 @@ for _ref, _pin in (("U2", "5"), ("U2", "6"), ("U3", "5"), ("U3", "6"),
 
 def write_project(path: Path, uuid: str, name: str):
     pro = json.loads(TEMPLATE_PRO.read_text(encoding="utf-8"))
+
+    # The template's netclass predates KiCad 7's schematic netclass properties
+    # and carries no `wire_width`. KiCad 10 applies the netclass wire width to
+    # every wire on the sheet, and a missing key resolves to ZERO: the wires
+    # render as invisible hairlines and the junction dots -- whose size is
+    # derived from the wire width -- disappear entirely. The netlist and ERC
+    # are unaffected, so every headless check still passes while Eeschema
+    # shows what looks exactly like a sheet full of unconnected wires.
+    # Open the same file with no .kicad_pro beside it and it draws correctly.
+    for cls in pro.get("net_settings", {}).get("classes", []):
+        cls.setdefault("wire_width", 6.0)      # mils, as default_line_thickness
+        cls.setdefault("bus_width", 12.0)
+        cls.setdefault("line_style", 0)
+
     pro["meta"]["filename"] = f"{name}.kicad_pro"
     pro["schematic"]["top_level_sheets"] = [
         {"filename": f"{name}.kicad_sch", "name": name, "uuid": uuid}]
