@@ -100,14 +100,20 @@ line in ─ AC couple ─ level pot ─ buffer ─┬─────────
   At a 4 µs switching period that destroys the modulation.
 
 ### E — Gate driver
-- `HIP4082IPZ`, 20-pin DIP. Full-bridge N-channel driver with bootstrap
-  high-side supplies, built-in shoot-through protection and dead-time set by
-  resistors on `HDEL`/`LDEL`.
+- `HIP4082IPZ`, **16-pin DIP** (not 20 - confirmed against the Renesas
+  ordering information). Full-bridge N-channel driver with bootstrap high-side
+  supplies, built-in shoot-through protection, and dead-time set by **one
+  resistor on the single `DEL` pin (pin 5)** - there is no separate
+  `HDEL`/`LDEL` pair on this part; that is the HIP4081. `R12 = 3k3` gives
+  ~200 ns.
 - Drive `AHI`/`ALI` from PWM_A and its complement, `BHI`/`BLI` from PWM_B and
   its complement. Generate the complements with a `4049` hex inverting buffer
   — **4000-series, not 74HC**, because 74HC parts are 6 V maximum and this
   logic runs at 12 V.
-- Bootstrap capacitors `100 nF` ceramic per high side.
+- Bootstrap capacitors `100 nF` ceramic per high side, **plus an external
+  bootstrap diode per high side** - the HIP4082 has none internally, so
+  `2 x 1N5817` are fitted from +12 V to `AHB` and `BHB`.
+- `DIS` (pin 8) is **active high**, so it is held down by a `10 kOhm` pulldown.
 - **Several values here are unconfirmed — see the datasheet checklist below
   before drawing.** Dead-time errors destroy MOSFETs, so none of the HIP4082
   numbers should be guessed.
@@ -254,21 +260,26 @@ paying for a panel.
 | 1 | 820 nF film | Capacitor / Film | output filter |
 | 1 | 100 nF film | Capacitor / Film | Zobel |
 | 1 | 10 Ω 5 W | Resistor / Power | Zobel |
-| 1 | 2200 µF | Capacitor / Electrolytic | bulk supply |
+| 1 | 2200 µF **50 V** | Capacitor / Electrolytic | bulk supply (take the `2200µF 50V` shop line; the plain one states no voltage) |
+| 2 | 1N5817 | Diode / Schottky | **external** bootstrap diodes |
 | 1 | 100 µF | Capacitor / Electrolytic | virtual-ground reservoir |
 | ~8 | 100 nF ceramic | Capacitor / Ceramic | decoupling, bootstrap |
-| 1 | 1 µF film | Capacitor / Film | input AC coupling |
+| 1 | 1.5 µF film | Capacitor / Film | input AC coupling (**no 1 µF film is stocked** - the series jumps 820 n to 1u5) |
 | 1 | 10 kΩ pot | Resistor / Potentiometer | level |
 | 1 | 10 kΩ trimmer | Resistor / Trimmer | carrier frequency |
 | ~12 | E96 1/4 W | Resistor / E96 | gate, pull-up, bias, divider |
-| 4 | 22 Ω | Resistor / E96 | gate resistors |
+| 4 | 22.1 Ω | Resistor / E96 | gate resistors (**22.0 Ω is not an E96 value**; 22R1 is the stocked one) |
 | 2 | 2-pole screw terminal | Connector / Terminal | supply in, speaker out |
 | 1 | 2-pole screw terminal | Connector / Terminal | line in |
 | 4 | TO-220 heatsink + mica + bushing | Hardware | FET cooling |
-| 1 | DIP20 + 2 × DIP8 + DIP14 + DIP16 sockets | Connector / IC Socket | never solder these ICs directly |
+| 1 | **2 × DIP16 + 2 × DIP8 + DIP14** sockets | Connector / IC Socket | never solder these ICs directly (no DIP20 - the HIP4082 is 16-pin) |
 | ~10 | offcut wire | — | hand-soldered vias between B.Cu and the F.Cu pour |
 
-Everything above was checked against the shop CSV and exists.
+Everything above was checked against the shop CSV and exists, with four
+caveats the CSV cannot settle: **no film capacitor carries a voltage rating**,
+the 100 µF electrolytic has none either, **no electrolytic states a ripple
+current**, and the screw terminal states no current rating. Read the part
+markings at pick time rather than trusting this table for those four.
 
 ## Datasheet checks — do these before drawing
 
@@ -278,17 +289,19 @@ marked **critical** can destroy parts or make the amplifier not work at all;
 the rest change component values.
 
 ### HIP4082 — gate driver
-- [ ] **critical** Are the bootstrap diodes internal, or must external ones be
-      fitted? If external, `1N5817` (1 A) or `BAT42` — check the reverse
-      voltage rating covers the switching node.
-- [ ] **critical** `HDEL` / `LDEL` resistor values for **~200 ns dead-time**.
+- [x] **critical** Are the bootstrap diodes internal, or must external ones be
+      fitted? **External - none inside.** `1N5817` (20 V, 1 A) covers the
+      switching node comfortably on a 12 V rail.
+- [x] **critical** `DEL` resistor value for **~200 ns dead-time** (one pin,
+      not two).
       Too little and the bridge shoot-throughs; too much and you get
       cross-over distortion. This value goes straight into the schematic.
 - [ ] Input logic thresholds at `VDD = 12 V` — confirm the `LM311` open-collector
       output with a 1 kΩ pull-up to 12 V actually meets V<sub>IH</sub>.
 - [ ] Absolute maximum `VDD` (assumed 16 V — confirm 12 V leaves margin).
 - [ ] Under-voltage lockout threshold, so you know what it does at power-up.
-- [ ] What the `DIS` (disable) pin needs — tie off or drive? Decide and draw it.
+- [x] What the `DIS` (disable) pin needs - **active high; pulled down by
+      `R13` 10k** so the driver is enabled.
 - [ ] Peak gate drive current, to sanity-check the 22 Ω gate resistors.
 
 ### IRF540 — output MOSFETs
@@ -348,12 +361,25 @@ read from:
 
 | item | value found | source |
 |---|---|---|
-| HIP4082 bootstrap diodes | | |
-| HDEL / LDEL for 200 ns | | |
-| IRF540 Q<sub>g</sub> | | |
-| LM311 input CM range @ 12 V | | |
-| TL074 input CM range @ 12 V | | |
-| Core A<sub>L</sub> / I<sub>sat</sub> | | |
+| HIP4082 package | **16-pin PDIP** (`HIP4082IPZ`); no 20-pin variant exists | Renesas FN3676 rev 6.00, ordering info p.2, package E16.3 p.13 |
+| HIP4082 bootstrap diodes | **External, required.** No internal diode. The datasheet names no part, so `1N5817` (20 V / 1 A Schottky) was chosen: abs max on `AHB`/`BHB` is `V_AHS + V_DD`, so 20 V is ample on a 12 V rail | FN3676 pin description p.7, abs max p.5 |
+| Dead time - `DEL`, not HDEL/LDEL | **One shared pin (5).** 10k -> 0.5 us typ, 100k -> 4.5 us typ; no closed form is given. Interpolating, **~3k3 -> ~200 ns**; DEL current (12-2)/3k3 ~ 3.0 mA, inside the -4 mA limit. *Read off Fig. 16 rather than a specified point - measure it on a scope during bring-up.* | FN3676 table p.5, Fig. 16 p.11 |
+| HIP4082 input thresholds @ 12 V | V_IL max 0.8 V, V_IH min 2.7 V. An LM311 open collector with 1k to +12 V clears both easily | FN3676 electrical specs p.5 |
+| HIP4082 V_DD abs max / UVLO | 16 V abs max (recommended 8.5-15 V); UVLO rising 7.6 V typ, falling 7.1 V. All four outputs are held low below it, so power-up is safe | FN3676 p.5-6, Fig. 11 p.10 |
+| HIP4082 peak gate drive | 1.4 A source / 1.3 A sink typ - the 22 Ohm gate resistors, not the driver, set the edge rate | FN3676 p.6 |
+| IRF540N Q_g | 71 nC max at I_D = 16 A - switches far inside 200 ns | Infineon IRF540NPbF PD-94812, p.2 |
+| IRF540N Q_rr / t_rr | 505 nC typ, 760 nC max; t_rr 115-170 ns. **Marginal**: t_rr is the same order as the dead time, so expect a recovery spike and EMI. Acceptable at 12 W; a faster-body-diode part is the upgrade if EMI matters | Infineon PD-94812, p.2 |
+| IRF540N R_DS(on) | 44 mOhm max guaranteed at V_GS = 10 V. **No 12 V figure is published**; the curves are nearly coincident above 10 V, so design with 44 mOhm. Conduction loss works out at 60-180 mW per FET - trivial for the shop heatsink | Infineon PD-94812, p.2 and Fig. 1 |
+| IRF540N R_thJC | 1.15 C/W max (TO-220) | Infineon PD-94812, p.1 |
+| LM311 input CM range @ 12 V | Recommended `V- + 0.5 V` to `V+ - 1.5 V`, i.e. **0.5-10.5 V**; worst-case guaranteed about 0.5-10 V. The 4-8 V window has ~2 V margin at the top and ~3.5 V at the bottom - comfortable | TI SLCS007K sec 6.3 p.4, sec 6.6 p.6 |
+| LM311 response time | 115 ns low-to-high, 165 ns high-to-low, typ, **at 5 mV overdrive**. It degrades sharply as overdrive approaches zero near the triangle peaks, and the datasheet gives only curves, no derating table. Expect real edge jitter there | TI SLCS007K sec 6.7 p.6, Figs. 3/4/14/15 |
+| LM311 pull-up / V_OL | V_OL 0.23 V typ at 8 mA, rated to 50 mA. 1k to 12 V draws ~11.7 mA - safe, not marginal | TI SLCS007K sec 6.6 p.6 |
+| LM311 BAL / STRB | Leaving both open is TI's own default test condition and is what the typical circuits show. Left unconnected here | TI SLCS007K sec 6.6 note 1, Figs. 1-2 |
+| TL074 input CM range @ 12 V | **The one genuinely tight number.** The classic TL07x die needs `V- + 4 V`, i.e. only **4-12 V** usable on a single 12 V rail, so a 6 V +/- 2 V audio swing sits right on the lower limit. The newer TL07xH die needs only `V- + 1.5 V` and is safe. See BUILD-NOTES | TI SLOS080W sec 5.3 p.11, sec 5.7 p.13 |
+| TL074 swing / slew / GBW | Swing at least +/-12 V on +/-15 V into a light load (a 3-9 V window here, which contains the 4 Vpp triangle); slew 8 V/us min, 20 V/us typ against the 2 V/us needed; GBW 5.25 MHz typ, about 21x loop gain at 250 kHz | TI SLOS080W sec 5.8 p.15, sec 5.9 p.16 |
+| MCP6002 fallback | **Not viable.** 1.8-6.0 V recommended, ~7 V abs max - it cannot run on this 12 V rail at all, so the fallback this brief suggested is wrong | Microchip MCP6001/2/4 datasheet |
+| CD4049 supply / delay | 3-18 V recommended, 20 V abs max, so 12 V is mid-range. **74HC4049 would be over its abs max and must not be substituted.** t_PLH ~28 ns typ / ~60 ns max at 12 V, t_PHL ~18 ns typ / ~36 ns max (interpolated between the 10 V and 15 V rows). No channel-matching spec is published, so budget the max against the 200 ns dead time | TI SCHS046L sec 5.1/5.3 p.5-6, sec 5.6 p.11 |
+| Core A_L / I_sat | **Still unknown.** The shop CSV lists three toroid sizes with no material and no A_L. Wind them, measure on an LCR meter, match the pair, and check for saturation at 3 A before trusting the filter | `dtu_component_shop(1).csv` |
 
 
 ## Risks — read before building
