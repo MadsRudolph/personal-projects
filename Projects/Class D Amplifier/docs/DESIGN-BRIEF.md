@@ -108,10 +108,9 @@ line in ─ AC couple ─ level pot ─ buffer ─┬─────────
   — **4000-series, not 74HC**, because 74HC parts are 6 V maximum and this
   logic runs at 12 V.
 - Bootstrap capacitors `100 nF` ceramic per high side.
-- **Verify against the datasheet before drawing:** whether the bootstrap diodes
-  are internal or need external `1N5817`s, the exact `HDEL`/`LDEL` resistor
-  values for ~200 ns dead-time, and the input logic thresholds at VDD = 12 V.
-  Do not guess these — dead-time errors destroy MOSFETs.
+- **Several values here are unconfirmed — see the datasheet checklist below
+  before drawing.** Dead-time errors destroy MOSFETs, so none of the HIP4082
+  numbers should be guessed.
 
 ### F — Output bridge
 - 4 × `IRF540` (TO-220, 100 V, 33 A, ~44 mΩ). Enormously overrated for 12 V /
@@ -271,6 +270,92 @@ paying for a panel.
 
 Everything above was checked against the shop CSV and exists.
 
+## Datasheet checks — do these before drawing
+
+Every value below is either assumed or taken from memory. Confirm each against
+the real datasheet and write the answer into this file as you go. The items
+marked **critical** can destroy parts or make the amplifier not work at all;
+the rest change component values.
+
+### HIP4082 — gate driver
+- [ ] **critical** Are the bootstrap diodes internal, or must external ones be
+      fitted? If external, `1N5817` (1 A) or `BAT42` — check the reverse
+      voltage rating covers the switching node.
+- [ ] **critical** `HDEL` / `LDEL` resistor values for **~200 ns dead-time**.
+      Too little and the bridge shoot-throughs; too much and you get
+      cross-over distortion. This value goes straight into the schematic.
+- [ ] Input logic thresholds at `VDD = 12 V` — confirm the `LM311` open-collector
+      output with a 1 kΩ pull-up to 12 V actually meets V<sub>IH</sub>.
+- [ ] Absolute maximum `VDD` (assumed 16 V — confirm 12 V leaves margin).
+- [ ] Under-voltage lockout threshold, so you know what it does at power-up.
+- [ ] What the `DIS` (disable) pin needs — tie off or drive? Decide and draw it.
+- [ ] Peak gate drive current, to sanity-check the 22 Ω gate resistors.
+
+### IRF540 — output MOSFETs
+- [ ] **critical** Body-diode reverse-recovery charge. In a bridge the opposite
+      body diode conducts during dead-time; slow recovery causes a current
+      spike and a lot of the EMI. If it looks poor, `IRL530` or a faster part
+      is worth considering.
+- [ ] Total gate charge Q<sub>g</sub>, to check the driver can switch it in well
+      under the 200 ns dead-time with 22 Ω.
+- [ ] R<sub>DS(on)</sub> at V<sub>GS</sub> = 12 V (not the headline 10 V figure)
+      → conduction loss → heatsink sizing.
+- [ ] Junction-to-case thermal resistance, against the shop `TO-220 Heatsink`
+      and mica pad, at the expected dissipation.
+
+### LM311 — comparators
+- [ ] **critical** Input common-mode range on a **single 12 V supply**. The
+      triangle sits at 6 V ± 2 V; confirm 4–8 V is inside the allowed range.
+- [ ] Response time at the actual overdrive — the ~200 ns figure assumes a
+      healthy overdrive, and near the triangle peaks the overdrive is small.
+- [ ] Output saturation voltage and maximum pull-up current, to size the 1 kΩ.
+- [ ] Whether the balance/strobe pins need tying off.
+
+### TL074 — op-amps
+- [ ] **critical** Input common-mode range on a single 12 V rail. TL07x is
+      typically about 4 V from each rail, which on 12 V leaves only ~4–8 V —
+      exactly where the 6 V virtual ground and the audio swing sit. If it is
+      tight, move the input buffer and inverter to `MCP6002` (rail-to-rail,
+      in the shop) and keep the TL074 only for the integrator.
+- [ ] Output voltage swing on a single 12 V rail — the triangle needs a clean
+      4 Vpp without clipping.
+- [ ] Slew rate and GBW, to confirm the integrator holds a straight ramp at
+      250 kHz.
+
+### 4049 — complement generation
+- [ ] Supply range covers 12 V (4000-series should, 74HC does **not** — make
+      sure the part fitted is the CMOS 4049, not `74HC4049`).
+- [ ] Propagation delay — it adds directly to the effective dead-time, so it
+      must be small compared with 200 ns, and matched between the two channels.
+
+### Passives and magnetics
+- [ ] **critical** Toroid core material and A<sub>L</sub>, so 15 µH can be wound
+      and, more importantly, so you know the **saturation current exceeds 3 A**.
+      Measure the finished inductors on an LCR meter and match the pair.
+- [ ] Output filter capacitor voltage rating — it sees the full differential
+      swing, so ≥ 63 V film.
+- [ ] Bulk `2200 µF` **ripple-current rating**, not just voltage. A Class D
+      bridge draws large pulsed current from this cap and an undersized one
+      will run hot and fail early. Voltage rating ≥ 25 V.
+- [ ] Screw terminal current rating covers ~3 A peak.
+- [ ] `10 Ω` Zobel resistor dissipation at 250 kHz — it carries the carrier
+      residual continuously, so confirm 5 W is comfortable.
+
+### Answers
+
+Record them here as you confirm them, so the schematic session has one place to
+read from:
+
+| item | value found | source |
+|---|---|---|
+| HIP4082 bootstrap diodes | | |
+| HDEL / LDEL for 200 ns | | |
+| IRF540 Q<sub>g</sub> | | |
+| LM311 input CM range @ 12 V | | |
+| TL074 input CM range @ 12 V | | |
+| Core A<sub>L</sub> / I<sub>sat</sub> | | |
+
+
 ## Risks — read before building
 
 1. **Hand-wound inductors are the critical unknown.** Core material and A<sub>L</sub>
@@ -345,5 +430,7 @@ unconnected pins in Eeschema. If that happens again, **open the file standalone
 with no project beside it** — if it is clean that way and broken inside the
 project, the problem is the project/uuid linkage, not the drawing.
 
-Before drawing, confirm from the HIP4082 datasheet: bootstrap diode
-requirement, HDEL/LDEL values for ~200 ns, and input thresholds at VDD = 12 V.
+Before drawing, work through **"Datasheet checks"** above and fill in the
+answers table. The items marked *critical* block the schematic — particularly
+the HIP4082 dead-time resistors and bootstrap arrangement, which are drawn
+components, not just numbers.
