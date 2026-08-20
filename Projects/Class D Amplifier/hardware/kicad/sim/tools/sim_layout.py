@@ -209,10 +209,14 @@ def back_link(sh, y=G(88)):
     KiCad rejects an href that is a bare relative path or a ${KIPRJMOD}
     variable, but accepts a relative path carrying the file: scheme, which
     keeps the link working wherever the repository is checked out.
+
+    It points at the .kicad_sch rather than the .kicad_pro because Windows
+    opens a project file with the project manager, leaving you a click short
+    of the drawing; a schematic file goes straight to eeschema.
     """
-    text = "<-  back to the board schematic   classd.kicad_pro"
+    text = "<-  back to the board schematic   classd.kicad_sch"
     sh.note((G(10), y), text, size=1.6)
-    return {text: "file:../classd.kicad_pro"}
+    return {text: "file:../classd.kicad_sch"}
 
 
 def add_hrefs(path, links):

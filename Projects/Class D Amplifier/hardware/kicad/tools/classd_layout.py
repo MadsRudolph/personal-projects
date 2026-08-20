@@ -647,9 +647,15 @@ def sim_index(sh):
     sh.note((x, y), "SIMULATION  (separate projects - click to open)", size=2)
     links = {}
     for i, (name, desc) in enumerate(SIM_LINKS):
-        text = f"{desc}   ->  sim/{name}.kicad_pro"
+        text = f"{desc}   ->  sim/{name}.kicad_sch"
         sh.note((x, y + G(5) + G(3) * i), text, size=1.27)
-        links[text] = f"file:sim/{name}.kicad_pro"
+        # Point at the SHEET, not the project. Windows opens .kicad_pro with
+        # kicad.exe -- the project manager -- which lands you one click short
+        # of the drawing. .kicad_sch opens eeschema.exe directly on it, which
+        # is the behaviour a hierarchical sheet would have given us. Eeschema
+        # still picks up the matching .kicad_pro beside it, so the netclass
+        # and the simulator workbook come with it.
+        links[text] = f"file:sim/{name}.kicad_sch"
     return links
 
 
