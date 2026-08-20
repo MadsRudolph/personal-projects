@@ -1,0 +1,22 @@
+{
+  "$schema": "https://go.kicad.org/pcm/schemas/v2",
+  "name": "Via Blank",
+  "description": "Import an SRM-20 via blank into the open board.",
+  "description_full": "Drops the plated hole pattern and F.Cu ground plane of a fab-made via blank into the board you already have, clipped to its outline and locked so automatic placement will not move it. The blank is a two-layer board with solid copper on both faces tied together by plated 1.0 mm holes: F.Cu is a ground plane you only relieve, B.Cu is the layer the mill isolates into traces, and ground stops needing hand-soldered wire vias.",
+  "identifier": "com.github.mads.via-blank",
+  "type": "plugin",
+  "author": {
+    "name": "Mads"
+  },
+  "license": "MIT",
+  "resources": {
+    "Reference": "https://github.com/opulo-inc/viagrid"
+  },
+  "versions": [
+    {
+      "version": "0.1.0",
+      "status": "development",
+      "kicad_version": "10.0"
+    }
+  ]
+}

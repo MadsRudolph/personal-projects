@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "via_blank")(type "KiCad")(uri "${KIPRJMOD}/../lib/via_blank.pretty")(options "")(descr "SRM-20 via blank lattices"))
+)
