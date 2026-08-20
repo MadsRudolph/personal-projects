@@ -14,6 +14,7 @@ the comment in write_project() for why that is not optional.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -98,18 +99,28 @@ def new_sheet(title, project, uuid, paper="A3"):
 # and run_sims.py all read this.
 PALETTE = ["rgb(228, 26, 28)", "rgb(55, 126, 184)", "rgb(77, 175, 74)",
            "rgb(152, 78, 163)", "rgb(255, 127, 0)"]
+# A signal that is not a bare V(/NODE) is an expression: KiCad stores those
+# separately as user-defined signals and binds each to an ngspice vector
+# named user0, user1, ... -- which is the name the measurement panel wants,
+# NOT the expression text. Retyping the expression into a measurement finds
+# no such vector.
 WORKBOOK = {
     "sim_a_vground": (".tran 1m 3", ["V(/VGND)", "V(/VG)"]),
     "sim_b_triangle": (".tran 20n 200u uic", ["V(/TRI)", "V(/SQ)"]),
-    "sim_c_input": (".tran 10u 5m", ["V(/AUDIO_P)", "V(/AUDIO_N)"]),
+    "sim_c_input": (".tran 10u 5m",
+                    ["V(/AUDIO_P)", "V(/AUDIO_N)",
+                     "V(/AUDIO_P)+V(/AUDIO_N)-12"]),
     "sim_d_pwm": (".tran 50n 1m", ["V(/PWM_A)", "V(/PWM_B)", "V(/TRI)"]),
     "sim_e_driver": (".tran 5n 150u uic",
                      ["V(/G_AH)", "V(/G_AL)", "V(/A_HI)"]),
+    # the differential, not the two outputs: each output alone carries a
+    # full-rail common mode that the load never sees.
     "sim_f_bridge": (".tran 20n 300u uic",
-                     ["V(/OUT_P)", "V(/OUT_N)", "V(/SW_A)"]),
+                     ["V(/OUT_P)-V(/OUT_N)", "V(/SW_A)"]),
     "sim_g_chain": (".tran 20n 1.4m uic",
-                    ["V(/OUT_P)", "V(/OUT_N)", "V(/AUDIO_P)", "V(/TRI)"]),
+                    ["V(/OUT_P)-V(/OUT_N)", "V(/AUDIO_P)", "V(/TRI)"]),
 }
+PLAIN_NODE = re.compile(r"^V\(/[A-Za-z0-9_+.-]+\)$")
 
 
 def write_workbook(path: Path, name: str):
@@ -129,8 +140,9 @@ def write_workbook(path: Path, name: str):
                         "trace_type": 257}
                        for i, s in enumerate(signals)],
         }],
-        "user_defined_signals": [],
-        "version": 6,
+        "user_defined_signals": [s for s in signals
+                                 if not PLAIN_NODE.match(s)],
+        "version": 7,
     }
     path.write_text(json.dumps(wb, indent=2) + "\n", encoding="utf-8")
 
@@ -771,21 +783,24 @@ def build_e(sh):
         else:
             sh.gnd(Cg.pin("2"), drop=G(4))
 
-    sh.note((G(10), G(176)),
-            "R23/R24 hold SW_A and SW_B near 0 V, standing in for the "
-            "low-side FET being on. Leave them out and the switch nodes float "
-            "up through the driver's own leakage until the bootstrap caps have "
-            "barely a volt across them -- the bridge itself is bench F.",
-            size=1.27)
-    sh.note((G(10), G(184)),
-            "The bootstrap caps start empty and take ~50 us to reach 11.7 V, "
-            "so read the dead time from the far end of the run, not the start.",
-            size=1.27)
-    sh.note((G(10), G(192)),
-            "Expect ~200 ns with both driver outputs low at every commutation, "
-            "and G_AH about a quarter of a volt short of G_AL: that is the "
-            "Schottky drop the high side runs on.", size=1.27)
-    sh.note((G(10), G(200)), WORKBOOK["sim_e_driver"][0], size=1.6)
+    for i, line in enumerate((
+            "R23/R24 hold SW_A and SW_B near 0 V, standing in for the",
+            "low-side FET being on. Without them the switch nodes float up",
+            "through the driver's own leakage and the bootstrap caps never",
+            "charge -- the bridge itself is bench F.",
+            "",
+            "The caps start empty and take ~50 us to fill, so read the dead",
+            "time from the far end of the run, not the start. Expect ~225 ns",
+            "with both outputs low at each commutation, and G_AH a quarter of",
+            "a volt below G_AL: the Schottky drop the high side runs on.",
+            "",
+            "Give every measurement a window. MAX over the whole run reads",
+            "the t=0 solve, where the uncharged bootstrap cap is a short and",
+            "ties the switch node to the rail, so G_AH appears to reach 12 V.",
+            "MAX V(/G_AH) FROM=100u TO=150u reports the real 11.78 V.")):
+        if line:
+            sh.note((G(10), G(154 + 4 * i)), line, size=1.27)
+    sh.note((G(10), G(212)), WORKBOOK["sim_e_driver"][0], size=1.6)
     return sim
 
 
@@ -830,7 +845,15 @@ def build_f(sh):
             "The bridge is real IRF540N cards, body diode included, so the "
             "dead-time commutation and its recovery spike are in the result.",
             size=1.27)
-    sh.note((G(10), G(182)), WORKBOOK["sim_f_bridge"][0], size=1.6)
+    sh.note((G(10), G(182)),
+            "Plot the DIFFERENCE, not the two outputs. Every part of the "
+            "filter -- C13, the Zobel, the load -- sits between OUT_P and "
+            "OUT_N, and nothing connects either of them to ground, so the "
+            "common mode is unfiltered and swings the full rail. Each output "
+            "measured to ground therefore runs from -3.8 V to +15.8 V while "
+            "the load sees a clean 6.8 V. Measure with FROM=150u TO=300u.",
+            size=1.27)
+    sh.note((G(10), G(190)), WORKBOOK["sim_f_bridge"][0], size=1.6)
     return sim
 
 
@@ -992,14 +1015,21 @@ def build_g(sh):
             "TL074's input common-mode floor. Full output and the input "
             "stage's limit arrive together; there is no headroom in hand.",
             size=1.27)
-    sh.note((G(10), G(268)), WORKBOOK["sim_g_chain"][0], size=1.6)
+    sh.note((G(10), G(268)),
+            "Measure over one audio cycle, past the bootstrap fill: "
+            "RMS user0 FROM=400u TO=1400u gives 7.2 V, which is 13 W across "
+            "4 ohm, and MIN V(/AUDIO_P) FROM=400u TO=1400u gives 4.00 V. "
+            "user0 is the differential output -- KiCad binds every "
+            "user-defined signal to userN, and the measurement panel wants "
+            "that name rather than the expression.", size=1.27)
+    sh.note((G(10), G(276)), WORKBOOK["sim_g_chain"][0], size=1.6)
     return sim
 
 
 # ===========================================================================
 # Where the "back to the board" link goes on each sheet: clear of the drawing,
 # which is not the same y once a sheet is more than a screenful tall.
-BACKLINK_Y = {"sim_e_driver": 212, "sim_f_bridge": 192, "sim_g_chain": 276}
+BACKLINK_Y = {"sim_e_driver": 220, "sim_f_bridge": 198, "sim_g_chain": 284}
 
 
 def main():

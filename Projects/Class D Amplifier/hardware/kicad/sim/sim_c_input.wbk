@@ -29,10 +29,17 @@
           "color": "rgb(55, 126, 184)",
           "signal": "V(/AUDIO_N)",
           "trace_type": 257
+        },
+        {
+          "color": "rgb(77, 175, 74)",
+          "signal": "V(/AUDIO_P)+V(/AUDIO_N)-12",
+          "trace_type": 257
         }
       ]
     }
   ],
-  "user_defined_signals": [],
-  "version": 6
+  "user_defined_signals": [
+    "V(/AUDIO_P)+V(/AUDIO_N)-12"
+  ],
+  "version": 7
 }

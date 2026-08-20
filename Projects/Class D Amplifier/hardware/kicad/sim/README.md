@@ -76,6 +76,48 @@ deliverable — the sheets themselves run in KiCad's own simulator.
 - The virtual ground takes about 2.5 s to settle through R1||R2 into C1. Worth
   knowing before deciding a board is dead at power-on.
 
+## Reading a sheet in KiCad's simulator
+
+Three things that will otherwise cost you time:
+
+- **Give every measurement a window.** `MAX V(/G_AH)` over the whole of bench E
+  returns 12.0 V, which is the `uic` solve at t = 0: an uncharged bootstrap cap
+  is a short, so it ties the switch node to the rail for one timepoint.
+  `MAX V(/G_AH) FROM=100u TO=150u` returns the real 11.78 V. E, F and G all
+  start cold and all need a window.
+- **Measurements take a vector name, not an expression.** A user-defined signal
+  is bound to `user0`, `user1`, … so it is `PP user0`, never
+  `PP V(/OUT_P)-V(/OUT_N)`. The sheets ship with the useful expression already
+  defined, so `user0` is there as soon as you press Run.
+- **The measurement panel is the command line.** KiCad prepends
+  `meas TRAN meas_result_N` and passes the rest to ngspice verbatim, so the
+  full `meas` grammar works — including
+  `TRIG v(/g_al) VAL=6 FALL=1 TD=100u TARG v(/g_ah) VAL=6 RISE=1 TD=100u`,
+  which reads the dead time straight off bench E. The panel labels every
+  result with the plot's Y unit, so a time comes back wearing volts: "225nV"
+  means 225 ns.
+
+## Verified against KiCad
+
+Every sheet has been run in Eeschema's own simulator and read back by hand;
+the numbers below are what the GUI reported, not what the harness computed.
+
+| sheet | measured |
+|---|---|
+| A | 6.00 V final, 3.79 V at 500 ms (τ = 0.5 s exactly) |
+| B | 214.6 kHz, ramps within 2 % of (V_SQ−6)/R4C12 |
+| C | 389 µV mirror error — and in quadrature, so it is op-amp phase, not gain |
+| D | duty 85 % ↔ 15 % across the audio cycle, mirrored between channels |
+| E | 225 ns dead time, G_AL 12.0 V against G_AH 11.8 V |
+| F | 6.81 V across 4 Ω = 11.6 W, 268 mV ripple, SW_A dips to −662 mV |
+| G | 7.22 V rms = **13.0 W**, AUDIO_P minimum **4.00 V** |
+
+Two behaviours worth knowing before you meet them on a scope: **VGND reads
+1.5 V at power-on**, not 0 V, because the buffer's output cannot go below its
+own low clamp until the divider rises past it; and **SW_A goes 0.66 V below
+ground** on every commutation, which is the low-side body diode freewheeling
+the inductor current through the dead time.
+
 ## Known scorer result
 
 `sch_score.py` passes on six of the seven sheets. `sim_d_pwm` fails on ratios

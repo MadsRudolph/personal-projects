@@ -178,6 +178,30 @@ differential swing and wants ≥63 V), and **no electrolytic states a ripple
 current** (the bulk cap takes the bridge's pulsed current). Read the markings
 on the physical parts.
 
+## The output filter is differential only, and the common mode is not filtered
+
+Every part of the output filter — `C13`, the Zobel `R22`/`C14`, and the
+speaker itself — sits **between** `OUT_P` and `OUT_N`. Nothing connects either
+output to ground, because the load floats. That is a deliberate consequence of
+the BTL topology and it is correct for the differential signal: 30 µH against
+820 nF gives the 32 kHz corner, and the simulation measures 0.27 Vpp of carrier
+left across the load.
+
+It does mean the **common mode is entirely unfiltered**. Both comparators work
+against the same triangle, so with no audio the two legs switch identically:
+the differential output is zero and the common mode is a full-swing square at
+the carrier. `sim_f_bridge` measures it at −0.28 V to 12.37 V, and because the
+differential sits on top of that, each output terminal referenced to ground
+runs from **−3.8 V to +15.8 V** — outside both rails, on a 12 V board.
+
+This is not a fault and the speaker never sees it. It is an EMI consideration:
+the two speaker leads are driven in common mode at 215 kHz, which makes them a
+two-wire antenna. Adding 100 nF from each output to ground trims the excursion
+by about 1.6 V and leaves the differential untouched (measured: 6.83 V average,
+0.25 Vpp, versus 6.86 V and 0.28 Vpp without). **This has not been done** — the
+board is drawn without it, and whether it is worth two more parts depends on
+how the finished amplifier behaves near anything sensitive.
+
 ## One thing to know about the drawing
 
 The IRF540N's body-diode recovery is **marginal, not comfortable**: Q_rr
