@@ -1,0 +1,182 @@
+* ===========================================================================
+* Behavioural SPICE models for the Class D amplifier
+* ===========================================================================
+*
+* The four ICs on this board have no SPICE model anyone ships: the HIP4082
+* has none at all, and the TL074/LM311/CD4049 vendor macromodels are licence
+* gated.  These are behavioural stand-ins built only from primitives that
+* EVERY ngspice build understands -- B, E, G, R, C and lossless T-lines.
+*
+* That restriction is deliberate.  KiCad's own class-D demo builds its dead
+* time from XSPICE digital primitives (d_inverter, d_pwm), but XSPICE code
+* models are not compiled into every ngspice, so a sheet that depends on them
+* runs for some people and not others.  Propagation delay here comes from a
+* terminated T-line instead, which is core SPICE and behaves identically
+* everywhere.
+*
+* Every number below is the datasheet figure recorded in docs/BUILD-NOTES.md.
+* These model the behaviour the design depends on -- gain, bandwidth, slew,
+* rail limits, propagation delay, dead time, the bootstrap supply -- and
+* nothing else.  They are NOT a substitute for the real parts' second-order
+* behaviour.
+*
+* The IRF540N is the exception: KiCad ships a real VDMOS card for it, body
+* diode included, so the bridge uses that rather than anything invented here.
+* ===========================================================================
+
+
+* --------------------------------------------------------------------------
+* TL074 section -- single-pole op-amp with slew limit and rail clamp
+*   Avol 100k, GBW 5.25 MHz typ, slew 20 V/us typ  (TI SLOS080W)
+*   Output clamps 1.5 V from each rail, matching the light-load swing spec.
+*   NOTE: the real part's input common-mode floor is V- + 4 V, which this
+*   model does NOT enforce.  It is the design's known risk, so check the
+*   simulated input node against that floor rather than trusting the output.
+* --------------------------------------------------------------------------
+.subckt OPAMP_TL074 inp inn out vp vn
+.param gm=1m rp=1e8 cp=30.3p ilim=606u hr=1.5
+Rin  inp inn 1e9
+* transconductance stage; tanh() saturation sets the slew rate (ilim/cp)
+Bg   0 nint I = {ilim}*tanh({gm}*(V(inp)-V(inn))/{ilim})
+Rp   nint 0 {rp}
+Cp   nint 0 {cp}
+* Output buffer, clamped inside the rails by a SMOOTH limiter.
+* min()/max() would clamp just as well but their derivative is discontinuous,
+* which stalls Newton: a plain follower fails to find an operating point at
+* all, and an open-loop .ac at a clamped bias point reports zero gain because
+* the derivative it linearises is the constant branch. tanh() has neither
+* problem. Centre is mid-supply, half-span reaches to hr from each rail.
+Bo   nbuf 0 V = 0.5*(V(vp)+V(vn))
++ + 0.5*(V(vp)-V(vn)-2*{hr})*tanh( 2*(V(nint)-0.5*(V(vp)+V(vn)))
++ / (V(vp)-V(vn)-2*{hr}) )
+Ro   nbuf out 100
+.ends OPAMP_TL074
+
+
+* --------------------------------------------------------------------------
+* LM311 comparator -- open-collector output, referenced to its own GND pin
+*   Response time 165 ns typ at 5 mV overdrive  (TI SLCS007K)
+*   VOL 0.23 V typ at 8 mA -> modelled as a 25 ohm switch to the GND pin.
+*   Pins: inp inn out oe vp vn      (oe = pin 1, the output emitter)
+* --------------------------------------------------------------------------
+.subckt CMP_LM311 inp inn out oe vp vn
+.param tpd=165n
+Rin  inp inn 1e12
+* Saturating high-gain stage -> clean logic level for the delay line.
+* Sign matters: the LM311's output transistor turns OFF when + is above -, so
+* with a pull-up the output goes HIGH. The comparator is NON-inverting. Wiring
+* this the other way round turns any oscillator built from it into a latch.
+Bc   nc 0 V = 2.5*tanh(1e4*(V(inn)-V(inp)))
+* pure propagation delay, terminated so nothing reflects
+Td   nc 0 nd 0 Z0=1k TD={tpd}
+Rt   nd 0 1k
+* open collector: conducts to the emitter pin when the comparator is LOW
+Sq   out oe nd 0 SW_OC
+.model SW_OC SW(Ron=25 Roff=1e9 Vt=0 Vh=0.5)
+.ends CMP_LM311
+
+
+* --------------------------------------------------------------------------
+* CD4049UB inverting buffer -- rail to rail, supply referenced
+*   tPHL ~18 ns / tPLH ~28 ns typ at 12 V  (TI SCHS046L, interpolated)
+*   One symmetrical delay is used; the asymmetry is far below the dead time.
+* --------------------------------------------------------------------------
+.subckt INV_CD4049 in out vcc vss
+.param tpd=25n
+* inverting, switching at half supply, clamped to the rails
+Bi   ni 0 V = V(vss) + (V(vcc)-V(vss))*0.5*(1 - tanh(40*(V(in)-0.5*(V(vcc)+V(vss)))))
+Td   ni 0 nd 0 Z0=1k TD={tpd}
+Rt   nd 0 1k
+Bo   nb 0 V = V(nd)
+Ro   nb out 200
+.ends INV_CD4049
+
+
+* --------------------------------------------------------------------------
+* HIP4082 full-bridge driver -- dead time, shoot-through lockout, bootstrap
+*
+*   Dead time is set on the real part by one resistor on DEL; pass the value
+*   you fitted, e.g. X1 ... DRV_HIP4082 tdead=200n for R12 = 3k3.
+*
+*   Turn-ON is delayed by tdead while turn-OFF is immediate.  That is done by
+*   ANDing each command with a delayed copy of itself, which is the same
+*   one-shot the real part implements, and it guarantees the two outputs of a
+*   leg can never overlap.
+*
+*   The high-side drivers are powered from the ACTUAL xHB pin and referenced
+*   to xHS, so the bootstrap diode and capacitor on the sheet are genuinely
+*   exercised -- if the bootstrap fails to charge, the high side stops
+*   driving, exactly as it would on the bench.
+*
+*   All sixteen pins of the real part are present, so the subcircuit maps
+*   one-to-one onto KiCad's stock Driver_FET:HIP4082xP symbol and a testbench
+*   sheet looks exactly like the board. DIS is implemented (active high, it
+*   forces all four outputs off). DEL is present for connectivity only -- a
+*   subcircuit cannot read the resistor hung on it, so pass the dead time you
+*   designed for instead, e.g. tdead=200n for R12 = 3k3.
+* --------------------------------------------------------------------------
+.subckt DRV_HIP4082 ahi ali bhi bli ahb ahs aho alo bhb bhs bho blo vdd vss del dis
+.param tdead=200n vih=2.7 rdrv=5
+
+* ---- input comparators against the real 2.7 V threshold -------------------
+Bahi nahi 0 V = 0.5*(1+tanh(50*(V(ahi)-V(vss)-{vih})))
+Bali nali 0 V = 0.5*(1+tanh(50*(V(ali)-V(vss)-{vih})))
+Bbhi nbhi 0 V = 0.5*(1+tanh(50*(V(bhi)-V(vss)-{vih})))
+Bbli nbli 0 V = 0.5*(1+tanh(50*(V(bli)-V(vss)-{vih})))
+
+* ---- DIS is active high and overrides everything (FN3676 truth table)
+Bdis ndis 0 V = 0.5*(1+tanh(50*(V(dis)-V(vss)-{vih})))
+Ben  nen  0 V = 1-V(ndis)
+Rdel del vss 1e9
+
+* ---- shoot-through lockout: a leg's output is commanded only if the
+* ---- opposite input is low, so both high is both off, as the truth table says
+Bahc nahc 0 V = V(nen)*V(nahi)*(1-V(nali))
+Balc nalc 0 V = V(nen)*V(nali)*(1-V(nahi))
+Bbhc nbhc 0 V = V(nen)*V(nbhi)*(1-V(nbli))
+Bblc nblc 0 V = V(nen)*V(nbli)*(1-V(nbhi))
+
+* ---- dead time: AND each command with a delayed copy of itself.
+* ---- Rising edge is delayed by tdead; falling edge passes straight through.
+Tah nahc 0 nahd 0 Z0=1k TD={tdead}
+Rtah nahd 0 1k
+Tal nalc 0 nald 0 Z0=1k TD={tdead}
+Rtal nald 0 1k
+Tbh nbhc 0 nbhd 0 Z0=1k TD={tdead}
+Rtbh nbhd 0 1k
+Tbl nblc 0 nbld 0 Z0=1k TD={tdead}
+Rtbl nbld 0 1k
+
+Bahg nahg 0 V = V(nahc)*V(nahd)
+Balg nalg 0 V = V(nalc)*V(nald)
+Bbhg nbhg 0 V = V(nbhc)*V(nbhd)
+Bblg nblg 0 V = V(nblc)*V(nbld)
+
+* ---- high-side drivers: powered from the bootstrap cap, referenced to xHS
+Eah nah ahs VALUE = { (V(ahb)-V(ahs)) * V(nahg) }
+Rdah nah aho {rdrv}
+Ebh nbh bhs VALUE = { (V(bhb)-V(bhs)) * V(nbhg) }
+Rdbh nbh bho {rdrv}
+
+* ---- low-side drivers: powered from VDD, referenced to VSS
+Eal nal vss VALUE = { (V(vdd)-V(vss)) * V(nalg) }
+Rdal nal alo {rdrv}
+Ebl nbl vss VALUE = { (V(vdd)-V(vss)) * V(nblg) }
+Rdbl nbl blo {rdrv}
+
+* ---- quiescent load so the bootstrap pins are never left floating, and a
+* ---- leakage path from each switch node to VSS.  Without the latter, a leg
+* ---- left unused in a testbench has NO DC path to ground and ngspice hangs
+* ---- looking for an operating point that does not exist.
+Rahb ahb ahs 1e7
+Rbhb bhb bhs 1e7
+Rlka ahs vss 1e8
+Rlkb bhs vss 1e8
+.ends DRV_HIP4082
+
+
+* --------------------------------------------------------------------------
+* Bootstrap Schottky, standing in for the 1N5817 fitted as D2/D3.
+* 20 V / 1 A Schottky: low Vf so the bootstrap cap charges close to the rail.
+* --------------------------------------------------------------------------
+.model DSCH D(Is=1e-8 Rs=0.05 N=1.05 Cjo=200p Vj=0.4 Bv=20)
