@@ -124,8 +124,89 @@ def bench_d():
           " %")
 
 
+def overlap_runs(t, a, b, thr=6.0, above=False):
+    """Lengths of every interval where both signals are the same side of thr."""
+    both = (a > thr) & (b > thr) if above else (a < thr) & (b < thr)
+    out, start = [], None
+    for i, f in enumerate(both):
+        if f and start is None:
+            start = t[i]
+        elif not f and start is not None:
+            out.append(t[i] - start)
+            start = None
+    return out
+
+
+def audio_band(t, v, period=4e-6):
+    """Average the carrier away with a boxcar one carrier period wide."""
+    n = max(1, int(round(period / np.median(np.diff(t)))))
+    return np.convolve(v, np.ones(n) / n, mode="valid")
+
+
+def bench_e():
+    w = simulate(netlist("sim_e_driver"))
+    t = w["time"]
+    sel = t > 100e-6                     # the bootstrap needs ~50 us to fill
+    ah, al = w["/g_ah"][sel], w["/g_al"][sel]
+    check("low-side gate drive (V)", float(al.max()), 11.5, 12.2, " V")
+    check("high-side gate drive (V)", float(ah.max()), 10.8, 12.0, " V")
+    # the high side runs off the bootstrap cap, one Schottky drop below VDD
+    check("bootstrap drop, high vs low (V)",
+          float(al.max() - ah.max()), 0.05, 0.6, " V")
+    gaps = overlap_runs(t[sel], ah, al)
+    check("dead time (ns)",
+          float(np.median(gaps)) * 1e9 if gaps else None, 150, 320, " ns")
+    # The thing dead time exists to prevent. Not "rarely" -- never.
+    check("both gates driven at once (ns)",
+          sum(overlap_runs(t[sel], ah, al, above=True)) * 1e9, 0, 0, " ns")
+    # The two CD4049 stages differ by one gate delay, so a leg's two driver
+    # inputs ARE briefly high together on every edge. That is harmless -- the
+    # HIP4082 turns both outputs off for both-high -- but it has to stay well
+    # under the dead time, or the gate skew and not R12 sets the timing.
+    skew = overlap_runs(t[sel], w["/a_hi"][sel], w["/a_lo"][sel], above=True)
+    check("input skew, both inputs high (ns)",
+          float(np.median(skew)) * 1e9 if skew else None, 5, 80, " ns")
+
+
+def bench_f():
+    w = simulate(netlist("sim_f_bridge"))
+    t = w["time"]
+    sel = t > 150e-6
+    sw = w["/sw_a"][sel]
+    check("SW_A pulls to the bottom rail (V)", float(sw.min()), -1.5, 1.0, " V")
+    check("SW_A pulls to the top rail (V)", float(sw.max()), 11.0, 13.0, " V")
+    d = (w["/out_p"] - w["/out_n"])[sel]
+    check("differential output (V)", float(d.mean()), 6.0, 7.5, " V")
+    check("power into 4 ohm (W)", float(d.mean()) ** 2 / 4, 10.0, 14.0, " W")
+    check("carrier left on the output (Vpp)",
+          float(d.max() - d.min()), 0, 0.5, " Vpp")
+
+
+def bench_g():
+    w = simulate(netlist("sim_g_chain"))
+    t = w["time"]
+    sel = t > 0.4e-3                     # past the bootstrap and the start-up
+    tt = t[sel]
+    check("carrier frequency (kHz)",
+          freq_of(tt, w["/tri"][sel]) / 1e3 if freq_of(tt, w["/tri"][sel])
+          else None, 190, 270, " kHz")
+    # THE design risk: at full output the buffer input reaches the TL074's
+    # V- + 4 V common-mode floor. It should touch it, not go under it.
+    check("AUDIO_P at the 4 V common-mode floor (V)",
+          float(w["/audio_p"][sel].min()), 3.85, 4.25, " V")
+    d = (w["/out_p"] - w["/out_n"])[sel]
+    sm = audio_band(tt, d)
+    check("output swing (V peak)", float(np.abs(sm).max()), 8.5, 12.0, " V")
+    check("power into 4 ohm (W)",
+          float((sm - sm.mean()).std()) ** 2 / 4, 10.0, 15.0, " W")
+    check("residual carrier (Vpp)",
+          float(np.max(np.abs(d[:len(sm)] - sm))) * 2, 0, 0.6, " Vpp")
+
+
 BENCHES = {"a": ("sim_a_vground", bench_a), "b": ("sim_b_triangle", bench_b),
-           "c": ("sim_c_input", bench_c), "d": ("sim_d_pwm", bench_d)}
+           "c": ("sim_c_input", bench_c), "d": ("sim_d_pwm", bench_d),
+           "e": ("sim_e_driver", bench_e), "f": ("sim_f_bridge", bench_f),
+           "g": ("sim_g_chain", bench_g)}
 
 wanted = sys.argv[1:] or list(BENCHES)
 for key in wanted:

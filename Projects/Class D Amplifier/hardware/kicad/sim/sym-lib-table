@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "classd_sim")(type "KiCad")(uri "${KIPRJMOD}/lib/classd_sim.kicad_sym")(options "")(descr "Simulation-only symbols for the Class D testbenches"))
+)

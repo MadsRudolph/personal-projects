@@ -116,7 +116,11 @@ Ro   nb out 200
 *   designed for instead, e.g. tdead=200n for R12 = 3k3.
 * --------------------------------------------------------------------------
 .subckt DRV_HIP4082 ahi ali bhi bli ahb ahs aho alo bhb bhs bho blo vdd vss del dis
-.param tdead=200n vih=2.7 rdrv=5
++ params: tdead=200n
+* tdead is declared on the .subckt line rather than as an internal .param
+* because KiCad validates every Sim.Params key against the subcircuit's own
+* parameter list, and refuses to export the netlist for one it cannot find.
+.param vih=2.7 rdrv=5
 
 * ---- input comparators against the real 2.7 V threshold -------------------
 Bahi nahi 0 V = 0.5*(1+tanh(50*(V(ahi)-V(vss)-{vih})))

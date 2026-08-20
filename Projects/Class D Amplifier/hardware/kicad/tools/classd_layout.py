@@ -631,17 +631,24 @@ SIM_LINKS = [
     ("sim_b_triangle", "B  triangle carrier, ~250 kHz"),
     ("sim_c_input", "C  input stage, buffer and inverter"),
     ("sim_d_pwm", "D  PWM comparators"),
+    ("sim_e_driver", "E  complement generation and gate driver"),
+    ("sim_f_bridge", "F  output bridge, LC filter and Zobel"),
+    ("sim_g_chain", "G  the whole chain, audio in to speaker out"),
 ]
 
 
 def sim_index(sh):
-    """A clickable index of the simulation testbenches."""
+    """A clickable index of the simulation testbenches.
+
+    Seven lines at 3 grid steps: the block F notes end at x=226 and the A2
+    frame's bottom margin starts around y=323, so this is the space there is.
+    """
     x, y = G(250), G(295)
     sh.note((x, y), "SIMULATION  (separate projects - click to open)", size=2)
     links = {}
     for i, (name, desc) in enumerate(SIM_LINKS):
         text = f"{desc}   ->  sim/{name}.kicad_pro"
-        sh.note((x, y + G(5) + G(4) * i), text, size=1.27)
+        sh.note((x, y + G(5) + G(3) * i), text, size=1.27)
         links[text] = f"file:sim/{name}.kicad_pro"
     return links
 

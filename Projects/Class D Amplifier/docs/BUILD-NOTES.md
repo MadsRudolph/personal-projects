@@ -120,6 +120,15 @@ in, wiper well below full) the buffer input stays within roughly 4.6–7.4 V.
 Watch for distortion that appears only at high level — that is this limit, not
 the filter or the bridge.
 
+**The simulation has since put a number on how tight that is.** In
+`hardware/kicad/sim/sim_g_chain`, the whole chain reaches 13 W across 4 Ω at
+the level where AUDIO_P bottoms out at **4.00 V** — the common-mode floor
+itself. The 12 W target and the input stage's limit are not merely close; they
+coincide. There is no margin to trade, so the level control is not a "turn it
+up until it clips" control on this board: past that point the buffer goes
+before the bridge does. `run_sims.py` asserts that number explicitly rather
+than treating it as incidental.
+
 The integrator is unaffected: its input sits at the virtual ground and does not
 track the audio.
 
