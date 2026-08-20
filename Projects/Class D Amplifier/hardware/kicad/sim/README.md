@@ -76,6 +76,33 @@ deliverable — the sheets themselves run in KiCad's own simulator.
 - The virtual ground takes about 2.5 s to settle through R1||R2 into C1. Worth
   knowing before deciding a board is dead at power-on.
 
+## The links from the board sheet
+
+`classd.kicad_sch` carries a clickable index of these benches, and each bench
+carries a link back. They are hyperlinks, not hierarchical sheets — see the
+comment above `SIM_LINKS` in `tools/classd_layout.py` for the measurements
+that ruled hierarchy out.
+
+Two things decide whether a click works:
+
+- **The href needs a scheme or an absolute path.** KiCad validates it when the
+  file loads, and a bare relative path or a bare `${KIPRJMOD}/...` makes
+  Eeschema refuse to open the schematic at all — not a broken link, a broken
+  file. `file:sim/<name>.kicad_sch` is what is used here: relative, so it
+  survives the repo being cloned anywhere, and it carries a scheme so it
+  passes the validator.
+- **The `.kicad_sch` file association must point at the KiCad you are running.**
+  The links name the sheet rather than the project, because Windows opens a
+  `.kicad_pro` with the project manager and leaves you one click short. That
+  means the click ends up in the shell, and if the association is stale the
+  error you get is misleading: KiCad reports *"Documentation file '…' not
+  found"* when the file is present and the real problem is that the handler
+  it tried to launch is gone. Upgrading KiCad does not necessarily repoint
+  every extension — after moving from 9.0 to 10.0 on this machine,
+  `.kicad_sch` still pointed into the uninstalled 9.0 folder while
+  `.kicad_pro` had been updated. Fix it with *Open with → Choose another app →
+  Always*, pointing at `bin\eeschema.exe` of the version you actually run.
+
 ## Reading a sheet in KiCad's simulator
 
 Three things that will otherwise cost you time:
