@@ -24,7 +24,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "b88ad4b2-b190-4baa-b282-c76f015d632c")
+		(uuid "a8f612c6-4a93-408a-8319-c3a9613eccf0")
 	)
 	(wire
 		(pts
@@ -34,7 +34,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "c8928a7f-d2ad-42cd-a0a3-457316a3eaef")
+		(uuid "e31ddfdd-05f3-4b2e-8f82-b3b179d6c8a6")
 	)
 	(wire
 		(pts
@@ -44,7 +44,17 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "670eec57-2d39-4e8c-b02e-e092341af865")
+		(uuid "47229548-bef4-4219-8f3f-c90a25254085")
+	)
+	(wire
+		(pts
+			(xy 17.78 43.18) (xy 27.94 43.18)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fd00905a-afb4-4ef4-9b18-22cc1c6bd334")
 	)
 	(wire
 		(pts
@@ -54,7 +64,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "cc566c19-5494-4707-a47f-471a48d651a9")
+		(uuid "478dab57-e7a0-4157-8cfb-0426b4772cdb")
 	)
 	(wire
 		(pts
@@ -64,7 +74,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "f82c30e7-72dc-4dc7-a903-2fd6cfece17c")
+		(uuid "0e7a4d7d-9f79-4a37-bdbe-03e8443568f9")
 	)
 	(wire
 		(pts
@@ -74,7 +84,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "a12c61de-9ade-4bdb-a4fe-81a3ae62698e")
+		(uuid "63889fd8-d165-4300-b2ab-e05afea7f109")
 	)
 	(wire
 		(pts
@@ -84,7 +94,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "e130cfc9-2b62-4fb1-9688-f6796deaceaf")
+		(uuid "4a3b3fcb-c0cd-4764-ab77-2b71792a1a47")
 	)
 	(wire
 		(pts
@@ -94,7 +104,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "aa70c4ab-a968-48c7-9e6b-825a6f22216f")
+		(uuid "44e4841b-1773-4456-944c-6a54769ffea7")
 	)
 	(wire
 		(pts
@@ -104,7 +114,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "c17b7d7a-491e-4253-9fda-75e72cce1352")
+		(uuid "6c88e589-7f1a-498e-818e-7482b5c1f18c")
 	)
 	(wire
 		(pts
@@ -114,7 +124,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "2c710df5-34f4-49f6-b1ae-d12a614201e3")
+		(uuid "fa33f7e6-04d2-4a1f-9103-0dd4d8abb68d")
 	)
 	(wire
 		(pts
@@ -124,7 +134,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "2b86f06a-a54b-49f7-8a01-01d1dda11f6b")
+		(uuid "907ab676-d15c-44e0-ae1a-58e8ca7b5626")
 	)
 	(wire
 		(pts
@@ -134,7 +144,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "209844b1-286b-4bb0-bd65-476100d1e6ad")
+		(uuid "88a7e444-9262-4b42-a20d-ecac5c6840d9")
 	)
 	(wire
 		(pts
@@ -144,7 +154,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "ce280105-ac16-4842-b543-9da561f5380e")
+		(uuid "675b2f7c-3e6a-4a64-9991-9bbf68908e55")
 	)
 	(wire
 		(pts
@@ -154,7 +164,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "4d8547bd-6bbc-47bb-9b5c-95c6c5d3823c")
+		(uuid "8706ee72-82d5-468d-abf8-d1942fc996d1")
 	)
 	(wire
 		(pts
@@ -164,7 +174,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "e11fb103-a544-4454-a262-3930b07d172e")
+		(uuid "ed67ffc6-49c4-4c45-9bbd-02caa509cd37")
 	)
 	(wire
 		(pts
@@ -174,7 +184,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "b444d80b-d184-4a94-8e10-5ba845c1bab2")
+		(uuid "e87f4862-52a4-4fc1-a9d5-c647cb451c13")
 	)
 	(wire
 		(pts
@@ -184,7 +194,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "e7e8d49d-8bf2-4135-aebd-ea49eb31fa2f")
+		(uuid "a1b3401d-b87b-4267-99c2-f041c1c5422d")
 	)
 	(wire
 		(pts
@@ -194,7 +204,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "97d8ae72-c118-4f54-a50c-d56ecb1d04e4")
+		(uuid "df41e14f-1b2b-4379-842c-b8722a51c52b")
 	)
 	(wire
 		(pts
@@ -204,7 +214,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "fac8ca8f-ddf5-4706-9155-b71111d8cfed")
+		(uuid "a23adaeb-a02b-4c80-9279-42ceb49430eb")
 	)
 	(wire
 		(pts
@@ -214,7 +224,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "bb05dc8c-8b32-4bd0-a76c-a1fbfbac3b30")
+		(uuid "3d67d4f7-18d1-4a28-9afb-ad567c6d3d8f")
 	)
 	(wire
 		(pts
@@ -224,31 +234,37 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "ef168602-b190-465a-ace3-09609e314cde")
+		(uuid "799b1ba8-e34a-4067-87d3-1a8b8b5ccce0")
 	)
 	(junction
 		(at 17.78 33.02)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "e84488a4-3f98-40ca-8594-c00bf00887a6")
+		(uuid "bed6d2cf-2676-401d-b328-e7a2d6388a6c")
+	)
+	(junction
+		(at 17.78 43.18)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "244873c7-74b6-4835-9eb9-9b279f2824d0")
 	)
 	(junction
 		(at 45.72 39.37)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "9156a28a-cce4-49dc-9788-13ddfb9ffb35")
+		(uuid "31db1181-faaf-4e8e-85d8-d3bb1511ab72")
 	)
 	(junction
 		(at 60.96 39.37)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "2b467b88-741f-4a03-9e32-b2c4b550e68b")
+		(uuid "dafcf6b9-1397-4b66-b2c0-eb603f1178e8")
 	)
 	(junction
 		(at 99.06 41.91)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "a2a80f9d-ff41-46e6-9f9f-e85f88417661")
+		(uuid "c8eccd48-264d-406d-90a2-aea906cc9000")
 	)
 	(label "VG"
 		(at 68.58 39.37 0)
@@ -258,7 +274,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "3c5014ec-f489-453e-b009-25e0462b7351")
+		(uuid "7735cb69-4c3f-4aea-9fd0-a60308da07ca")
 	)
 	(label "VGND"
 		(at 106.68 41.91 0)
@@ -268,7 +284,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "4337b5b6-8aad-43e5-a860-7899e9649b2d")
+		(uuid "72bc8330-cc80-4c78-a11f-8b2f2b532f4e")
 	)
 	(text "A  Rails and the 6 V virtual ground"
 		(at 12.7 12.7 0)
@@ -278,7 +294,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "f52ee351-b914-49a2-bf1a-6b01fbda39f5")
+		(uuid "b32a14b6-d652-4d32-b95a-8031e1f01eee")
 	)
 	(text "V1 ramps up in 1 ms like a bench supply being switched on. The divider is R1||R2 = 5k into C1 = 100u, so VGND then takes about 2.5 s to settle -- that is why the run is 3 s long."
 		(at 12.7 71.12 0)
@@ -288,7 +304,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "02be437d-34aa-4c0b-b27a-57bede8812cf")
+		(uuid "ed8579af-bdfa-4356-9d89-b96a316a2a5f")
 	)
 	(text ".tran 1m 3"
 		(at 12.7 78.74 0)
@@ -298,7 +314,19 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "079098d6-ea8b-4c1e-9c4e-c35e6ad98255")
+		(uuid "3dc153b6-9e17-4c26-b2af-5d6c5be32173")
+	)
+	(text "<-  back to the board schematic   classd.kicad_pro"
+		(at 12.7 111.76 0)
+		(effects
+			(font
+				(size 1.6 1.6)
+			)
+			(justify left bottom)
+		
+			(href "file:../classd.kicad_pro")
+		)
+		(uuid "ae5f52c2-dc74-4dbb-a25c-923594b9a3ca")
 	)
 	(symbol
 		(lib_id "Simulation_SPICE:VPULSE")
@@ -310,7 +338,7 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "6cc37fbe-cad9-4c78-ab42-a0e11c3257fe")
+		(uuid "be765ee4-5cd3-4361-988f-99906a40f8a9")
 		(property "Reference" "V1"
 			(at 22.098 36.83 0)
 			(show_name no)
@@ -416,7 +444,7 @@
 		(on_board no)
 		(in_pos_files no)
 		(dnp no)
-		(uuid "608566be-7966-4057-872c-b61c1b0c7545")
+		(uuid "39d1f208-3869-4baf-97f4-9986b1c4fc9d")
 		(property "Reference" "#PWR001"
 			(at 20.32 26.67 0)
 			(hide yes)
@@ -479,7 +507,7 @@
 		(on_board no)
 		(in_pos_files no)
 		(dnp no)
-		(uuid "bfa6ba31-dfad-492c-9d74-edf0df483af3")
+		(uuid "ffcc359b-d91d-4323-baa1-28a744b557a5")
 		(property "Reference" "#PWR002"
 			(at 20.828 46.99 0)
 			(hide yes)
@@ -542,7 +570,7 @@
 		(on_board no)
 		(in_pos_files no)
 		(dnp no)
-		(uuid "a4847bce-ce2d-4722-abe8-2565abe2864b")
+		(uuid "20310d54-b09b-45e2-8a4b-b0c6a536731c")
 		(property "Reference" "#PWR003"
 			(at 30.734 31.75 0)
 			(hide yes)
@@ -596,6 +624,69 @@
 		)
 	)
 	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 27.94 43.18 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files no)
+		(dnp no)
+		(uuid "431e2f7e-f1b6-4c26-bb2a-fce6b3b61ff6")
+		(property "Reference" "#PWR004"
+			(at 30.734 41.91 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 30.734 44.45 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 27.94 43.18 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 27.94 43.18 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(instances
+			(project "sim_a_vground"
+				(path "/a1000000-0000-4000-8000-000000000001"
+					(reference "#PWR004")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:R")
 		(at 45.72 30.48 0)
 		(unit 1)
@@ -605,7 +696,7 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "7e6a3094-345d-4e5a-b06b-a9b94f6820c6")
+		(uuid "87ee598f-c533-4260-b026-b0c37ad88d99")
 		(property "Reference" "R1"
 			(at 48.514 29.21 0)
 			(show_name no)
@@ -667,7 +758,7 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "9045b84c-6afd-4504-aacb-dc3177b2e71c")
+		(uuid "0f8dc93a-1ac3-45fb-9774-76ed2bbfb9fa")
 		(property "Reference" "R2"
 			(at 48.514 46.99 0)
 			(show_name no)
@@ -729,7 +820,7 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "43d3a7aa-007f-44d6-8e27-18dd1a814aea")
+		(uuid "f5754947-d804-45fb-b0f7-d24e9b06ba14")
 		(property "Reference" "C1"
 			(at 65.024 46.99 0)
 			(show_name no)
@@ -791,8 +882,8 @@
 		(on_board no)
 		(in_pos_files no)
 		(dnp no)
-		(uuid "3f800a90-c36f-41af-9c77-3af1419b7a19")
-		(property "Reference" "#PWR004"
+		(uuid "a9fb3b17-7603-4a0f-a3f7-ea36beeb826f")
+		(property "Reference" "#PWR005"
 			(at 48.26 20.32 0)
 			(hide yes)
 			(show_name no)
@@ -838,7 +929,7 @@
 		(instances
 			(project "sim_a_vground"
 				(path "/a1000000-0000-4000-8000-000000000001"
-					(reference "#PWR004")
+					(reference "#PWR005")
 					(unit 1)
 				)
 			)
@@ -854,8 +945,8 @@
 		(on_board no)
 		(in_pos_files no)
 		(dnp no)
-		(uuid "695c8e27-02c3-46b3-ab21-e4e13347012a")
-		(property "Reference" "#PWR005"
+		(uuid "49d3be27-bf88-4165-b6ca-a5b6eb85865c")
+		(property "Reference" "#PWR006"
 			(at 45.72 55.372 0)
 			(hide yes)
 			(show_name no)
@@ -901,7 +992,7 @@
 		(instances
 			(project "sim_a_vground"
 				(path "/a1000000-0000-4000-8000-000000000001"
-					(reference "#PWR005")
+					(reference "#PWR006")
 					(unit 1)
 				)
 			)
@@ -917,8 +1008,8 @@
 		(on_board no)
 		(in_pos_files no)
 		(dnp no)
-		(uuid "63a96996-af7b-4ff7-afb2-ffb9afeb73e4")
-		(property "Reference" "#PWR006"
+		(uuid "050d54c0-97fd-47fd-8f7d-827da9499712")
+		(property "Reference" "#PWR007"
 			(at 60.96 55.372 0)
 			(hide yes)
 			(show_name no)
@@ -964,7 +1055,7 @@
 		(instances
 			(project "sim_a_vground"
 				(path "/a1000000-0000-4000-8000-000000000001"
-					(reference "#PWR006")
+					(reference "#PWR007")
 					(unit 1)
 				)
 			)
@@ -980,7 +1071,7 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "435be22b-e20a-4951-ab1d-e8474723c4a9")
+		(uuid "89e3a5a2-adcf-4319-b674-1586cf54bf62")
 		(property "Reference" "U1"
 			(at 81.28 32.512 0)
 			(show_name no)
@@ -1086,8 +1177,8 @@
 		(on_board no)
 		(in_pos_files no)
 		(dnp no)
-		(uuid "cfc8fd56-3a09-408e-8465-b1f5a6134d5a")
-		(property "Reference" "#PWR007"
+		(uuid "afca6303-927c-41f6-9a84-024b7caa0e6e")
+		(property "Reference" "#PWR008"
 			(at 81.28 27.94 0)
 			(hide yes)
 			(show_name no)
@@ -1133,7 +1224,7 @@
 		(instances
 			(project "sim_a_vground"
 				(path "/a1000000-0000-4000-8000-000000000001"
-					(reference "#PWR007")
+					(reference "#PWR008")
 					(unit 1)
 				)
 			)
@@ -1149,8 +1240,8 @@
 		(on_board no)
 		(in_pos_files no)
 		(dnp no)
-		(uuid "3e666b31-b8d4-4f54-a973-7f381b1bd295")
-		(property "Reference" "#PWR008"
+		(uuid "ad05be58-9c63-4b51-8535-3186a839ebc1")
+		(property "Reference" "#PWR009"
 			(at 81.788 53.34 0)
 			(hide yes)
 			(show_name no)
@@ -1196,7 +1287,7 @@
 		(instances
 			(project "sim_a_vground"
 				(path "/a1000000-0000-4000-8000-000000000001"
-					(reference "#PWR008")
+					(reference "#PWR009")
 					(unit 1)
 				)
 			)
@@ -1212,7 +1303,7 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "4a7df10b-b11e-4148-a211-7e34d879d8a0")
+		(uuid "28660e3d-ec21-4ffc-8ccf-8673eaeccc8b")
 		(property "Reference" "R3"
 			(at 119.634 49.53 0)
 			(show_name no)
@@ -1274,8 +1365,8 @@
 		(on_board no)
 		(in_pos_files no)
 		(dnp no)
-		(uuid "7b15fed9-9251-4e36-b8ce-e0b46106997a")
-		(property "Reference" "#PWR009"
+		(uuid "1dc8f682-a116-48df-a8d3-5d1d4c3173df")
+		(property "Reference" "#PWR010"
 			(at 119.888 58.42 0)
 			(hide yes)
 			(show_name no)
@@ -1321,7 +1412,7 @@
 		(instances
 			(project "sim_a_vground"
 				(path "/a1000000-0000-4000-8000-000000000001"
-					(reference "#PWR009")
+					(reference "#PWR010")
 					(unit 1)
 				)
 			)

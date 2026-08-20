@@ -127,6 +127,37 @@ def set_sim(path: Path, fields: dict):
     path.write_text(txt, encoding="utf-8")
 
 
+def back_link(sh, y=G(88)):
+    """A hyperlink back to the board schematic.
+
+    KiCad rejects an href that is a bare relative path or a ${KIPRJMOD}
+    variable, but accepts a relative path carrying the file: scheme, which
+    keeps the link working wherever the repository is checked out.
+    """
+    text = "<-  back to the board schematic   classd.kicad_pro"
+    sh.note((G(10), y), text, size=1.6)
+    return {text: "file:../classd.kicad_pro"}
+
+
+def add_hrefs(path, links):
+    """Attach hyperlinks to chosen text items (href lives inside (effects ...))."""
+    txt = path.read_text(encoding="utf-8")
+    for text, url in links.items():
+        i = txt.index(f'(text "{text}"')
+        e = txt.index("(effects", i)
+        depth, j = 0, e
+        while True:
+            if txt[j] == "(":
+                depth += 1
+            elif txt[j] == ")":
+                depth -= 1
+                if depth == 0:
+                    break
+            j += 1
+        txt = txt[:j] + '\n\t\t\t(href "' + url + '")\n\t\t' + txt[j:]
+    path.write_text(txt, encoding="utf-8")
+
+
 BENCHES = []
 
 
@@ -152,6 +183,8 @@ def build_a(sh):
     sh.gnd(V1.pin("2"), drop=G(4))
     sh.seg(V1.pin("1"), (G(22), V1.pin("1").y))
     sh.power("power:PWR_FLAG", (G(22), V1.pin("1").y))
+    sh.seg(V1.pin("2"), (G(22), V1.pin("2").y))
+    sh.power("power:PWR_FLAG", (G(22), V1.pin("2").y))
 
     R1 = sh.place(R, "R1", at=(G(36), G(24)), value="10k")
     R2 = sh.place(R, "R2", at=(G(36), G(38)), value="10k")
@@ -204,6 +237,8 @@ def build_b(sh):
     sh.gnd(V1.pin("2"), drop=G(4))
     sh.seg(V1.pin("1"), (G(22), V1.pin("1").y))
     sh.power("power:PWR_FLAG", (G(22), V1.pin("1").y))
+    sh.seg(V1.pin("2"), (G(22), V1.pin("2").y))
+    sh.power("power:PWR_FLAG", (G(22), V1.pin("2").y))
 
     V2 = sh.place(VDC, "V2", at=(G(14), G(46)), value="6")
     sim["V2"] = src("DC", "dc=6")
@@ -278,6 +313,8 @@ def build_c(sh):
     sh.gnd(V1.pin("2"), drop=G(4))
     sh.seg(V1.pin("1"), (G(22), V1.pin("1").y))
     sh.power("power:PWR_FLAG", (G(22), V1.pin("1").y))
+    sh.seg(V1.pin("2"), (G(22), V1.pin("2").y))
+    sh.power("power:PWR_FLAG", (G(22), V1.pin("2").y))
 
     V2 = sh.place(VDC, "V2", at=(G(14), G(46)), value="6")
     sim["V2"] = src("DC", "dc=6")
@@ -331,7 +368,7 @@ def build_c(sh):
     sh.label((G(104), G(44)), "VGND")
     sh.rail(U2.pin("V+"), net="+12V", rise=G(4))
     sh.gnd(U2.pin("V-"), drop=G(4))
-    sh.label((G(132), G(46)), "AUDIO_N")
+    sh.label((G(136), G(46)), "AUDIO_N")
 
     sh.note((G(10), G(68)),
             "AUDIO_P and AUDIO_N must be equal and opposite about 6 V. Watch "
@@ -356,6 +393,8 @@ def build_d(sh):
     sh.gnd(V1.pin("2"), drop=G(4))
     sh.seg(V1.pin("1"), (G(22), V1.pin("1").y))
     sh.power("power:PWR_FLAG", (G(22), V1.pin("1").y))
+    sh.seg(V1.pin("2"), (G(22), V1.pin("2").y))
+    sh.power("power:PWR_FLAG", (G(22), V1.pin("2").y))
 
     # triangle: a pulse source with equal rise and fall and no flat top
     V2 = sh.place(VPULSE, "V2", at=(G(14), G(46)), value="")
@@ -395,7 +434,7 @@ def build_d(sh):
         sh.rail(rp.pin("1"), net="+12V", rise=G(4))
         sh.seg(rp.pin("2"), (G(98), y))
         sh.seg(U.pin("out"), (G(112), y))
-        sh.label((G(108), y), f"PWM_{tag}")
+        sh.label((G(112), y), f"PWM_{tag}")
 
     sh.note((G(10), G(72)),
             "Duty on PWM_A should track the audio and PWM_B should mirror it. "
@@ -415,9 +454,11 @@ def main():
         for p in problems:
             print(f"  {name}: CHECK {p}")
             bad += 1
+        links = back_link(sh)
         out = SIM / f"{name}.kicad_sch"
         sh.emit(str(out))
         set_sim(out, sim)
+        add_hrefs(out, links)
         write_project(SIM / f"{name}.kicad_pro", uuid, name)
         print(f"  {name:16s} {len(sh.parts):3d} symbols, {len(sh.wires):3d} "
               f"wires, {len(sim)} models")

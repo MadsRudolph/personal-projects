@@ -615,6 +615,63 @@ def apply_footprints():
 
 
 # ===========================================================================
+# Simulation index
+#
+# The testbenches are deliberately NOT hierarchical sheets of this schematic.
+# A hierarchy is one electrical design: attaching sim_b_triangle as a sheet
+# was tried, and the netlist showed the testbench's supply V1 welded straight
+# onto the board's +12V rail, its sources landing in the BOM ready to be
+# pushed onto the PCB, and -- worst -- its U1/R4/R5 silently merging with the
+# board's parts of the same name, quietly rewiring real components.
+#
+# Each testbench is its own project instead, reached by the hyperlinks below.
+# ===========================================================================
+SIM_LINKS = [
+    ("sim_a_vground", "A  rails and the 6 V virtual ground"),
+    ("sim_b_triangle", "B  triangle carrier, ~250 kHz"),
+    ("sim_c_input", "C  input stage, buffer and inverter"),
+    ("sim_d_pwm", "D  PWM comparators"),
+]
+
+
+def sim_index(sh):
+    """A clickable index of the simulation testbenches."""
+    x, y = G(250), G(295)
+    sh.note((x, y), "SIMULATION  (separate projects - click to open)", size=2)
+    links = {}
+    for i, (name, desc) in enumerate(SIM_LINKS):
+        text = f"{desc}   ->  sim/{name}.kicad_pro"
+        sh.note((x, y + G(5) + G(4) * i), text, size=1.27)
+        links[text] = f"file:sim/{name}.kicad_pro"
+    return links
+
+
+def add_hrefs(path, links):
+    """Turn chosen text items into hyperlinks.
+
+    KiCad 10 carries a schematic hyperlink as (href "...") INSIDE the text
+    item's (effects ...) block. It is not a sibling of (uuid ...), and it is
+    not spelled (hyperlink ...) as it is on the PCB -- both of those make
+    Eeschema refuse to load the file outright.
+    """
+    txt = Path(path).read_text(encoding="utf-8")
+    for text, url in links.items():
+        i = txt.index(f'(text "{text}"')
+        e = txt.index("(effects", i)
+        depth, j = 0, e
+        while True:
+            if txt[j] == "(":
+                depth += 1
+            elif txt[j] == ")":
+                depth -= 1
+                if depth == 0:
+                    break
+            j += 1
+        txt = txt[:j] + '\n\t\t\t(href "' + url + '")\n\t\t' + txt[j:]
+    Path(path).write_text(txt, encoding="utf-8")
+
+
+# ===========================================================================
 # What the drawing is supposed to say, node by node.
 # ===========================================================================
 TARGET = {
@@ -732,6 +789,7 @@ def move_fields(path, ref, ref_at, val_at, n=0):
 
 def main():
     spread()
+    links = sim_index(sh)
     missing_fp = apply_footprints()
     if missing_fp:
         print("  NO FOOTPRINT for:", ", ".join(sorted(missing_fp)))
@@ -746,6 +804,7 @@ def main():
           f"carry a footprint")
     out = KICAD / "classd.kicad_sch"
     sh.emit(str(out))
+    add_hrefs(out, links)
     move_fields(out, "U6", spread_pt(G(46), G(171)),
                 spread_pt(G(46), G(174)))
     move_fields(out, "U1", spread_pt(G(52), G(58)),
