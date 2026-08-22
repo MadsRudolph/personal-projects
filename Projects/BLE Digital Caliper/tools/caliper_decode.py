@@ -208,12 +208,23 @@ def find_contradictions(labelled):
     "no magnitude field explains all readings", which sounds like a decoding
     problem rather than a bookkeeping one.
     """
+    usable = [(b, e, u) for b, e, u in labelled
+              if b is not None and not np.isnan(e)]
     by_frame = {}
-    for bits, expect, unit in labelled:
-        if bits is None or np.isnan(expect):
+    for bits, expect, unit in usable:
+        by_frame.setdefault(bits, []).append((round(expect, 4), unit))
+
+    out = {}
+    for bits, labels in by_frame.items():
+        if len(set(labels)) < 2:
             continue
-        by_frame.setdefault(bits, set()).add((round(expect, 4), unit))
-    return {b: v for b, v in by_frame.items() if len(v) > 1}
+        if len(labels) == len(usable):
+            # EVERY capture decoded to one frame. That is the wrong clock
+            # polarity collapsing them all, not a labelling mistake -- and
+            # shouting "mislabelled" here would bury the real warning.
+            continue
+        out[bits] = set(labels)
+    return out
 
 
 def print_config(pol, cands, signs, frame_bits, note=""):
@@ -284,9 +295,13 @@ def main():
                           else f"   margin {margin:.0f} us")
             print(f"  {pol:7s}: {agree}/{total} frames agree   "
                   f"{len(best)} bits{margin_txt}   {bits_to_str(best)}")
-            if agree < total:
-                print("           ^ frames disagree -- jaws moved, or the "
-                      "sample point is on a transition (try --sample-frac)")
+            if total - agree > 1:
+                print(f"           ^ {total - agree} of {total} frames "
+                      f"disagree -- jaws moved, or the sample point is on a "
+                      f"transition (try --sample-frac)")
+            elif agree < total:
+                print(f"           ^ 1 of {total} frames differs, normally "
+                      f"one clipped by the capture window -- harmless")
             if args.dump:
                 for f in frames:
                     print(f"             {bits_to_str(f)}")

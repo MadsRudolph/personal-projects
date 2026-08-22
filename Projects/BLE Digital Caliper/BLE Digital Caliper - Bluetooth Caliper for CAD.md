@@ -3,8 +3,8 @@
 Bolt an ESP32-C3 onto an ordinary digital caliper so it pairs as a Bluetooth
 keyboard and types measurements straight into CAD.
 
-**Status:** 🟡 Planning -- firmware skeleton written, AD3 bench tooling ready,
-protocol not yet measured
+**Status:** 🟡 Protocol decoded and verified on the bench -- next is building
+the level shifter and running the firmware against real hardware
 
 ## Why a keyboard
 
@@ -92,8 +92,10 @@ the bit map turns out to be strange, that is much cheaper to find out now.
 - **HID sends scancodes, not characters.** On a Danish layout the decimal
   separator is a different physical key than on US, and Windows may want `,`
   rather than `.`. Set `DECIMAL_SEPARATOR` in `config.h`.
-- **Your caliper may send no unit bit.** Newer units often dropped it. Set
-  `CALIPER_HAS_UNIT_BIT 0` and pick the unit at boot (hold both buttons).
+- **This caliper sends no unit bit** -- confirmed, see `docs/protocol-notes.md`.
+  Inch mode just changes the count scale, so nothing in the frame says which
+  unit you are in. Switch the caliper to inches without telling the firmware
+  and the typed number is out by a factor of 50.8.
 - **Battery life** depends entirely on sleeping. The reference build gets 20
   days standby / 2 hours active from 150 mAh.
 

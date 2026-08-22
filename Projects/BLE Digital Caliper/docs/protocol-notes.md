@@ -96,46 +96,56 @@ Data is sampled on the **falling edge of CLK**. (The firmware triggers on
 RISING with `SHIFTER_INVERTS 1`, which is the same edge once the inverting
 shifter has flipped it.)
 
-| Displayed | Raw frame (24 bits, index 0 first) | capture |
-|---|---|---|
-| 0.00 mm | `100000000000000000000000` | `captures/mm_0.npz` |
-| 19.00 mm | `100110110111000000000000` | `captures/mm_19.npz` |
-| 1.00 mm | | |
-| 100.00 mm | | |
-| 150.00 mm (near full scale) | | |
-| -1.00 mm | | |
-| 1.0000 in (if switchable) | | |
+| Displayed | Raw frame (24 bits, index 0 first) | count | capture |
+|---|---|---|---|
+| 0.00 mm | `100000000000000000000000` | 0 | `mm_0.npz` |
+| 0.99 mm | `111000110000000000000000` | 99 | `mm_1.npz` |
+| 10.01 mm | `110010111110000000000000` | 1001 | `mm_10.npz` |
+| 19.00 mm | `100110110111000000000000` | 1900 | `mm_19.npz` |
+| 103.76 mm | `100010001000101000000000` | 10376 | `mm_100.npz` |
+| 163.82 mm (full scale) | `101111111111111000000000` | 16382 | `mm_max.npz` |
+| -1.11 mm | `111110110000000000000100` | 111, sign set | `mm_neg1.npz` |
+| 1.0010 in | `101001011111000000000000` | 2002 | `in_1.npz` |
 
-Bits 1..11 read 1900 at 19.00 mm, which is exactly 19.00 / 0.01 -- the metric
-count scale from `prior-art.md` is confirmed, as is the always-1 marker at
-bit 0.
+Every one of those decodes back to the displayed value with **zero error**
+using the field below. Re-check any time with:
 
-Then work out:
+    cd tools && python caliper_decode.py ../captures/mm_*.npz
 
-- Magnitude first bit: **1** (confirmed) -> `CALIPER_VALUE_FIRST_BIT`
-- Magnitude last bit: **>= 11, assumed 14** -> `CALIPER_VALUE_LAST_BIT`.
-  Two captures cannot separate 1..11 from 1..14, because 1900 fits in 11 bits
-  and bits 12-14 stayed 0. **Capture near full scale to settle this.**
-- Sign bit: **unknown** -> `CALIPER_SIGN_BIT`. Needs a negative capture.
-- Unit bit present? **unknown** -> `CALIPER_HAS_UNIT_BIT`, `CALIPER_UNIT_BIT`
+### The answer
 
-Sanity checks:
+- Magnitude first bit: **1** -> `CALIPER_VALUE_FIRST_BIT`
+- Magnitude last bit: **14** -> `CALIPER_VALUE_LAST_BIT`
+- Sign bit: **21**, 1 = negative -> `CALIPER_SIGN_BIT`
+- Unit bit: **none** -> leave `CALIPER_HAS_UNIT_BIT` at 0
+- Bit 0 is always 1. Bits 15-20, 22 and 23 were 0 in every capture.
+- Scales: **0.01 mm** and **0.0005 in** per count, both verified.
 
-- 100.00 mm needs a count of 10000, so at least 14 magnitude bits.
-- Toggling mm/inch on the caliper should flip exactly one bit if a unit bit
-  exists. If nothing changes, it does not. Capture the same displacement in
-  both units and compare the two frames printed by `caliper_decode.py`.
-- The decoder lists several magnitude fields when the wider ones only fit
-  because their top bits never got exercised. Capture something near full
-  scale (e.g. 150 mm on a 150 mm caliper) to rule them out.
-- Compare 1.00 mm against 10.00 mm -- the count should be exactly 10x.
+The 14-bit field is not an assumption. Full scale is 163.82 mm = 16382 counts
+and 2^14 - 1 = 16383, so the caliper's whole range is exactly what the field
+can hold. Nothing narrower fits 16382, and nothing wider is reachable.
+
+### No unit bit -- and why that matters
+
+Switching the display to inches changes only the **count scale**: 1.0010 in
+arrived as 2002 counts of 0.0005 in, and every bit outside the magnitude and
+sign fields stayed 0 in both modes. Nothing in the frame says which unit it is.
+
+So the firmware cannot work it out. Switch the caliper to inches without
+telling it and the typed number is wrong by a factor of 50.8. Pick the unit
+with `CALIPER_DEFAULT_INCHES`, or hold both buttons at boot.
 
 ## 4. Verification
 
-With `CALIPER_SNIFFER_MODE = 0`:
+Done on the AD3, before any hardware exists:
 
-- [ ] Reads 0.00 when closed
-- [ ] Matches the display across the full range
-- [ ] Negative values correct
+- [x] Reads 0.00 when closed
+- [x] Matches the display across the full range (0 to 163.82 mm, zero error)
+- [x] Negative values correct (-1.11 mm, sign bit 21)
+- [x] Inch mode correct (1.0010 in = 2002 counts)
+
+Still to do on the ESP32, with `CALIPER_SNIFFER_MODE = 0`:
+
+- [ ] Frames match what the AD3 saw, inverted by the shifter
 - [ ] Gauge blocks or a known pin agree to +/-0.01 mm
 - [ ] Decimal separator accepted by the CAD field
