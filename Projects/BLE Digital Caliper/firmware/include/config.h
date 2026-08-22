@@ -11,6 +11,9 @@
 // ---------------------------------------------------------------------------
 // CLK and DATA arrive from the caliper via the transistor level shifter, which
 // INVERTS both lines. See ../../hardware/level-shifter.md.
+//
+// The caliper side runs at 1.085 V, not the 1.5 V an LR44 implies -- measured,
+// see docs/protocol-notes.md. Size the shifter for that.
 #define PIN_CALIPER_CLK   3
 #define PIN_CALIPER_DATA  1
 
@@ -32,15 +35,21 @@
 // ---------------------------------------------------------------------------
 // Protocol -- VERIFY THESE AGAINST YOUR OWN CALIPER
 // ---------------------------------------------------------------------------
-// The 24-bit format below is what most budget calipers emit, and matches the
-// Neiko unit documented in docs/prior-art.md. Bit layouts DO vary between
-// makes and even between production runs of the same model, so confirm yours
-// with CALIPER_SNIFFER_MODE before trusting any reading.
+// MEASURED on this caliper with an Analog Discovery 3 -- see
+// docs/protocol-notes.md. Confirmed: 24-bit frame, always-1 marker at bit 0,
+// magnitude LSB-first from bit 1, 0.01 mm per count (19.00 mm read 1900), and
+// DATA valid on the FALLING edge of CLK at the caliper.
+//
+// STILL UNCONFIRMED, do not trust until captured:
+//   * VALUE_LAST_BIT -- only bits 1..11 have been exercised. 14 is inherited
+//     from prior-art.md. Capture near full scale to settle it.
+//   * SIGN_BIT -- no negative capture yet.
+//   * the unit bit -- no inch capture yet.
 #define CALIPER_FRAME_BITS       24
 
 #define CALIPER_VALUE_FIRST_BIT   1   // first magnitude bit (LSB first)
-#define CALIPER_VALUE_LAST_BIT   14   // last magnitude bit, inclusive
-#define CALIPER_SIGN_BIT         21   // 1 = negative
+#define CALIPER_VALUE_LAST_BIT   14   // last magnitude bit, inclusive (>=11 measured)
+#define CALIPER_SIGN_BIT         21   // 1 = negative -- NOT yet measured
 
 // Some calipers signal mm/inch in the frame; many newer ones do not. When the
 // unit bit is absent, set CALIPER_HAS_UNIT_BIT to 0 and pick the unit with
@@ -53,7 +62,9 @@
 #define CALIPER_MM_PER_COUNT      0.01
 #define CALIPER_INCH_PER_COUNT    0.0005
 
-// A gap longer than this means the next edge starts a fresh frame.
+// A gap longer than this means the next edge starts a fresh frame. Measured on
+// this caliper: 145 ms between frames, and 930 us between the six groups of
+// four clock pulses within a frame. 3000 sits safely between the two.
 #define CALIPER_FRAME_GAP_US   3000
 
 // ---------------------------------------------------------------------------

@@ -74,7 +74,8 @@ def synth_capture(value_mm, seconds=4.0, rng=None):
 
 def write_capture(path, value_mm, rng):
     clk, dat = synth_capture(value_mm, rng=rng)
-    np.savez_compressed(path, clk=clk, data=dat,
+    np.savez_compressed(path, ch0=clk, ch1=dat,
+                        clk_channel=np.int32(0), data_channel=np.int32(1),
                         rate=np.float64(RATE),
                         expect=np.float64(value_mm),
                         unit=np.str_("mm"))

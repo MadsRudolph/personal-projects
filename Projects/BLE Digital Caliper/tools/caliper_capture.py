@@ -98,9 +98,15 @@ def main():
                   "DATA may be swapped (try --clk/--data the other way round)")
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+    # Store the raw scope channels and record which role each was believed to
+    # hold, rather than baking the roles into the arrays. If CLK and DATA turn
+    # out to be the other way round, caliper_decode.py --swap fixes the whole
+    # set instead of you re-capturing every displacement.
     np.savez_compressed(
         args.out,
-        clk=clk, data=dat,
+        ch0=data[0], ch1=data[1],
+        clk_channel=np.int32(args.clk),
+        data_channel=np.int32(args.data),
         rate=np.float64(rate),
         expect=np.float64(args.expect if args.expect is not None else np.nan),
         unit=np.str_(args.unit),

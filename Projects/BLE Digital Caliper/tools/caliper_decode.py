@@ -30,12 +30,29 @@ SCALE = {"mm": 0.01, "in": 0.0005}
 POLARITIES = ("rising", "falling")
 
 
-def load_capture(path):
+def load_capture(path, swap=False):
+    """Load a capture, resolving which scope channel held which role.
+
+    Captures store the raw channels plus the roles they were believed to have,
+    so `swap` can correct a CLK/DATA mix-up across a whole set without
+    re-capturing anything.
+    """
     z = np.load(path, allow_pickle=False)
+    if "ch0" in z:
+        clk_ch = int(z["clk_channel"])
+        dat_ch = int(z["data_channel"])
+        if swap:
+            clk_ch, dat_ch = dat_ch, clk_ch
+        clk, dat = z[f"ch{clk_ch}"], z[f"ch{dat_ch}"]
+    else:
+        # Captures written before the raw-channel format.
+        clk, dat = z["clk"], z["data"]
+        if swap:
+            clk, dat = dat, clk
     return {
         "path": path,
-        "clk": z["clk"],
-        "data": z["data"],
+        "clk": clk,
+        "data": dat,
         "rate": float(z["rate"]),
         "expect": float(z["expect"]),
         "unit": str(z["unit"]),
@@ -213,6 +230,8 @@ def main():
                    help="sample DATA this fraction of a clock period before "
                         "the active edge (default 0.25)")
     p.add_argument("--dump", action="store_true", help="print every frame")
+    p.add_argument("--swap", action="store_true",
+                   help="treat the CLK and DATA channels as swapped")
     args = p.parse_args()
 
     paths = []
@@ -223,7 +242,7 @@ def main():
         print("FAIL: no capture files matched")
         return 2
 
-    caps = [load_capture(path) for path in paths]
+    caps = [load_capture(path, swap=args.swap) for path in paths]
 
     # ---- per-capture frames, both clock polarities --------------------------
     results = {pol: [] for pol in POLARITIES}

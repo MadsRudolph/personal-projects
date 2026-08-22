@@ -80,37 +80,74 @@ def classify(volts, rate_hz):
     if not bursts:
         return "active, but no burst structure", details
 
-    pulse_counts = []
-    durations = []
+    # Split the bursts into real frames and one- or two-edge blips. The blips
+    # come from noise and from frames clipped by the start or end of the
+    # window, and they would otherwise drag every statistic down.
+    real, blips = [], 0
     for start, end in bursts:
-        in_burst = np.count_nonzero((edges >= start) & (edges <= end))
-        pulse_counts.append(in_burst)
-        durations.append((end - start) / rate_hz)
+        in_burst = int(np.count_nonzero((edges >= start) & (edges <= end)))
+        if in_burst >= 4:
+            real.append((start, end, in_burst))
+        else:
+            blips += 1
 
-    counts = np.array(pulse_counts)
+    if not real:
+        details.append(f"{len(bursts)} bursts, all under 4 edges -- noise, "
+                       f"not frames")
+        return "active, but no frame structure", details
+
+    counts = np.array([c for _, _, c in real])
+    durations = [(e - s) / rate_hz for s, e, _ in real]
     span_s = volts.size / rate_hz
-    burst_rate = len(bursts) / span_s if span_s else 0.0
+    burst_rate = len(real) / span_s if span_s else 0.0
     details.append(
-        f"{len(bursts)} bursts   {burst_rate:.1f} /s   "
-        f"edges/burst {counts.min()}..{counts.max()} (median {int(np.median(counts))})   "
-        f"burst length {1000*min(durations):.2f}..{1000*max(durations):.2f} ms")
+        f"{len(real)} frames   {burst_rate:.1f} /s   "
+        f"edges/frame {counts.min()}..{counts.max()} "
+        f"(median {int(np.median(counts))})   "
+        f"length {1000*min(durations):.2f}..{1000*max(durations):.2f} ms"
+        + (f"   [+{blips} noise blips ignored]" if blips else ""))
 
-    # Within a burst, a clock's pulse widths are all the same; a data line's
-    # are multiples of the bit period. That ratio is the cleanest separator.
-    first = bursts[0]
-    burst_edges = edges[(edges >= first[0]) & (edges <= first[1])]
-    if burst_edges.size >= 4:
-        runs = np.diff(burst_edges)
-        regularity = runs.max() / runs.min() if runs.min() else 999
-        bit_period_s = float(np.median(runs)) / rate_hz
+    # Analyse the fullest frame, not the first one -- the first is often a
+    # fragment clipped by the start of the capture window.
+    start, end, _ = max(real, key=lambda b: b[2])
+    burst_edges = edges[(edges >= start) & (edges <= end)]
+    runs = np.diff(burst_edges)
+    if runs.size < 3:
+        return "active", details
+
+    unit = float(np.min(runs))                    # one half-clock, in samples
+    regularity = float(runs.max()) / unit if unit else 999.0
+    half_us = 1e6 * unit / rate_hz
+    details.append(
+        f"fullest frame: {burst_edges.size} edges   shortest pulse "
+        f"{half_us:.1f} us   longest {regularity:.1f}x that   "
+        f"implied clock {1e3/(2*half_us):.2f} kHz")
+
+    # A clock's pulses are all one unit wide; a data line holds its level for
+    # whole bit periods, so its runs come out as small integer multiples.
+    mult = np.round(runs / unit).astype(int)
+    spread = ", ".join(f"{m}x{int(np.count_nonzero(mult == m))}"
+                       for m in sorted(set(mult.tolist())))
+    details.append(f"pulse widths (as multiples of the shortest): {spread}")
+
+    # Same-direction intervals: for a clock these are one period throughout,
+    # give or take whatever gap separates groups of bits.
+    rise = burst_edges[::2] if bits[int(burst_edges[0])] else burst_edges[1::2]
+    if rise.size >= 3:
+        periods = np.diff(rise)
         details.append(
-            f"first burst: shortest pulse {1e6*runs.min()/rate_hz:.1f} us   "
-            f"max/min {regularity:.1f}x   implied clock "
-            f"{1e-3/(2*bit_period_s):.2f} kHz")
-        # ~24 bits per frame means ~48 clock edges; a data line has far fewer.
-        if regularity < 2.5 and counts.max() >= 20:
-            return "CLK", details
-        return "DATA", details
+            f"period between same-direction edges: "
+            f"{1e6*periods.min()/rate_hz:.0f}..{1e6*periods.max()/rate_hz:.0f} us")
+
+    details.append(
+        "CLK vs DATA cannot be settled from one reading -- a data line whose "
+        "bits happen to alternate looks exactly like a clock. Capture two "
+        "different displacements: the clock's edges/frame does not change, "
+        "DATA's does.")
+
+    if regularity < 2.5 and counts.max() >= 20:
+        return "signal -- looks clock-like", details
+    return "signal -- looks data-like", details
 
     return "active", details
 
