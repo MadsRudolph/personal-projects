@@ -193,13 +193,13 @@ sh.note((G(74), G(108)), "SW1/SW2 are for BLE mode only -- not needed",
         size=1.5)
 sh.note((G(74), G(110.5)), "for CALIPER_SNIFFER_MODE bring-up.", size=1.5)
 
-sh.note((G(8), G(105)), "BC547 pinout: flat face toward you, legs down,",
-        size=1.5)
-sh.note((G(8), G(107.5)), "left to right = C  B  E.", size=1.5)
-sh.note((G(8), G(110)), "A 2N3904 is E  B  C, the mirror image. If a stage",
-        size=1.5)
-sh.note((G(8), G(112.5)), "will not switch, swap the outer two legs.",
-        size=1.5)
+sh.note((G(8), G(105)), "BC547: flat face toward you, legs down --", size=1.5)
+sh.note((G(8), G(107.5)), "left = C = pin 1,  middle = B = pin 2,", size=1.5)
+sh.note((G(8), G(110)), "right = E = pin 3.", size=1.5)
+sh.note((G(8), G(113)), "A 2N3904 is the mirror image (E B C), so check", size=1.5)
+sh.note((G(8), G(115.5)), "before soldering: diode mode, red on the middle", size=1.5)
+sh.note((G(8), G(118)), "leg, both outer legs read ~0.7 V. The HIGHER of", size=1.5)
+sh.note((G(8), G(120.5)), "the two is the EMITTER.", size=1.5)
 
 # ---------------------------------------------------------------------------
 # Verify, then emit

@@ -62,8 +62,34 @@ Flat face toward you, legs pointing down:
 ```
 
 The middle leg is Base on both, so a stage wired to the wrong pinout has its
-collector and emitter swapped. If one will not switch, swap the outer two legs
-before suspecting anything else.
+collector and emitter swapped.
+
+Against the schematic in `kicad/protoboard.kicad_sch`, whose symbol numbers the
+pins C-B-E:
+
+| Schematic pin | Function | Physical leg, flat face toward you |
+|---|---|---|
+| 1 | Collector -- 10k to 3V3, and to the ESP32 | left |
+| 2 | Base -- 10k to the caliper | middle |
+| 3 | Emitter -- GND | right |
+
+**Confirm it with a meter rather than trusting the table.** Datasheets disagree
+about whether "front view" means the flat face or the rounded one, and this is
+the single most likely way to lose an evening here.
+
+Diode mode, red probe on the **middle** leg, black on each outer leg in turn.
+Both should read about 0.6-0.7 V, which confirms the middle leg is the Base.
+Now compare the two: the **higher** reading is the **Emitter**, because the
+base-collector junction has the larger area and so a lower forward drop at the
+same test current. The difference is small but consistent, typically 10-40 mV.
+
+If your meter has an hFE socket that is definitive -- insert as E-B-C and
+expect 200-500. Single digits means C and E are swapped and the transistor is
+running reverse-active.
+
+`tools/caliper_shifter_check.py` is the backstop: a reversed stage will not
+saturate, so it reports the low side sitting well above 0 V instead of at the
+rail.
 
 ## Do not use a BSS138 shifter
 
