@@ -54,22 +54,22 @@ the bit map turns out to be strange, that is much cheaper to find out now.
    Two pads at a time; move the probes and repeat. Record the answer in
    `docs/protocol-notes.md` section 2.
 
-2. **Decode the protocol, still with no hardware built.** Capture at several
-   known displacements, then let the decoder solve the bit map:
+2. **Decode the protocol, still with no hardware built.** One command:
 
    ```
-   cd tools
-   python caliper_capture.py --expect 0.00   --out ../captures/mm_0.npz
-   python caliper_capture.py --expect 1.00   --out ../captures/mm_1.npz
-   python caliper_capture.py --expect 10.00  --out ../captures/mm_10.npz
-   python caliper_capture.py --expect 100.00 --out ../captures/mm_100.npz
-   python caliper_capture.py --expect -1.00  --out ../captures/mm_neg1.npz
-   python caliper_decode.py ../captures/*.npz
+   cd tools && python caliper_session.py
    ```
 
-   It searches every possible magnitude field for the one that reproduces all
-   your readings at once and prints a `config.h` block. Fill in
-   `docs/protocol-notes.md` section 3 from that.
+   It walks you through the whole set of captures, saying what to set the
+   caliper to at each step and asking what the display actually reads -- type
+   what you see, not what you aimed for, because that number is what the
+   decoder solves against. Each capture is checked immediately and can be
+   retaken on the spot. At the end it searches every possible magnitude field
+   for the one that reproduces all your readings at once and prints a
+   `config.h` block.
+
+   `caliper_capture.py` and `caliper_decode.py` do the same job one step at a
+   time if you would rather drive it yourself.
 
 3. **Build the level shifter.** See `hardware/level-shifter.md`.
 4. **Confirm on the ESP32.** `CALIPER_SNIFFER_MODE = 1` in
@@ -99,7 +99,10 @@ the bit map turns out to be strange, that is much cheaper to find out now.
 
 ## Layout
 
-- `tools/` -- AD3 bench scripts: pad scan, capture, protocol decoder
+- `tools/` -- AD3 bench scripts. `caliper_session.py` is the guided front end;
+  `caliper_padscan.py`, `caliper_capture.py` and `caliper_decode.py` are the
+  individual steps, and `selftest_decode.py` checks the decoder without hardware
+- `captures/` -- recorded scope data, one file per known displacement
 - `firmware/` -- PlatformIO project, ESP32-C3
 - `docs/protocol-notes.md` -- worksheet to fill in during bring-up
 - `docs/prior-art.md` -- findings from an existing build, and licensing

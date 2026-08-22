@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Step 3 of bring-up: capture caliper frames to a file for offline decoding.
+"""Capture caliper frames to a file for offline decoding.
 
-Run this once per known displacement, telling it what the caliper display
-reads. caliper_decode.py then uses those known values to work out the bit map
-automatically, which beats squinting at bit strings.
+One capture per known displacement, tagged with what the caliper display read.
+caliper_decode.py then uses those known values to solve the bit map.
+
+For a guided run that tells you what to do at each step and prompts for the
+reading, use caliper_session.py instead -- it drives this module.
 
 WIRING -- after caliper_padscan.py has told you which pad is which:
 
@@ -33,6 +35,54 @@ import numpy as np
 
 import ad3
 
+DEFAULT_RATE = 200e3
+DEFAULT_SECONDS = 4.0
+
+
+def capture_pair(seconds=DEFAULT_SECONDS, rate=DEFAULT_RATE):
+    """Record both scope channels. Returns (data, actual_rate, lost, corrupt)."""
+    with ad3.open_ad3() as device:
+        return ad3.record(device, rate, seconds, channels=(0, 1))
+
+
+def summarise_clock(clk, rate):
+    """Frame count and clock edges per frame, for immediate bench feedback.
+
+    Blips under 4 edges are noise or frames clipped by the window edge; they
+    are counted separately rather than dragging the statistics down.
+    """
+    bits, _ = ad3.digitize(clk)
+    bursts = ad3.find_bursts(bits, rate, gap_s=0.003)
+    edges = ad3.edge_indices(bits)
+    per = [int(np.count_nonzero((edges >= s) & (edges <= e)))
+           for s, e in bursts]
+    real = [p for p in per if p >= 4]
+    return {"frames": len(real),
+            "blips": len(per) - len(real),
+            "edges_min": min(real) if real else 0,
+            "edges_max": max(real) if real else 0}
+
+
+def save_capture(path, data, rate, expect, unit, clk_ch, data_ch):
+    """Write a capture.
+
+    The raw scope channels are stored along with the roles each was believed
+    to hold, rather than the roles being baked into the arrays. If CLK and
+    DATA turn out to be the other way round, caliper_decode.py --swap fixes
+    the whole set instead of you re-capturing every displacement.
+    """
+    parent = os.path.dirname(os.path.abspath(path))
+    os.makedirs(parent, exist_ok=True)
+    np.savez_compressed(
+        path,
+        ch0=data[0], ch1=data[1],
+        clk_channel=np.int32(clk_ch),
+        data_channel=np.int32(data_ch),
+        rate=np.float64(rate),
+        expect=np.float64(expect if expect is not None else np.nan),
+        unit=np.str_(unit),
+    )
+
 
 def main():
     p = argparse.ArgumentParser(
@@ -43,9 +93,9 @@ def main():
                    help="what the caliper display reads right now, e.g. 10.00")
     p.add_argument("--unit", default="mm", choices=("mm", "in"),
                    help="unit shown on the display (default mm)")
-    p.add_argument("--seconds", type=float, default=4.0,
+    p.add_argument("--seconds", type=float, default=DEFAULT_SECONDS,
                    help="capture window (default 4 -- several frames)")
-    p.add_argument("--rate", type=float, default=200e3,
+    p.add_argument("--rate", type=float, default=DEFAULT_RATE,
                    help="sample rate Hz (default 200k)")
     p.add_argument("--clk", type=int, default=0, choices=(0, 1),
                    help="scope channel on CLK (default 0 = 1+/orange)")
@@ -64,53 +114,32 @@ def main():
     print(">>> HOLD THE CALIPER STILL AT THAT READING <<<\n")
 
     try:
-        with ad3.open_ad3() as device:
-            data, rate, lost, corrupt = ad3.record(
-                device, args.rate, args.seconds, channels=(0, 1))
+        data, rate, lost, corrupt = capture_pair(args.seconds, args.rate)
     except ad3.Ad3Busy as exc:
         print(f"FAIL: {exc}")
         return 2
 
-    clk = data[args.clk]
-    dat = data[args.data]
-    n = clk.size
+    n = data[0].size
     print(f"captured {n} samples/channel @ {rate/1e3:.1f} kS/s ({n/rate:.2f} s)")
     if lost or corrupt:
         print(f"!! lost={lost} corrupt={corrupt} -- lower --rate if large")
 
-    # Immediate sanity feedback, so a bad probe is caught at the bench rather
-    # than three captures later.
-    bits, thr = ad3.digitize(clk)
-    bursts = ad3.find_bursts(bits, rate, gap_s=0.003)
-    if not bursts:
+    s = summarise_clock(data[args.clk], rate)
+    if not s["frames"]:
         print("\n!! NO FRAMES SEEN on the CLK channel.")
         print("   - is the caliper on, and are the probes on CLK/DATA?")
         print("   - some calipers only transmit while the reading changes;")
         print("     nudge the jaws during the window")
         print("   - re-run caliper_padscan.py to confirm the pad map")
     else:
-        edges = ad3.edge_indices(bits)
-        per = [np.count_nonzero((edges >= s) & (edges <= e)) for s, e in bursts]
-        print(f"\n{len(bursts)} frames  ({len(bursts)/(n/rate):.1f} /s)  "
-              f"clock edges per frame {min(per)}..{max(per)}")
-        if max(per) < 20:
+        print(f"\n{s['frames']} frames  ({s['frames']/(n/rate):.1f} /s)  "
+              f"clock edges per frame {s['edges_min']}..{s['edges_max']}")
+        if s["edges_max"] < 20:
             print("!! fewer clock edges than a 24-bit frame needs -- CLK and "
                   "DATA may be swapped (try --clk/--data the other way round)")
 
-    os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-    # Store the raw scope channels and record which role each was believed to
-    # hold, rather than baking the roles into the arrays. If CLK and DATA turn
-    # out to be the other way round, caliper_decode.py --swap fixes the whole
-    # set instead of you re-capturing every displacement.
-    np.savez_compressed(
-        args.out,
-        ch0=data[0], ch1=data[1],
-        clk_channel=np.int32(args.clk),
-        data_channel=np.int32(args.data),
-        rate=np.float64(rate),
-        expect=np.float64(args.expect if args.expect is not None else np.nan),
-        unit=np.str_(args.unit),
-    )
+    save_capture(args.out, data, rate, args.expect, args.unit,
+                 args.clk, args.data)
     print(f"\nsaved -> {args.out}")
     return 0
 

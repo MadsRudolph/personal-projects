@@ -199,6 +199,23 @@ def search_sign_bit(labelled, frame_bits):
     return out
 
 
+def find_contradictions(labelled):
+    """Captures whose frames are identical but whose labels are not.
+
+    The caliper cannot send the same 24 bits for two different readings, so
+    this means a capture is mislabelled -- almost always taken before the jaws
+    were actually set. It is worth naming explicitly, because the symptom is
+    "no magnitude field explains all readings", which sounds like a decoding
+    problem rather than a bookkeeping one.
+    """
+    by_frame = {}
+    for bits, expect, unit in labelled:
+        if bits is None or np.isnan(expect):
+            continue
+        by_frame.setdefault(bits, set()).add((round(expect, 4), unit))
+    return {b: v for b, v in by_frame.items() if len(v) > 1}
+
+
 def print_config(pol, cands, signs, frame_bits, note=""):
     """Emit the config.h block implied by one (polarity, bit map) solution."""
     first, last = cands[0]
@@ -291,6 +308,14 @@ def main():
         cands, usable = search_bit_map(labelled, args.bits)
         print(f"=== bit map search, {pol} edge "
               f"({len(usable)} labelled captures) ===")
+        for bits, labels in find_contradictions(labelled).items():
+            pretty = ", ".join(f"{v:g} {u}" for v, u in sorted(labels))
+            print(f"  !! MISLABELLED CAPTURE: the identical frame "
+                  f"{bits_to_str(bits)}")
+            print(f"     is labelled {pretty}. One reading cannot produce two")
+            print(f"     frames, so a capture was taken before the jaws were "
+                  f"set.")
+            print(f"     Re-take it before trusting anything below.")
         if not cands:
             print("  no magnitude field explains all readings on this "
                   "polarity\n")
@@ -314,6 +339,8 @@ def main():
 
     if not solutions:
         print("Nothing solved. Most likely causes, in order:")
+        print("  0. a capture is MISLABELLED -- see any warning above, and")
+        print("     check each file was taken with the jaws actually set")
         print("  1. CLK and DATA are swapped -- re-run caliper_padscan.py")
         print("  2. the frame is not 24 bits -- try --bits 20 / --bits 32")
         print("  3. the sample point is wrong -- try --sample-frac 0.5 or 0.1")
