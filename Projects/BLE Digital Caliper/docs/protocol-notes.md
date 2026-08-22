@@ -7,7 +7,8 @@ Do not skip it -- see `prior-art.md` for why published bit maps are unreliable.
 
 - Make / model: _______________ (still to record)
 - Data port: **4 exposed pads**
-- Battery: **LR44**, but see the VDD measurement below
+- Battery: **LR44** (alkaline). An SR44 silver oxide is the better fit -- same
+  size, holds ~1.55 V flat instead of sagging across the whole range.
 
 ## 2. Pad identification
 
@@ -34,9 +35,12 @@ So the expected `GND, DATA, CLK, VDD` set is all present -- but **CLK and DATA
 are not in the order you would guess**, and telling them apart took two
 captures at different displacements (see below).
 
-- Measured VDD: **1.085 V** -- NOT the ~1.5 V an LR44 suggests. The logic
-  swings 0 -> 1.08 V. Confirm against the cell itself with a multimeter; either
-  way the level shifter has to be designed for this, not for 1.5 V.
+- Measured VDD: **1.085 V at the pad, 1.078 V at the cell.** Same number within
+  tolerance, so the caliper runs its logic **straight off the battery with no
+  regulator** -- the logic level is whatever the cell is doing that day. This
+  cell is nearly flat (an alkaline LR44 starts near 1.5 V). Everything below
+  was captured on it and was clean, but see `../hardware/level-shifter.md`:
+  the shifter has to cover ~1.0 to 1.6 V, not a fixed 1.5 V.
 - Clock frequency: **2.13 kHz** within a group (470 us period)
 - Frame repetition rate: **6.0 - 6.3 Hz**
 - Frame length: **13.2 ms**
