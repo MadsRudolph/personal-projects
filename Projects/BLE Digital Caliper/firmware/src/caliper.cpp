@@ -5,6 +5,7 @@ static volatile uint8_t  s_frame[CALIPER_FRAME_BITS];
 static volatile uint8_t  s_index       = 0;
 static volatile uint32_t s_lastEdgeUs  = 0;
 static volatile bool     s_frameReady  = false;
+static volatile uint32_t s_edges       = 0;
 
 static bool s_inches = CALIPER_DEFAULT_INCHES;
 
@@ -18,6 +19,7 @@ static portMUX_TYPE s_mux = portMUX_INITIALIZER_UNLOCKED;
  */
 static void IRAM_ATTR onClockEdge() {
     const uint32_t now = micros();
+    s_edges++;
 
     if (now - s_lastEdgeUs > CALIPER_FRAME_GAP_US) {
         s_index = 0;  // long silence -- this edge starts a new frame
@@ -107,3 +109,5 @@ CaliperReading caliperDecode(const uint8_t *bits) {
 void caliperSetInches(bool inches) { s_inches = inches; }
 bool caliperIsInches()             { return s_inches; }
 uint32_t caliperLastEdgeUs()       { return s_lastEdgeUs; }
+uint32_t caliperEdgeCount()        { return s_edges; }
+uint8_t  caliperPartialIndex()     { return s_index; }

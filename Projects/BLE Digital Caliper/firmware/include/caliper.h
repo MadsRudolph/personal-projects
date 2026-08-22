@@ -35,3 +35,13 @@ bool caliperIsInches();
 
 /** micros() timestamp of the last clock edge seen, for liveness checks. */
 uint32_t caliperLastEdgeUs();
+
+/** Total clock edges the ISR has seen. Bring-up diagnostic: zero here means
+ *  nothing is reaching the pin at all, which is a wiring or shifter fault
+ *  rather than anything to do with decoding. */
+uint32_t caliperEdgeCount();
+
+/** How many bits of the current frame have been captured. Sitting at a value
+ *  that never reaches CALIPER_FRAME_BITS means edges arrive but frames never
+ *  complete -- suspect the gap threshold or a noisy clock. */
+uint8_t caliperPartialIndex();

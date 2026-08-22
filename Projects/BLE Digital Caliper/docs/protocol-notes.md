@@ -42,7 +42,10 @@ captures at different displacements (see below).
   was captured on it and was clean, but see `../hardware/level-shifter.md`:
   the shifter has to cover ~1.0 to 1.6 V, not a fixed 1.5 V.
 - Clock frequency: **2.13 kHz** within a group (470 us period)
-- Frame repetition rate: **6.0 - 6.3 Hz**
+- Frame repetition rate: **6.0 - 6.3 Hz while the reading is changing**, and
+  about **3 Hz when it is sitting still**. It stops altogether once the caliper
+  powers itself down, which during ESP32 bring-up looked exactly like a dead
+  shifter -- nudge the jaws before suspecting the hardware.
 - Frame length: **13.2 ms**
 - Gap between frames: **~145 ms** -> `CALIPER_FRAME_GAP_US 3000` is correct: it
   sits well above the 930 us group gap and well below the 145 ms frame gap.

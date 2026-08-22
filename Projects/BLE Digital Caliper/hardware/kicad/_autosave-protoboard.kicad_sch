@@ -2092,7 +2092,7 @@
 	)
 	(text "DATA stage  (caliper green)"
 		(exclude_from_sim no)
-		(at 83.82 92.71 0)
+		(at 74.93 85.09 0)
 		(effects
 			(font
 				(size 1.6 1.6)
@@ -2276,10 +2276,6 @@
 	(no_connect
 		(at 165.1 101.6)
 		(uuid "9f3fb1b4-363b-4d9f-813e-e9efe4758072")
-	)
-	(no_connect
-		(at 193.04 101.6)
-		(uuid "ac817b75-1d59-4fc6-8ac3-78cdd8596862")
 	)
 	(no_connect
 		(at 165.1 60.96)
@@ -3212,7 +3208,7 @@
 			)
 		)
 		(property "Value" "ESP32 DevKit"
-			(at 197.358 74.93 0)
+			(at 181.61 60.96 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects

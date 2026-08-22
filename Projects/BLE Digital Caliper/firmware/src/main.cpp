@@ -110,7 +110,39 @@ void setup() {
 #endif
 }
 
+#if CALIPER_SNIFFER_MODE
+/* Bring-up heartbeat. Prints even when nothing is arriving, which is the
+ * case that needs the most help: it separates "no edges reach the pin at
+ * all" (wiring or shifter) from "edges arrive but frames never complete"
+ * (timing), and shows the idle levels the shifter is presenting. With
+ * SHIFTER_INVERTS the caliper's idle-high lines should read LOW here. */
+static void heartbeat() {
+    static uint32_t lastMs = 0;
+    if (millis() - lastMs < 2000) {
+        return;
+    }
+    lastMs = millis();
+
+    const uint32_t edges = caliperEdgeCount();
+    Serial.printf("hb: edges=%lu  bit=%u/%u  CLK(gpio%d)=%d DATA(gpio%d)=%d",
+                  (unsigned long)edges, caliperPartialIndex(),
+                  CALIPER_FRAME_BITS, PIN_CALIPER_CLK,
+                  digitalRead(PIN_CALIPER_CLK), PIN_CALIPER_DATA,
+                  digitalRead(PIN_CALIPER_DATA));
+    if (edges) {
+        Serial.printf("  last edge %lu ms ago",
+                      (unsigned long)((micros() - caliperLastEdgeUs()) / 1000));
+    } else {
+        Serial.print("  -- NO EDGES: check the shifter, not the decode");
+    }
+    Serial.println();
+}
+#endif
+
 void loop() {
+#if CALIPER_SNIFFER_MODE
+    heartbeat();
+#endif
     if (caliperTakeFrame(g_bits)) {
         g_last = caliperDecode(g_bits);
 #if CALIPER_SNIFFER_MODE
