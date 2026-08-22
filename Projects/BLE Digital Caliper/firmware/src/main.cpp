@@ -76,7 +76,14 @@ static void dumpFrame(const uint8_t *bits, const CaliperReading &r) {
 static void enterDeepSleep() {
     Serial.println("idle -- sleeping");
     Serial.flush();
+#if defined(CONFIG_IDF_TARGET_ESP32)
+    // The classic ESP32 has no GPIO deep-sleep wake source -- that only exists
+    // on the C3 and later. EXT0 is the equivalent here, and it requires an
+    // RTC-capable pin, which is why PIN_BTN_SEND is GPIO32 on this board.
+    esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_BTN_SEND, 0);
+#else
     esp_deep_sleep_enable_gpio_wakeup(1ULL << PIN_BTN_SEND, ESP_GPIO_WAKEUP_GPIO_LOW);
+#endif
     esp_deep_sleep_start();
 }
 

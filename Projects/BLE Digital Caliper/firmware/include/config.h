@@ -7,22 +7,35 @@
 #pragma once
 
 // ---------------------------------------------------------------------------
-// Pin map (ESP32-C3 SuperMini)
+// Pin map -- selected by the build target, see platformio.ini
 // ---------------------------------------------------------------------------
 // CLK and DATA arrive from the caliper via the transistor level shifter, which
 // INVERTS both lines. See ../../hardware/level-shifter.md.
 //
 // The caliper side runs at 1.085 V, not the 1.5 V an LR44 implies -- measured,
 // see docs/protocol-notes.md. Size the shifter for that.
+#if defined(CONFIG_IDF_TARGET_ESP32)
+// ---- Classic ESP32 DevKit (WROOM-32), the protoboard prototype ------------
+// GPIO1 and GPIO3 are UART0, which is the USB serial bridge you read the
+// sniffer on, so they cannot carry CLK and DATA here.
+// GPIO32 and 33 are chosen for the buttons because they are RTC-capable, which
+// EXT0 deep-sleep wake requires on this chip -- see enterDeepSleep().
+// Avoid GPIO6-11 (flash), 34-39 (input only, no internal pull-up) and the
+// strapping pins 0, 2, 12 and 15.
+#define PIN_CALIPER_CLK   25
+#define PIN_CALIPER_DATA  26
+#define PIN_BTN_SEND      32  // type the value, then Enter
+#define PIN_BTN_SEND_ALT  33  // type the value, then Space (room for tolerance)
+#define PIN_STATUS_LED    -1  // a plain DevKit has no WS2812
+
+#else
+// ---- ESP32-C3 SuperMini, the PCB target -----------------------------------
 #define PIN_CALIPER_CLK   3
 #define PIN_CALIPER_DATA  1
-
-// Momentary buttons to ground, using the internal pull-ups.
 #define PIN_BTN_SEND      4   // type the value, then Enter
 #define PIN_BTN_SEND_ALT  5   // type the value, then Space (room for tolerance)
-
-// Optional. Set to -1 if your board has no WS2812.
-#define PIN_STATUS_LED    8
+#define PIN_STATUS_LED    8   // set to -1 if your board has no WS2812
+#endif
 
 // ---------------------------------------------------------------------------
 // Level shifter polarity
