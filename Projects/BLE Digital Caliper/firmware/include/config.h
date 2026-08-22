@@ -70,6 +70,17 @@
 #define CALIPER_MM_PER_COUNT      0.01
 #define CALIPER_INCH_PER_COUNT    0.0005
 
+// Bit 0 was 1 in every frame captured from this caliper, so checking it is a
+// free sanity test -- and it catches the one failure this design is actually
+// exposed to. DATA holds for only about 60 us after the active clock edge, so
+// if the ISR is late by more than that (BLE stacks do occasionally disable
+// interrupts for a while) it samples the next bit and the whole frame shifts
+// by one. A shifted frame has the marker in the wrong place, so it is
+// rejected rather than typed as a number that is wrong by roughly 2x.
+#define CALIPER_CHECK_MARKER      1
+#define CALIPER_MARKER_BIT        0
+#define CALIPER_MARKER_VALUE      1
+
 // A gap longer than this means the next edge starts a fresh frame. Measured on
 // this caliper: 145 ms between frames, and 930 us between the six groups of
 // four clock pulses within a frame. 3000 sits safely between the two.

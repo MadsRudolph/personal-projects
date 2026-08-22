@@ -75,6 +75,14 @@ bool caliperTakeFrame(uint8_t *bits) {
 CaliperReading caliperDecode(const uint8_t *bits) {
     CaliperReading r = {0.0, s_inches, false};
 
+#if CALIPER_CHECK_MARKER
+    // Cheapest possible guard against a frame shifted by one bit -- see the
+    // note in config.h. Returning invalid keeps main.cpp from typing it.
+    if (bits[CALIPER_MARKER_BIT] != CALIPER_MARKER_VALUE) {
+        return r;
+    }
+#endif
+
     // Magnitude is little-endian: CALIPER_VALUE_FIRST_BIT is the LSB.
     uint32_t raw = 0;
     for (int i = CALIPER_VALUE_LAST_BIT; i >= CALIPER_VALUE_FIRST_BIT; i--) {
