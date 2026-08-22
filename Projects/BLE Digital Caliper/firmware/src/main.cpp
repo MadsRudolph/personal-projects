@@ -24,15 +24,23 @@ static uint32_t g_lastActivityMs = 0;
 
 // --- tiny debounced button -------------------------------------------------
 struct Button {
-    uint8_t  pin;
+    int      pin = -1;          // negative means this button is not fitted
     bool     stable   = true;   // pulled up, so idle is high
     bool     lastRead = true;
     uint32_t changedMs = 0;
 
-    void begin(uint8_t p) { pin = p; pinMode(pin, INPUT_PULLUP); }
+    void begin(int p) {
+        pin = p;
+        if (pin >= 0) {
+            pinMode(pin, INPUT_PULLUP);
+        }
+    }
 
     // True exactly once per press.
     bool pressed() {
+        if (pin < 0) {
+            return false;
+        }
         bool now = digitalRead(pin);
         if (now != lastRead) {
             lastRead  = now;
@@ -73,6 +81,7 @@ static void dumpFrame(const uint8_t *bits, const CaliperReading &r) {
     Serial.println(r.inches ? " in" : " mm");
 }
 
+#if SLEEP_TIMEOUT_MIN > 0
 static void enterDeepSleep() {
     Serial.println("idle -- sleeping");
     Serial.flush();
@@ -86,6 +95,7 @@ static void enterDeepSleep() {
 #endif
     esp_deep_sleep_start();
 }
+#endif
 
 void setup() {
     Serial.begin(115200);
@@ -93,12 +103,15 @@ void setup() {
     btnSend.begin(PIN_BTN_SEND);
     btnSendAlt.begin(PIN_BTN_SEND_ALT);
 
+#if PIN_BTN_SEND_ALT >= 0
     // Holding both buttons at boot flips the unit, for calipers that send no
-    // unit bit in the frame.
+    // unit bit in the frame. Needs two buttons, and it cannot be done on the
+    // BOOT button: holding GPIO0 through a reset enters download mode.
     delay(50);
     if (!digitalRead(PIN_BTN_SEND) && !digitalRead(PIN_BTN_SEND_ALT)) {
         caliperSetInches(!CALIPER_DEFAULT_INCHES);
     }
+#endif
 
     caliperBegin();
     g_lastActivityMs = millis();
@@ -107,6 +120,13 @@ void setup() {
     Serial.println("sniffer mode -- move the caliper, frames follow");
 #else
     bleKeyboard.begin();
+    // Without this the port is silent in BLE mode, so there is no way to tell
+    // a running board from a dead one.
+    Serial.print("BLE mode -- advertising as ");
+    Serial.println(BLE_DEVICE_NAME);
+    Serial.print("Pair from the host, focus a field, then press the button on "
+                 "GPIO");
+    Serial.println(PIN_BTN_SEND);
 #endif
 }
 
@@ -151,7 +171,15 @@ void loop() {
     }
 
 #if !CALIPER_SNIFFER_MODE
-    if (!bleKeyboard.isConnected()) {
+    // Report the link only when it changes, so the port stays quiet in use.
+    static int wasConnected = -1;
+    const bool connected = bleKeyboard.isConnected();
+    if ((int)connected != wasConnected) {
+        wasConnected = connected;
+        Serial.println(connected ? "BLE connected -- press to type"
+                                 : "BLE waiting for a host");
+    }
+    if (!connected) {
         return;
     }
 
@@ -174,8 +202,10 @@ void loop() {
         }
     }
 
+#if SLEEP_TIMEOUT_MIN > 0
     if (millis() - g_lastActivityMs > (uint32_t)SLEEP_TIMEOUT_MIN * 60000UL) {
         enterDeepSleep();
     }
+#endif
 #endif
 }

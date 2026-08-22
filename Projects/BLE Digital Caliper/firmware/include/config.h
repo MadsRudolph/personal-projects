@@ -24,9 +24,31 @@
 // strapping pins 0, 2, 12 and 15.
 #define PIN_CALIPER_CLK   25
 #define PIN_CALIPER_DATA  26
+#define PIN_STATUS_LED    -1  // a plain DevKit has no WS2812
+
+// Set to 1 to use the DevKit's own BOOT button instead of mounting switches.
+// It is GPIO0: pulled up on the board and an ordinary readable input once
+// running. You get ONE button, so only the Enter variant exists.
+//
+// The EN/RST button cannot be used for this. It resets the chip; it is not
+// an input.
+//
+// Two things follow from GPIO0 being a strapping pin, both handled below:
+//   * held LOW at reset it means "enter flash download mode", so do not hold
+//     it while the board resets, and the hold-both-at-boot unit toggle is
+//     compiled out.
+//   * strapping is re-latched when deep sleep wakes, so waking on GPIO0 could
+//     drop into download mode instead of running. SLEEP_TIMEOUT_MIN is
+//     therefore 0 here -- the protoboard runs off USB anyway.
+#define USE_ONBOARD_BOOT_BUTTON   1
+
+#if USE_ONBOARD_BOOT_BUTTON
+#define PIN_BTN_SEND       0  // the DevKit's BOOT button
+#define PIN_BTN_SEND_ALT  -1  // no second button
+#else
 #define PIN_BTN_SEND      32  // type the value, then Enter
 #define PIN_BTN_SEND_ALT  33  // type the value, then Space (room for tolerance)
-#define PIN_STATUS_LED    -1  // a plain DevKit has no WS2812
+#endif
 
 #else
 // ---- ESP32-C3 SuperMini, the PCB target -----------------------------------
@@ -104,7 +126,7 @@
 // ---------------------------------------------------------------------------
 // 1 = dump every raw frame as binary over USB serial and do not touch BLE.
 // This is the first thing to run against an unknown caliper.
-#define CALIPER_SNIFFER_MODE      1
+#define CALIPER_SNIFFER_MODE      0
 
 // ---------------------------------------------------------------------------
 // Host keyboard behaviour
@@ -117,5 +139,12 @@
 #define BLE_DEVICE_NAME         "Caliper"
 #define BLE_MANUFACTURER        "MadsRudolph"
 
-// Idle minutes before deep sleep. Wake is via the send button.
+// Idle minutes before deep sleep. Wake is via the send button. Set to 0 to
+// disable sleeping entirely -- which is what the protoboard wants, both
+// because it is USB powered and because waking on GPIO0 would re-latch the
+// strapping and boot into download mode.
+#if defined(CONFIG_IDF_TARGET_ESP32) && USE_ONBOARD_BOOT_BUTTON
+#define SLEEP_TIMEOUT_MIN         0
+#else
 #define SLEEP_TIMEOUT_MIN         3
+#endif
