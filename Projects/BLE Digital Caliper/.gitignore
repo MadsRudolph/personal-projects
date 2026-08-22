@@ -5,3 +5,9 @@
 .vscode/ipch
 __pycache__/
 *.pyc
+
+# KiCad session leftovers
+_autosave-*
+*.kicad_prl
+*-backups/
+fp-info-cache
