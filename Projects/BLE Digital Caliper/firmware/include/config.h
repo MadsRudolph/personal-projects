@@ -46,7 +46,7 @@
 #define PIN_BTN_SEND       0  // the DevKit's BOOT button
 #define PIN_BTN_SEND_ALT  -1  // no second button
 #else
-#define PIN_BTN_SEND      32  // type the value, then Enter
+#define PIN_BTN_SEND      32  // type the value, then SEND_TERMINATOR_KEY
 #define PIN_BTN_SEND_ALT  33  // type the value, then Space (room for tolerance)
 #endif
 
@@ -135,6 +135,14 @@
 // host's keyboard layout. On a Danish layout '.' and ',' are different keys and
 // Windows may expect a comma. Set to ',' if your CAD field rejects the value.
 #define DECIMAL_SEPARATOR       '.'
+
+// What to press after typing the value. TAB advances to the next field, which
+// is what CAD dialogs want -- RETURN tends to commit or close the whole dialog
+// instead, which is rarely what you meant mid-sketch.
+// Any key constant from BleKeyboard.h works: KEY_TAB, KEY_RETURN, KEY_ESC.
+// Set SEND_TERMINATOR to 0 to type the bare value and press nothing.
+#define SEND_TERMINATOR           1
+#define SEND_TERMINATOR_KEY       KEY_TAB
 
 #define BLE_DEVICE_NAME         "Caliper"
 #define BLE_MANUFACTURER        "MadsRudolph"

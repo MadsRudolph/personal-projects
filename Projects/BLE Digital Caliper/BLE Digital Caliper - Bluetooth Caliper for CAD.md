@@ -33,7 +33,7 @@ without one you would spray hundreds of numbers into your sketch.
 | ESP32-C3 SuperMini | Better BLE power profile than classic ESP32 | $3 |
 | LiPo 250–400 mAh + TP4056 | Do **not** run this off the caliper's LR44 | $5 |
 | 2× 2N3904 + resistors | Level shifter, see `hardware/level-shifter.md` | $0.50 |
-| 2× tactile switch | Send-with-Enter, send-with-Space | $0.50 |
+| 2× tactile switch | Send-then-Tab, send-then-Space | $0.50 |
 | 3D-printed clip | The part you will actually be unhappy with | -- |
 
 ## Bring-up order

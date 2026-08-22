@@ -82,3 +82,8 @@ Two caveats:
   first and only add it back if your CAD package actually needs it.
 - **Configurable decimal separator.** They hardcode `.`, which breaks on a
   Danish keyboard layout.
+- **Tab, not Enter, after the value.** Tested against real CAD: Tab advances to
+  the next field, while Enter tends to commit or close the whole dialog, which
+  is rarely what you meant mid-sketch. `SEND_TERMINATOR_KEY` in `config.h`
+  takes any BleKeyboard constant, and `SEND_TERMINATOR 0` types the bare value
+  and presses nothing.

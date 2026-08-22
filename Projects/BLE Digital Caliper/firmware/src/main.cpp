@@ -183,8 +183,8 @@ void loop() {
         return;
     }
 
-    // Button 1 confirms the value, button 2 leaves the field open so a
-    // tolerance can be typed after it.
+    // Button 1 types the value and moves on; button 2 leaves the caret in the
+    // field, with a space after the value, so a tolerance can be typed.
     const bool send    = btnSend.pressed();
     const bool sendAlt = btnSendAlt.pressed();
 
@@ -193,9 +193,12 @@ void loop() {
             bleKeyboard.print(formatReading(g_last).c_str());
             if (sendAlt) {
                 bleKeyboard.print(" ");
-            } else {
-                bleKeyboard.write(KEY_RETURN);
             }
+#if SEND_TERMINATOR
+            else {
+                bleKeyboard.write(SEND_TERMINATOR_KEY);
+            }
+#endif
             g_lastActivityMs = millis();
         } else {
             Serial.println("no fresh reading -- is the caliper on?");
