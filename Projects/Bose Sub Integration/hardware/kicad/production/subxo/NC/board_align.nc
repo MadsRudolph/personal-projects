@@ -1,0 +1,64 @@
+%
+O0001
+( gerber2rml - SRM-20 NC )
+( spindle 7000 rpm - set this in VPanel cut settings )
+G90 G17
+G21
+G91
+G28 Z0.
+G90
+G54
+M3
+( spindle spin-up settle 2. s before first cut )
+G04 X2.
+G0 Z2.
+G0 X4.1 Y13.
+G0 Z0.5
+G1 X4.1 Y13. Z-0.6 F60.
+G0 Z0.5
+G0 Z-0.4
+G1 X4.1 Y13. Z-1.2
+G0 Z0.5
+G0 Z-1.
+G1 X4.1 Y13. Z-1.6
+G0 Z2.
+G0 X198.3 Y13.
+G0 Z0.5
+G1 X198.3 Y13. Z-0.6
+G0 Z0.5
+G0 Z-0.4
+G1 X198.3 Y13. Z-1.2
+G0 Z0.5
+G0 Z-1.
+G1 X198.3 Y13. Z-1.6
+G0 Z2.
+G0 X198.3 Y136.
+G0 Z0.5
+G1 X198.3 Y136. Z-0.6
+G0 Z0.5
+G0 Z-0.4
+G1 X198.3 Y136. Z-1.2
+G0 Z0.5
+G0 Z-1.
+G1 X198.3 Y136. Z-1.6
+G0 Z2.
+G0 X4.1 Y136.
+G0 Z0.5
+G1 X4.1 Y136. Z-0.6
+G0 Z0.5
+G0 Z-0.4
+G1 X4.1 Y136. Z-1.2
+G0 Z0.5
+G0 Z-1.
+G1 X4.1 Y136. Z-1.6
+G0 Z2.
+G0 Z2.
+G91
+G28 Z0.
+G90
+M5
+G91
+G28 X0. Y0.
+G90
+M30
+%

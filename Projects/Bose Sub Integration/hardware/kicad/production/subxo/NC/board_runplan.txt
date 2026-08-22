@@ -1,0 +1,26 @@
+DOUBLE-SIDED run plan: board  [Roland SRM-20 (G-code)]  registration: FIDUCIAL
+
+FIDUCIAL mode: 4 reference holes inside the board corners, drilled 1.60 mm (through the 1.3 mm stock only - NOT into the bed). Onboard holes stay in the finished board; pick corners clear of copper.
+
+0. Set XY zero ONCE and do NOT re-zero XY for the bottom side.
+1. board_align: drills the 4 fiducial holes. Bottom side: board_bottom_drill.nc with one 0.8 mm bit (plunge holes that fit, interpolate larger ones). Then board_bottom_traces.
+2. FLIP the board left-to-right and re-place it (no pins needed).
+   Re-zero Z on the new surface.
+3. Probe each fiducial and record its measured X/Y. Nominal (perfect-
+   flip) positions to probe near:
+    fiducial 1: X198.300 Y13.000
+    fiducial 2: X4.100 Y13.000
+    fiducial 3: X4.100 Y136.000
+    fiducial 4: X198.300 Y136.000
+4. In the app, enter/capture the measured X/Y and 'Fit & export top
+   traces' (fit: rotation + translation). Check the RMS - a high value means a bad
+   re-placement; re-seat and re-probe before cutting.
+5. board_top_traces (now warped to the fit): cut it.
+6. board_cutout LAST.
+Estimated run time (excludes tool changes, spin-up and pauses):
+   board_align.nc: ~48s
+   board_bottom_drill.nc: ~31m 37s
+   board_bottom_traces.nc: ~1h 32m
+   board_top_traces.nc: ~1h 26m
+   board_cutout.nc: ~8m 25s
+   TOTAL: ~3h 40m

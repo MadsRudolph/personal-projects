@@ -4,3 +4,6 @@
 [submodule "spotify-addon"]
 	path = spotify-addon
 	url = https://github.com/MadsRudolph/spotify-addon.git
+[submodule "Projects/BLE Digital Caliper/reference/esp32-caliper"]
+	path = Projects/BLE Digital Caliper/reference/esp32-caliper
+	url = https://github.com/MadsRudolph/esp32-caliper.git
