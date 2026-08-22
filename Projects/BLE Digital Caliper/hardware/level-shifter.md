@@ -34,6 +34,37 @@ Worth re-checking the clock rate on a fresh cell though -- these ASICs often
 clock from an RC oscillator that tracks the supply, so 2.13 kHz may shift. It
 will not matter: `CALIPER_FRAME_GAP_US` has three orders of magnitude of margin.
 
+## Parts
+
+Per line, so two of everything:
+
+| Part | Qty | Note |
+|---|---|---|
+| NPN small-signal transistor | 2 | BC547, 2N3904, 2N2222, BC337 -- any of them |
+| 10 kohm resistor | 4 | two base, two collector |
+| Tactile pushbutton | 2 | BLE mode only; not needed for sniffer bring-up |
+
+All of it was already in the component inventory when this was written:
+6x BC547 and 2x BC547A, 30x 10k kit resistors plus 9x 10K0 E96, and 11x 6 mm
+tactile buttons. Nothing to order.
+
+### Watch the pinout -- BC547 is not a 2N3904
+
+Flat face toward you, legs pointing down:
+
+```
+   BC547            2N3904 / 2N2222
+  ___________      ___________
+ |   flat    |    |   flat    |
+ |___________|    |___________|
+   |   |   |        |   |   |
+   C   B   E        E   B   C      mirror images
+```
+
+The middle leg is Base on both, so a stage wired to the wrong pinout has its
+collector and emitter swapped. If one will not switch, swap the outer two legs
+before suspecting anything else.
+
 ## Do not use a BSS138 shifter
 
 The ubiquitous BSS138 bidirectional level-shifter board is the obvious reach
