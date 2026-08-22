@@ -3,7 +3,8 @@
 Bolt an ESP32-C3 onto an ordinary digital caliper so it pairs as a Bluetooth
 keyboard and types measurements straight into CAD.
 
-**Status:** 🟡 Planning -- firmware skeleton written, waiting on hardware bring-up
+**Status:** 🟡 Planning -- firmware skeleton written, AD3 bench tooling ready,
+protocol not yet measured
 
 ## Why a keyboard
 
@@ -37,18 +38,53 @@ without one you would spray hundreds of numbers into your sketch.
 
 ## Bring-up order
 
+The protocol work comes **before** any soldering. An Analog Discovery 3 reads
+the caliper's 1.5 V lines directly on its analog scope channels, so the whole
+bit map can be settled while the hardware is still a pile of parts -- and if
+the bit map turns out to be strange, that is much cheaper to find out now.
+
 1. **Find the data port.** Small cover on the top edge of the slider. Four pads:
-   `GND`, `DATA`, `CLK`, `VDD (~1.5 V)`. Confirm with a scope -- pad order is
-   not standardised.
-2. **Build the level shifter.** See `hardware/level-shifter.md`.
-3. **Run the sniffer.** `CALIPER_SNIFFER_MODE = 1` in `firmware/include/config.h`,
-   then fill in `docs/protocol-notes.md`. Do not skip this -- bit layouts vary
-   between makes and even between production runs.
-4. **Flip to BLE.** `CALIPER_SNIFFER_MODE = 0`, pair, measure something known.
-5. **Fix the decimal separator** if the value is rejected -- see below.
+   `GND`, `DATA`, `CLK`, `VDD (~1.5 V)`. Pad order is not standardised, so
+   measure it:
+
+   ```
+   cd tools && python caliper_padscan.py
+   ```
+
+   Two pads at a time; move the probes and repeat. Record the answer in
+   `docs/protocol-notes.md` section 2.
+
+2. **Decode the protocol, still with no hardware built.** Capture at several
+   known displacements, then let the decoder solve the bit map:
+
+   ```
+   cd tools
+   python caliper_capture.py --expect 0.00   --out ../captures/mm_0.npz
+   python caliper_capture.py --expect 1.00   --out ../captures/mm_1.npz
+   python caliper_capture.py --expect 10.00  --out ../captures/mm_10.npz
+   python caliper_capture.py --expect 100.00 --out ../captures/mm_100.npz
+   python caliper_capture.py --expect -1.00  --out ../captures/mm_neg1.npz
+   python caliper_decode.py ../captures/*.npz
+   ```
+
+   It searches every possible magnitude field for the one that reproduces all
+   your readings at once and prints a `config.h` block. Fill in
+   `docs/protocol-notes.md` section 3 from that.
+
+3. **Build the level shifter.** See `hardware/level-shifter.md`.
+4. **Confirm on the ESP32.** `CALIPER_SNIFFER_MODE = 1` in
+   `firmware/include/config.h`. The frames should match what the AD3 saw, but
+   inverted -- the shifter flips both lines.
+5. **Flip to BLE.** `CALIPER_SNIFFER_MODE = 0`, pair, measure something known.
+6. **Fix the decimal separator** if the value is rejected -- see below.
 
 ## Gotchas
 
+- **The AD3's logic analyzer cannot see this signal either.** Its 16 DIO
+  inputs are fixed 3.3 V LVCMOS -- logic high from about 2.0 V -- and the AD3
+  exposes no adjustable logic level (unlike the Digital Discovery). A 1.5 V
+  high reads as a steady LOW and the lines look dead. Use the two **analog**
+  scope channels instead, which is what `tools/` does.
 - **1.5 V will not drive an ESP32 input.** Its logic-high threshold is ~2.5 V.
   You must shift up. The BSS138 shifter everyone reaches for is marginal here
   because its gate threshold can be as high as 1.5 V; the prior art in
@@ -63,6 +99,7 @@ without one you would spray hundreds of numbers into your sketch.
 
 ## Layout
 
+- `tools/` -- AD3 bench scripts: pad scan, capture, protocol decoder
 - `firmware/` -- PlatformIO project, ESP32-C3
 - `docs/protocol-notes.md` -- worksheet to fill in during bring-up
 - `docs/prior-art.md` -- findings from an existing build, and licensing
