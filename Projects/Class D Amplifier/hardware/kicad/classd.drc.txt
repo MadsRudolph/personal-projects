@@ -1,0 +1,226 @@
+** Drc report for classd.kicad_pcb **
+** Created on 2026-08-20T13:41:50 **
+** Report includes: Errors, Warnings, Exclusions **
+
+** Found 23 DRC violations **
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(121.5510 mm, 76.2428 mm): Segment of R8 on F.Silkscreen
+    @(118.2810 mm, 76.0928 mm): Reference field of C10
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(118.2810 mm, 77.2428 mm): Reference field of R8
+    @(115.6610 mm, 77.2228 mm): Segment of C10 on F.Silkscreen
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(118.2810 mm, 80.2928 mm): Reference field of U5
+    @(120.9010 mm, 79.9628 mm): Segment of C10 on F.Silkscreen
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(87.7310 mm, 55.6208 mm): Reference field of R1
+    @(87.7310 mm, 56.7228 mm): Reference field of R2
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(118.2810 mm, 54.4128 mm): Reference field of R9
+    @(118.2810 mm, 53.6238 mm): Reference field of U1
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(121.5510 mm, 53.4128 mm): Segment of R9 on F.Silkscreen
+    @(118.2810 mm, 53.6238 mm): Reference field of U1
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(118.2810 mm, 38.8428 mm): Reference field of C7
+    @(118.2810 mm, 38.2428 mm): Arc of U2 on F.Silkscreen
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(118.2810 mm, 37.2428 mm): Reference field of U2
+    @(120.9010 mm, 37.7128 mm): Segment of C7 on F.Silkscreen
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(84.0390 mm, 88.1598 mm): Reference field of C9
+    @(84.0390 mm, 88.0288 mm): Reference field of U3
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(100.4310 mm, 87.9428 mm): Reference field of U4
+    @(100.2040 mm, 88.2008 mm): Reference field of C8
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(205.0270 mm, 103.5078 mm): Segment of Q1 on F.Silkscreen
+    @(199.9170 mm, 103.3837 mm): Reference field of R18
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(178.7080 mm, 103.3408 mm): Reference field of TP4
+    @(180.1580 mm, 102.6428 mm): Segment of TP4 on F.Silkscreen
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(168.5000 mm, 120.8270 mm): Reference field of Q4
+    @(168.4210 mm, 121.7862 mm): Reference field of R21
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(163.3900 mm, 121.6670 mm): Segment of Q4 on F.Silkscreen
+    @(168.4210 mm, 121.7862 mm): Reference field of R21
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(173.5310 mm, 103.5028 mm): Segment of Q3 on F.Silkscreen
+    @(168.4210 mm, 103.3787 mm): Reference field of R20
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(168.4210 mm, 112.6745 mm): Reference field of R16
+    @(168.4210 mm, 112.4903 mm): Reference field of R17
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(168.5000 mm, 120.8270 mm): Reference field of Q4
+    @(171.6910 mm, 120.7862 mm): Segment of R21 on F.Silkscreen
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(196.6470 mm, 120.7912 mm): Segment of R19 on F.Silkscreen
+    @(199.9170 mm, 120.8270 mm): Reference field of Q2
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(199.9170 mm, 117.2353 mm): Reference field of R15
+    @(199.9170 mm, 117.0512 mm): Reference field of R19
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(182.9110 mm, 53.4550 mm): Reference field of R22
+    @(174.5360 mm, 53.0890 mm): Segment of C13 on F.Silkscreen
+[silk_overlap]: Silkscreen clearance
+    Rule: board setup constraints silk; warning
+    @(182.1370 mm, 43.6800 mm): Reference field of J3
+    @(195.5310 mm, 52.4550 mm): Rectangle of R22 on F.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(168.4210 mm, 103.3787 mm): Reference field of R20
+    @(168.4210 mm, 102.1428 mm): PTH pad 2 [+12V] of Q3
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(199.9170 mm, 103.3837 mm): Reference field of R18
+    @(199.9170 mm, 102.1478 mm): PTH pad 2 [+12V] of Q1
+
+** Found 29 unconnected pads **
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(150.1997 mm, 100.7928 mm): Track [/SW_A] on B.Cu, length 3.1913 mm
+    @(207.0333 mm, 102.1478 mm): Track [/SW_A] on B.Cu, length 4.5763 mm
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(205.9385 mm, 107.9652 mm): Track [/SW_A] on B.Cu, length 3.1275 mm
+    @(207.0333 mm, 102.1478 mm): Track [/SW_A] on B.Cu, length 4.5763 mm
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(198.1510 mm, 47.8350 mm): Track [/OUT_P] on B.Cu, length 10.9531 mm
+    @(184.6770 mm, 38.6000 mm): PTH pad 1 [/OUT_P] of J3
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(141.1910 mm, 82.7388 mm): PTH pad 1 [Net-(D3-K)] of C6
+    @(134.0390 mm, 87.8188 mm): Track [Net-(D3-K)] on B.Cu, length 5.7150 mm
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(114.4710 mm, 95.3228 mm): PTH pad 6 [/B_LO] of U5
+    @(124.8281 mm, 100.4028 mm): Track [/B_LO] on B.Cu, length 2.7371 mm
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(114.4710 mm, 85.1628 mm): PTH pad 2 [/A_LO] of U5
+    @(114.4710 mm, 92.7828 mm): PTH pad 5 [/A_LO] of U5
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(114.4710 mm, 92.7828 mm): PTH pad 5 [/A_LO] of U5
+    @(139.8810 mm, 95.5658 mm): PTH pad 4 [/A_LO] of U6
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(147.5010 mm, 103.1858 mm): PTH pad 10 [/G_AH] of U6
+    @(203.7270 mm, 110.3095 mm): PTH pad 1 [/G_AH] of R14
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(104.2410 mm, 90.2728 mm): PTH pad 8 [+12V] of U4
+    @(102.7040 mm, 85.7008 mm): PTH pad 1 [+12V] of C8
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(114.4710 mm, 63.5738 mm): PTH pad 4 [+12V] of U1
+    @(114.4710 mm, 79.9028 mm): Track [+12V] on B.Cu, length 1.8526 mm
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(114.4710 mm, 63.5738 mm): PTH pad 4 [+12V] of U1
+    @(96.5330 mm, 47.4308 mm): Track [+12V] on B.Cu, length 7.7136 mm
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(122.0910 mm, 39.5728 mm): PTH pad 8 [+12V] of U2
+    @(118.5839 mm, 34.1457 mm): Track [+12V] on B.Cu, length 3.1072 mm
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(168.3108 mm, 77.6588 mm): Track [+12V] on B.Cu, length 34.2718 mm
+    @(114.4710 mm, 79.9028 mm): Track [+12V] on B.Cu, length 1.8526 mm
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(147.5010 mm, 95.5658 mm): PTH pad 13 [/G_AL] of U6
+    @(203.7270 mm, 114.8653 mm): PTH pad 1 [/G_AL] of R15
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(172.2310 mm, 119.4162 mm): Track [Net-(Q4-G)] on B.Cu, length 3.1119 mm
+    @(172.2310 mm, 114.8603 mm): PTH pad 2 [Net-(Q4-G)] of R17
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(165.8652 mm, 104.4945 mm): Track [Net-(Q3-G)] on B.Cu, length 1.7737 mm
+    @(164.6110 mm, 110.3045 mm): PTH pad 2 [Net-(Q3-G)] of R16
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(87.5577 mm, 53.2508 mm): Track [Net-(U1A-+)] on B.Cu, length 3.6367 mm
+    @(77.5910 mm, 57.9455 mm): Track [Net-(U1A-+)] on B.Cu, length 5.1827 mm
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(97.8030 mm, 62.4188 mm): Track [Net-(U2-+)] on B.Cu, length 0.3592 mm
+    @(114.4710 mm, 42.1128 mm): PTH pad 2 [Net-(U2-+)] of U2
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(84.4260 mm, 40.5698 mm): PTH pad 2 [Net-(D1-A)] of R3
+    @(84.6800 mm, 45.0148 mm): PTH pad 2 [Net-(D1-A)] of D1
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(196.1070 mm, 114.8653 mm): PTH pad 2 [Net-(Q2-G)] of R15
+    @(196.1070 mm, 121.3053 mm): Track [Net-(Q2-G)] on B.Cu, length 1.8841 mm
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(80.2290 mm, 95.4388 mm): Track [/TRI] on B.Cu, length 0.9008 mm
+    @(96.6210 mm, 95.3528 mm): PTH pad 3 [/TRI] of U4
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(104.1530 mm, 70.1258 mm): Track [/TRI] on B.Cu, length 6.2630 mm
+    @(87.1248 mm, 77.0238 mm): Track [/TRI] on B.Cu, length 10.8052 mm
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(197.3612 mm, 104.4995 mm): Track [Net-(Q1-G)] on B.Cu, length 1.7737 mm
+    @(196.1070 mm, 110.3095 mm): PTH pad 2 [Net-(Q1-G)] of R14
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(129.9840 mm, 48.5748 mm): PTH pad 2 [Net-(C3-Pad2)] of C3
+    @(130.1910 mm, 58.0878 mm): PTH pad 1 [Net-(C3-Pad2)] of RV2
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(80.2290 mm, 92.8988 mm): PTH pad 2 [/AUDIO_P] of U3
+    @(122.0910 mm, 74.8728 mm): PTH pad 1 [/AUDIO_P] of R8
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(122.0910 mm, 71.1938 mm): PTH pad 8 [/AUDIO_P] of U1
+    @(122.0910 mm, 68.6538 mm): PTH pad 9 [/AUDIO_P] of U1
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(122.0910 mm, 74.8728 mm): PTH pad 1 [/AUDIO_P] of R8
+    @(122.0910 mm, 71.1938 mm): PTH pad 8 [/AUDIO_P] of U1
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(114.4710 mm, 74.8728 mm): PTH pad 2 [Net-(U1D--)] of R8
+    @(122.0910 mm, 58.4938 mm): Track [Net-(U1D--)] on B.Cu, length 2.5517 mm
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(96.6210 mm, 92.8128 mm): PTH pad 2 [/AUDIO_N] of U4
+    @(122.0910 mm, 55.9538 mm): Track [/AUDIO_N] on B.Cu, length 2.5517 mm
+
+** Found 0 Footprint errors **
+
+** Ignored checks **
+    - Footprint has no courtyard defined
+    - Track endpoint not centered on via
+    - Tuning profile track geometries
+    - Footprint doesn't match symbol's footprint filters
+    - Footprint component type doesn't match footprint pads
+
+** End of Report **
