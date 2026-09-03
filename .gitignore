@@ -63,3 +63,6 @@ dist-renderer/
 
 # KiCad netlist JSON: regenerated from the .kicad_sch by pcb_netlist_json.py
 subxo.json
+
+# editor local-history folders
+**/.history/
