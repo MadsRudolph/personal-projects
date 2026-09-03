@@ -66,3 +66,7 @@ subxo.json
 
 # editor local-history folders
 **/.history/
+
+# Blender backups
+*.blend1
+*.blend2
