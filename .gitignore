@@ -70,3 +70,6 @@ subxo.json
 # Blender backups
 *.blend1
 *.blend2
+
+# Standalone migrated project (https://github.com/MadsRudolph/vinyl-adc)
+Projects/Vinyl ADC

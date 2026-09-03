@@ -1,6 +1,0 @@
-# KiCad local session state
-*.kicad_prl
-*-backups/
-
-# Python bytecode from the tools/ scripts
-__pycache__/
