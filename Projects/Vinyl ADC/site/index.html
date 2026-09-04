@@ -63,7 +63,7 @@
       .section-head { grid-template-columns: 1fr; gap: 18px; }
     }
     @media (max-width: 520px) {
-      .wrap { width: min(100% - 26px, 1180px); }
+      .wrap { width: min(calc(100% - 26px), 1180px); }
       nav .links { display: none; }
       .hero { min-height: 780px; }
       .hero img { object-position: 61% center; }
@@ -77,6 +77,8 @@
       .step { min-height: 185px; }
       .step h3 { margin-top: 36px; }
       footer .wrap { display: block; }
+      footer span { display: block; }
+      footer span + span { margin-top: 6px; }
     }
     @media (prefers-color-scheme: dark) {
       :root { --bg: #090f16; --surface: #101822; --ink: #eef3f7; --muted: #9dacb9; --line: #27323d; --accent: #42adfa; --shadow: 0 24px 70px rgba(0,0,0,.3); }
@@ -100,7 +102,7 @@
       <div class="wrap">
         <div class="section-head"><h2>Built from the board out.</h2><p>The dimensions and interface positions come from the latest routed digital PCB backup. Where the repository does not define a finished-system detail, it remains explicitly TBD.</p></div>
         <div class="spec-grid">
-          <div class="spec"><small>Conversion</small><strong>48 kHz</strong><span>Bit depth: TBD</span></div>
+          <div class="spec"><small>Capture framing</small><strong>48 kHz · 32-bit stereo</strong><span>I²S carries interleaved raw PDM; final PCM depth: TBD</span></div>
           <div class="spec"><small>Board</small><strong>100 × 100 × 1.6 mm</strong><span>Four 3.2 mm M3 mounting holes</span></div>
           <div class="spec"><small>Enclosure</small><strong>107 × 107 × 21 mm</strong><span>3 mm walls · 0.5 mm side clearance</span></div>
           <div class="spec"><small>Interfaces</small><strong>GPIO + board bus</strong><span>8-pin GPIO, 2×8 bus, 1×3 clock select; channel inputs are 2-pin terminals</span></div>

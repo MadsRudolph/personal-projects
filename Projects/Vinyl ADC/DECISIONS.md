@@ -6,7 +6,7 @@
 - `hardware/kicad/vinyl_adc-backups/vinyl_adc-2026-08-23_185144.zip` describes the complete modular design: a channel board built twice, a common board, and a digital board. The schematic title is **“Discrete 3rd-order delta-sigma vinyl ADC - stereo, 48 kHz.”** The channel connector values are `LINE IN L` and `LINE IN R`; the design does not identify them as phono-level inputs.
 - The product enclosure and the required singular board export use `vinyl_adc_digital.kicad_pcb` from the newer `hardware/kicad/digital/vinyl_adc_digital-backups/vinyl_adc_digital-2026-09-03_225821.zip`. This is the newest routed board source, it has the only explicit enclosure-ready M3 hole pattern, and it supersedes the older digital-board snapshot. The enclosure is consequently a housing for the digital PCB module rather than an invented single-PCB integration of the older four-board system.
 - The digital PCB edge cuts run from `(20.000, 20.000)` to `(120.000, 120.000)` in KiCad coordinates: **100.0 × 100.0 mm**, **1.6 mm** thick.
-- The only design-derived sample-rate value is **48 kHz**. A finished PCM word length/bit depth is not specified, so the site says **TBD**. The converter topology is described as third-order delta-sigma, but that is not presented as an invented PCM bit depth.
+- The design specifies standard **48 kHz / 32-bit stereo I²S capture framing**. Each nominal 32-bit channel word contains 32 interleaved raw PDM bits, and decimation happens later in software. The finished decimated PCM word length is not specified, so the site distinguishes the design-derived 32-bit transport framing from **final PCM depth: TBD**. The converter topology is described as third-order delta-sigma, but that is not presented as an invented PCM bit depth.
 - RCA, USB, a dedicated power inlet, panel switches, and LEDs do not occur on the selected PCB or in the archived top-level schematic. They were not invented. The digital board has a top-entry 8-pin `TO PI GPIO` header, a top-entry 2×8 `BUS` header, and an internal 1×3 `CLK SEL` jumper. The older channel boards use 2-pin terminal blocks for line input.
 
 ## Enclosure geometry
@@ -47,7 +47,7 @@
 - The initial required PATH lookup found only `python.exe` at `C:\Users\Mads2\AppData\Local\Microsoft\WindowsApps\python.exe` (a Windows app execution alias; it was not needed).
 - `kicad-cli` was not on PATH. The requested typical KiCad 9 path was absent. The installed executable used was `C:\Program Files\KiCad\10.0\bin\kicad-cli.exe`, version 10.0.4.
 - `blender` was not on PATH. Blender was found at both `C:\Program Files\Blender Foundation\Blender 4.4\blender.exe` and `C:\Program Files\Blender Foundation\Blender 5.1\blender.exe`. Version 4.4.3 was used for stable script/API behaviour.
-- `openscad` was neither on PATH nor present at `C:\Program Files\OpenSCAD\openscad.exe`. Blender Python was selected for the parametric enclosure.
+- `openscad` was not on PATH, but the requested fallback lookup found `C:\Program Files\OpenSCAD\openscad.exe`, version 2021.01. It was not used: Blender Python was selected so the manufacturing geometry and presentation scene share one parameter source and one reproducible headless command.
 - A callable Blender MCP endpoint was not exposed in this session, so the documented headless-Blender fallback was used.
 - An initial loose-file scan did not locate a PCB because the sources are archived. The fallback was to inspect both KiCad backup ZIPs and extract them to a temporary directory using PowerShell `Expand-Archive`.
 
@@ -58,7 +58,7 @@
   - `vinyl-adc-base.stl`: 107.0 × 107.0 × 18.0 mm; 0 boundary edges; 0 non-manifold edges; positive volume 53,578.513 mm³.
   - `vinyl-adc-lid.stl`: 107.0 × 107.0 × 5.0 mm in print orientation (3.0 mm plate + 2.0 mm inward lip); 0 boundary edges; 0 non-manifold edges; positive volume 34,675.038 mm³.
 - The three render images and the three copies under `site/assets` decode as PNGs at exactly 1920 × 1080.
-- `site/index.html` uses only relative local image paths, inline CSS, system fonts, and no scripts/CDNs. All referenced image files were path-checked and decoded. A headless local-browser screenshot was also used to check the finished offline page at desktop width; the result is intentionally not committed.
+- `site/index.html` uses only relative local image paths, inline CSS, system fonts, and no scripts/CDNs. All referenced image files were path-checked and decoded. Headless Microsoft Edge loaded the page directly from its local `file:` URL at desktop width and under an exact **390 CSS px** DevTools-emulated viewport. At 390 px, `innerWidth`, document `clientWidth`, and document `scrollWidth` were all 390 px (no horizontal overflow); after a full-page scroll, all four `<img>` elements reported complete at 1920 × 1080. Verification screenshots are intentionally not committed.
 
 ## Reproduction from a clean checkout (PowerShell)
 
