@@ -9,7 +9,7 @@ tags:
   - CNC
   - handoff
 parent: "[[Illuminate 7Mk2 - Speaker Build]]"
-status: Parts measured, board re-placed on real footprints and DRC-clean, unrouted
+status: Routed and exported for the mill (production/); coils being wound
 started: 2026-09-24
 updated: 2026-09-24
 ---

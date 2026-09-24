@@ -19,9 +19,10 @@ actually stocks.
 | `illuminate7mk2-crossover-pcb.png` | render of the placement |
 | `tools/pcb_build.py` | builds and places the board from the netlist — re-run it after changing footprints |
 
-Status: schematic done (ERC 0 violations), board placed on measured
-footprints (DRC 0 violations, 37 unconnected = the unrouted ratsnest).
-**Routing is by hand, next.** Coils: L102 may be a shop 270 µH if it passes
+Status: schematic done (ERC 0 violations), board routed by hand on B.Cu,
+144.5 × 110 mm, four M4 corner holes, DRC clean. Mill and laser files are in
+`production/illuminate7mk2-crossover/` (Gerbers + Excellon for the CAM,
+`_silk_top.dxf` for the laser silkscreen). Coils: L102 may be a shop 270 µH if it passes
 the LCR check; L101, L201 and L202 are to be wound.
 
 ## Circuit
