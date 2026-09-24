@@ -159,8 +159,9 @@ cd sim && ngspice -b crossover_ac.cir && python3 compare.py
 
 `tools/pcb_build.py` builds the `.kicad_pcb` from the schematic netlist and
 places it on a fixed floorplan that follows the signal flow, packed from the
-footprints' real courtyards. **202 × 179 mm** with the provisional footprints;
-it shrinks when the measured ones go in. Re-run after any footprint change:
+footprints' real courtyards. **167 × 144 mm** with the provisional cap
+footprints, inside the mill's 203 × 152 mm envelope. Re-run after any footprint
+change:
 
 ```bash
 kicad-cli sch export netlist --format kicadsexpr -o /tmp/xo.net illuminate7mk2-crossover.kicad_sch
@@ -169,17 +170,18 @@ python3 tools/pcb_build.py /tmp/xo.json illuminate7mk2-crossover.kicad_pcb
 ```
 
 ```
- row A   L101 | C101 R101 R102 | C102 C103 | C104 C105 | J2 TWEETER    (top)
- row C   J1 IN, R201 R202 | C201 C202 C203 C204 C205 | L102           (middle)
- row B   L201 | C206 C207 | L202 | J3 WOOFER                          (bottom)
+ row A   L101 pads | C101 R101 R102 | C102 C103 | L102 pads | C104 C105 | J2 TWEETER   (top)
+ row C   J1 IN, R201 R202 | C201 C202 C203 C204 C205 | L201 pads                     (middle)
+ row B   L202 pads | C206 C207 | J3 WOOFER                                           (bottom)
 ```
 
-- Coils are in separate corners: L101 top-left, L102 middle-right, L201
-  bottom-left, L202 bottom-centre, so no two air-cores sit side by side. C206/C207
-  were deliberately put *between* L201 and L202 for that reason, even though the
-  placement scorer prefers them adjacent (cohesion 0.35 vs 0.38); mutual
-  inductance between the two woofer coils would shift the low-pass, and the
-  scorer does not know about that.
+- **The coils are not on the board.** They would not fit the mill envelope, so
+  each coil has only its two lead pads (`crossover:L_OffBoard_P10.16mm`,
+  10.16 mm pitch, 1.4 mm holes) at a board edge: L101 left edge top, L202 left
+  edge bottom, L201 right edge middle, L102 top row between the tweeter caps.
+  Mount the coil bodies overhanging the edge next to their pads, or glue them to
+  the enclosure beside the board, and bring the leads to the pads. Keep any two
+  coils at least one coil diameter apart, and never stack one on another.
 - Input on the left edge, tweeter out top-right, woofer out bottom-right.
 - Copper is **B.Cu only**, single-sided. A GND zone is defined on B.Cu (the
   return for both drivers) but not filled — fill it after routing.
@@ -192,8 +194,8 @@ python3 tools/pcb_build.py /tmp/xo.json illuminate7mk2-crossover.kicad_pcb
   J1 faces left, J2/J3 face right; if the real blocks turn out to open the
   other way, flip the rotation (90 ↔ 270) in `ROW_A/B/C`.
 - DRC: 0 violations. Placement score: rotation, spacing and alignment pass;
-  cohesion is 0.38 against a 0.25 threshold, which is the price of the coil
-  separation above.
+  cohesion is 0.43 against a 0.25 threshold, which is the price of pushing the
+  coil pads to the edges.
 
 Routing notes for the hand pass: IN+ is the big net (11 pads, J1 → L101 tank,
 R101, C101, and the whole woofer tank). Run it as one wide bus along the left
@@ -214,13 +216,11 @@ part types. Measure the real parts, fix the footprints, and re-run
 
    Measure lead spacing, body length, width and height on one of each value and
    pick the matching stock footprint.
-2. **Coil outside diameters.** The footprints in `lib/crossover.pretty/` use
-   two 1.4 mm holes on a 10.16 mm pitch plus a silk/courtyard circle at the
-   assumed diameter: 40 mm (0.20 mH), 42 mm (0.25 mH), 55 mm (0.70 mH), 70 mm
-   (2.0 mH). Measure the coils you buy and re-run
-   `python3 tools/make_coil_footprints.py` with the real numbers. The courtyard
-   is what stops the placer putting a part under a coil, so it has to be right.
-   The 2.0 mH coil is the big one and will drive the board size.
+2. **Coil lead spacing.** The off-board pad pairs are 10.16 mm apart with
+   1.4 mm holes, which suits 0.8–1.0 mm wire. If you wind with thicker wire,
+   raise `DRILL` in `tools/make_coil_footprints.py` and re-run it. (The
+   on-board `L_AirCore_D*` footprints are kept in the library for a bigger
+   board, but nothing uses them now.)
 3. **5 W resistor body.** Assigned
    `R_Axial_Power_L25.0mm_W9.0mm_P30.48mm` (30.48 mm pitch). If the shop's 5 W
    parts are the ceramic-block type, check the lead spacing — those are often

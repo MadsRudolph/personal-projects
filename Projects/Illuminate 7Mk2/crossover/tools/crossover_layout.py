@@ -105,10 +105,10 @@ FP_CAP_S = "Capacitor_THT:C_Rect_L29.0mm_W13.0mm_P27.50mm_MKT"      # <= 3u3
 FP_CAP_L = "Capacitor_THT:C_Rect_L41.5mm_W20.0mm_P37.50mm_MKS4"     # 4u7..8u2
 FP_RES = "Resistor_THT:R_Axial_Power_L25.0mm_W9.0mm_P30.48mm"       # 5 W wirewound
 FP_TERM = "TerminalBlock:TerminalBlock_MaiXu_MX126-5.0-02P_1x02_P5.00mm"
-FP_L020 = "crossover:L_AirCore_D40mm_0.8mm"
-FP_L025 = "crossover:L_AirCore_D42mm_0.8mm"
-FP_L070 = "crossover:L_AirCore_D55mm_0.8mm"
-FP_L200 = "crossover:L_AirCore_D70mm_0.8mm"
+FP_L020 = "crossover:L_OffBoard_P10.16mm"
+FP_L025 = "crossover:L_OffBoard_P10.16mm"
+FP_L070 = "crossover:L_OffBoard_P10.16mm"
+FP_L200 = "crossover:L_OffBoard_P10.16mm"
 
 SHEET_UUID = "7e3c1a90-0000-4000-8000-c0ffee000001"
 
@@ -295,9 +295,9 @@ NOTES = [
     "3. Series pairs:   R101+R102 = 9.4 ohm / 10 W (design 10 ohm).   R201+R202 = 20 ohm / 10 W (20).",
     "4. Parallel caps:  C102||C103 = 5.5uF (5.6).  C104||C105 = 10.1uF (10).  C201..C205 = 41uF (40).",
     "                   C206||C207 = 11.5uF (12).  Each part's 'Design value' field holds the original.",
-    "5. L101/L102/L201/L202 are BOUGHT air-core coils, 0.8 mm (20 AWG) wire - not shop stock. Dayton",
+    "5. L101/L102/L201/L202 are air-core coils, 0.8 mm (20 AWG) wire - self-wound or bought (Dayton",
     "   AC20-20 / AC20-25 / AC20-70 / AC202 or Jantzen Audio equivalents. Target DCR is in Description.",
-    "6. FOOTPRINTS ARE PROVISIONAL: measure cap lead pitch and coil diameter before placement.",
+    "6. FOOTPRINTS ARE PROVISIONAL: measure cap lead pitch before routing. Coils mount OFF the board (lead pads only).",
     "7. Single-sided board, CNC isolation-milled with a 0.8 mm end mill. Through-hole only.",
 ]
 for i, line in enumerate(NOTES):

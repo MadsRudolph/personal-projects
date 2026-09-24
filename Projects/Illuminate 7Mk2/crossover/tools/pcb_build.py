@@ -14,13 +14,13 @@ outline. Routing is left to the user.
 
 Floorplan (flow left -> right, margin/gap in mm below):
 
-    row A  L101 | C101/R101/R102 | C102/C103 | C104/C105 | J2        tweeter branch
-    row C  J1 over R201+R202 | C201..C205 (woofer tank caps) | L102   input + woofer tank
-    row B  L201 | C206/C207 | L202 | J3                               woofer branch
+    row A  L101 pads | C101/R101/R102 | C102/C103 | L102 pads | C104/C105 | J2   tweeter
+    row C  J1 over R201+R202 | C201..C205 (woofer tank caps) | L201 pads         input + woofer tank
+    row B  L202 pads | C206/C207 | J3                                            woofer
 
-L101 (tweeter tank) sits top-left, L201/L202 (woofer) bottom, L102 (tweeter
-shunt) middle-right: every coil pair is at least one coil diameter apart so the
-air-cores do not couple.
+The coils are NOT on the board (mill envelope is 203 x 152 mm): only their lead
+pads are, at the edges, and the coil bodies overhang or sit beside the board.
+Keep the bodies apart from each other when mounting them.
 """
 import json, os, sys
 import pcbnew
@@ -100,18 +100,23 @@ def place(node, fps, x0, y0, out):
 # Terminal blocks: rot 90 puts the pin row vertical so the block sits flat against
 # a left/right edge. Which face the wire enters from is a property of the actual
 # block -- check it on the part and flip 90 <-> 270 if it faces inwards.
-ROW_A = ("h", [("L101", 0),
+#
+# Coils are OFF-BOARD: only their lead pads (L_OffBoard_P10.16mm) are placed, at
+# the board edges so the coil body can overhang or sit on the enclosure beside
+# it. L101 left edge, L201 right edge, L202 left edge, L102 top-middle.
+ROW_A = ("h", [("L101", 90),
                ("v", [("C101", 0), ("R101", 0), ("R102", 0)]),
                ("v", [("C102", 0), ("C103", 0)]),
+               ("L102", 0),
                ("v", [("C104", 0), ("C105", 0)]),
                ("J2", 90)])
 ROW_C = ("h", [("v", [("J1", 270), ("h", [("R201", 90), ("R202", 90)])]),
                ("h", [("C201", 90), ("C202", 90), ("C203", 90), ("C204", 90), ("C205", 90)]),
-               ("L102", 0)])
-ROW_B = ("h", [("L201", 0),
+               ("L201", 90)])
+ROW_B = ("h", [("L202", 90),
                ("v", [("C206", 0), ("C207", 0)]),
-               ("L202", 0),
                ("J3", 90)])
+FLUSH_RIGHT = ("J2", "L201", "J3")   # pushed to the right margin after packing
 ROWS = [ROW_A, ROW_C, ROW_B]
 
 # ---------------------------------------------------------------- build
@@ -152,8 +157,8 @@ def main(jsonf, outf):
         y += h + ROW_GAP
     W = max(widths) + 2 * MARGIN
     H = y - ROW_GAP + MARGIN
-    # right-edge connectors: push J2/J3 rows' last part flush to the right margin
-    for ref in ("J2", "J3"):
+    # right-edge parts: push flush to the right margin
+    for ref in FLUSH_RIGHT:
         cx, cy, rot = pos[ref]
         w, _ = crt_size(fps[ref], rot)
         pos[ref] = (W - MARGIN - w / 2, cy, rot)

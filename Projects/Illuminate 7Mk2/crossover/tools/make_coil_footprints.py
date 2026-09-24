@@ -94,3 +94,53 @@ for suffix, od, purpose in COILS:
     (OUT / f"{name}.kicad_mod").write_text("\n".join(body) + "\n", encoding="utf-8")
     print("wrote", OUT / f"{name}.kicad_mod",
           f"  pad gap {PITCH - PADSZ:.2f} mm (mill floor 0.8 mm)")
+
+
+# ---------------------------------------------------------------------------
+# Off-board variant: the mill envelope is 203 x 152 mm and the coils do not fit
+# on the board, so this is just the two lead holes with a small courtyard. Place
+# it at a board edge; the coil body overhangs or is fixed to the enclosure beside
+# the board, with its leads brought to these pads.
+OFF_NAME = "L_OffBoard_P10.16mm"
+OFF_W, OFF_H = 16.0, 8.0           # courtyard
+body = [
+    f'(footprint "{OFF_NAME}"',
+    "\t(version 20260206)",
+    '\t(generator "crossover-tools")',
+    '\t(generator_version "10.0")',
+    '\t(layer "F.Cu")',
+    '\t(descr "Lead pads for an air-core crossover coil mounted OFF the board (overhanging '
+    'the edge or fixed to the enclosure). 0.8-1.0 mm wire, 10.16 mm pitch. Put it at a board edge.")',
+    '\t(tags "inductor air core crossover speaker THT off-board")',
+    '\t(property "Reference" "L**"',
+    f"\t\t(at 0 {-(OFF_H / 2 + 1.2)} 0)",
+    '\t\t(layer "F.SilkS")',
+    "\t\t(effects\n\t\t\t(font\n\t\t\t\t(size 1 1)\n\t\t\t\t(thickness 0.15)\n\t\t\t)\n\t\t)",
+    "\t)",
+    f'\t(property "Value" "{OFF_NAME}"',
+    f"\t\t(at 0 {OFF_H / 2 + 1.2} 0)",
+    '\t\t(layer "F.Fab")',
+    "\t\t(effects\n\t\t\t(font\n\t\t\t\t(size 1 1)\n\t\t\t\t(thickness 0.15)\n\t\t\t)\n\t\t)",
+    "\t)",
+    "\t(attr through_hole)",
+    "\t(duplicate_pad_numbers_are_jumpers no)",
+]
+def rect(w, h, layer, width):
+    x, y = w / 2, h / 2
+    return (f"\t(fp_rect\n\t\t(start {-x} {-y})\n\t\t(end {x} {y})\n"
+            f"\t\t(stroke\n\t\t\t(width {width})\n\t\t\t(type solid)\n\t\t)\n"
+            f'\t\t(fill no)\n\t\t(layer "{layer}")\n\t)')
+body += [rect(OFF_W - 1.0, OFF_H - 1.0, "F.SilkS", 0.12),
+         rect(OFF_W - 1.0, OFF_H - 1.0, "F.Fab", 0.1),
+         rect(OFF_W, OFF_H, "F.CrtYd", 0.05)]
+for num, x in (("1", -PITCH / 2), ("2", PITCH / 2)):
+    body += [f'\t(pad "{num}" thru_hole circle',
+             f"\t\t(at {x} 0)",
+             f"\t\t(size {PADSZ} {PADSZ})",
+             f"\t\t(drill {DRILL})",
+             '\t\t(layers "*.Cu" "*.Mask")',
+             "\t\t(remove_unused_layers no)",
+             "\t)"]
+body.append(")")
+(OUT / f"{OFF_NAME}.kicad_mod").write_text("\n".join(body) + "\n", encoding="utf-8")
+print("wrote", OUT / f"{OFF_NAME}.kicad_mod")
