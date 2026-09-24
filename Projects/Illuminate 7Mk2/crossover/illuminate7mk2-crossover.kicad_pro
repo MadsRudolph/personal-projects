@@ -309,7 +309,7 @@
     "last_paths": {
       "idf": "",
       "netlist": "",
-      "plot": "",
+      "plot": "production/illuminate7mk2-crossover/new_gerber/",
       "specctra_dsn": "",
       "step": "",
       "vrml": ""
