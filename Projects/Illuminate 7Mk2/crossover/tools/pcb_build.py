@@ -164,6 +164,14 @@ def main(jsonf, outf):
         pos[ref] = (W - MARGIN - w / 2, cy, rot)
     for ref, (cx, cy, rot) in pos.items():
         put(fps[ref], cx, cy, rot)
+    # a short bottom row can leave a part under a bottom corner hole: drop the
+    # bottom edge until both bottom holes clear every courtyard by 1 mm
+    hole_r = crt_size(load_fp("MountingHole:MountingHole_4.3mm_M4_DIN965"), 0)[0] / 2
+    for hx in (HOLE_INSET, W - HOLE_INSET):
+        for fp in fps.values():
+            bb = fp.GetCourtyard(pcbnew.F_CrtYd).BBox()
+            if ToMM(bb.GetLeft()) < hx + hole_r and ToMM(bb.GetRight()) > hx - hole_r:
+                H = max(H, ToMM(bb.GetBottom()) + 1.0 + hole_r + HOLE_INSET)
 
     # outline
     def line(x1, y1, x2, y2):

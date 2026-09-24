@@ -19,9 +19,10 @@ actually stocks.
 | `illuminate7mk2-crossover-pcb.png` | render of the placement |
 | `tools/pcb_build.py` | builds and places the board from the netlist — re-run it after changing footprints |
 
-Status: schematic done (ERC 0 violations), board placed (DRC 0 violations,
-37 unconnected = the unrouted ratsnest). **Routing is by hand, next.** The
-placement is on provisional footprints; see "Measurements still needed".
+Status: schematic done (ERC 0 violations), board placed on measured
+footprints (DRC 0 violations, 37 unconnected = the unrouted ratsnest).
+**Routing is by hand, next.** Coils: L102 may be a shop 270 µH if it passes
+the LCR check; L101, L201 and L202 are to be wound.
 
 ## Circuit
 
@@ -121,16 +122,16 @@ Thicker wire (1.0 mm) gives about 30 % lower DCR than the design, so it needs
 the series-resistor trim in step 4 on every coil; thinner wire (0.6 mm) makes
 the DCR too high and should not be used for L202.
 
-### Capacitor voltage rating — check this yourself
+### Capacitor voltage ratings (read off the parts)
 
-The shop CSV gives **no voltage rating** for the film caps. The Fosi V3 runs
-from a 48 V supply and is bridged, so the peak across the input terminals can
-approach ±45 V, and the caps inside a resonant tank can see more than the input.
+The Fosi V3 runs from 48 V and is bridged, so the input can swing about ±45 V.
+The shop parts, as printed on them:
 
-**Every film cap must be rated ≥ 63 V, and 100 V is the sensible choice.**
-Read the printing on the actual parts before you fit them. If the shop's caps
-turn out to be 50 V or 63 V parts, buy proper 100 V/250 V MKP crossover caps
-instead — this is the one substitution that can fail loudly.
+| Part | Rating | Verdict |
+|---|---|---|
+| 2u2 | 63 V | at the minimum; accepted, it is the weak point at full power |
+| 3u3, 6u8 | 100 V | fine |
+| 8u2 | 600 V | fine |
 
 ## Does this make an adequate crossover?
 
@@ -159,7 +160,7 @@ cd sim && ngspice -b crossover_ac.cir && python3 compare.py
 
 `tools/pcb_build.py` builds the `.kicad_pcb` from the schematic netlist and
 places it on a fixed floorplan that follows the signal flow, packed from the
-footprints' real courtyards. **167 × 144 mm** with the provisional cap
+footprints' real courtyards. **151 × 120 mm** on the measured
 footprints, inside the mill's 203 × 152 mm envelope. Re-run after any footprint
 change:
 
@@ -203,32 +204,26 @@ side and the middle row. GND has only six pads and the pour carries it. The
 circuit is series-parallel, so nothing forces a wire bridge: it routes on one
 layer with zero jumpers if the placement is respected.
 
-## Measurements still needed before milling
+## Measured footprints
 
-The board is placed on footprints that are **provisional guesses** for three
-part types. Measure the real parts, fix the footprints, and re-run
-`tools/pcb_build.py` before routing for real; otherwise the components will not fit.
+Every shop part was measured with calipers on 2026-09-24 (pitch = leads
+outside to outside minus one lead Ø). The same table is in the DTU-EKB
+footprint repo (`DTU-EKB/KiCad-components`), so these never need measuring again.
 
-1. **Film capacitor lead pitch and body size.** The shop lists no dimensions.
-   Currently assigned:
-   - ≤ 3.3 µF → `C_Rect_L29.0mm_W13.0mm_P27.50mm_MKT` (27.5 mm pitch)
-   - 6.8 / 8.2 µF → `C_Rect_L41.5mm_W20.0mm_P37.50mm_MKS4` (37.5 mm pitch)
+| Part | Body L × W × H (mm) | Pitch | Footprint |
+|---|---|---|---|
+| 2u2 film, 63 V | 25.7 × 6.2 × 15 | 22.5 | `C_Rect_L26.5mm_W7.0mm_P22.50mm_MKS4` |
+| 3u3 film, 100 V | 25 × 8.2 × 17.8 | 22.5 | `C_Rect_L26.5mm_W8.5mm_P22.50mm_MKS4` |
+| 6u8 film, 100 V | 31 × 11 × 21 | 27.5 | `C_Rect_L31.5mm_W11.0mm_P27.50mm_MKS4` |
+| 8u2 film, 600 V | 31.5 × 13.3 × 28 | 27.5 | `C_Rect_L31.5mm_W13.0mm_P27.50mm_MKS4` |
+| 4R7 5W, axial | 24 × Ø8.5 | 27.94 | `R_Axial_Power_L25.0mm_W9.0mm_P27.94mm` |
+| 10R 5W, axial | 18 × 6 × 6 | 22.4 | `R_Axial_Power_L20.0mm_W6.4mm_P22.40mm` |
+| 2-pole screw terminal | stock | 5.0 | `TerminalBlock_MaiXu_MX126-5.0-02P_1x02_P5.00mm` |
 
-   Measure lead spacing, body length, width and height on one of each value and
-   pick the matching stock footprint.
-2. **Coil lead spacing.** The off-board pad pairs are 10.16 mm apart with
-   1.4 mm holes, which suits 0.8–1.0 mm wire. If you wind with thicker wire,
-   raise `DRILL` in `tools/make_coil_footprints.py` and re-run it. (The
-   on-board `L_AirCore_D*` footprints are kept in the library for a bigger
-   board, but nothing uses them now.)
-3. **5 W resistor body.** Assigned
-   `R_Axial_Power_L25.0mm_W9.0mm_P30.48mm` (30.48 mm pitch). If the shop's 5 W
-   parts are the ceramic-block type, check the lead spacing — those are often
-   shorter-bodied with the leads bent to a narrower pitch.
-
-Plan how the coils are held down — glue, or a cable tie through a pair of
-extra holes (add them to the coil footprint). After routing, `kicad-laser-pcb`
-does the Gerber/drill export for the mill.
+Still open: the coil lead spacing if the wire ends up thicker than 1.0 mm
+(raise `DRILL` in `tools/make_coil_footprints.py`), and the enclosure's M4
+insert positions. `pcb_build.py` drops the bottom edge until the bottom corner
+holes clear every courtyard by 1 mm.
 
 ## Notes on manufacturability
 

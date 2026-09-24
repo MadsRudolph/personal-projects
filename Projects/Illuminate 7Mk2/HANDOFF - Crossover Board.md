@@ -9,7 +9,7 @@ tags:
   - CNC
   - handoff
 parent: "[[Illuminate 7Mk2 - Speaker Build]]"
-status: Schematic done, board placed and DRC-clean, unrouted; parts not yet measured
+status: Parts measured, board re-placed on real footprints and DRC-clean, unrouted
 started: 2026-09-24
 updated: 2026-09-24
 ---
@@ -47,7 +47,7 @@ Fosi V3 amp on 48 V). Everything lives in
 |---|---|
 | Reference circuit redrawn in KiCad 10 with values from DTU shop stock | `illuminate7mk2-crossover.kicad_sch`, ERC 0 violations, readability score 13/13 |
 | Substituted values proven adequate | ngspice in `sim/`: tweeter within +0.54 dB, woofer within +0.42 dB of the reference, 100 Hz–20 kHz |
-| Board built from the netlist and placed | `illuminate7mk2-crossover.kicad_pcb`, 167 × 144 mm, DRC 0 violations, 37 unconnected = the unrouted ratsnest |
+| Board built from the netlist and placed | `illuminate7mk2-crossover.kicad_pcb`, 151 × 120 mm on measured footprints, DRC 0 violations, 37 unconnected = the unrouted ratsnest |
 | Coils moved off the board | only lead-pad footprints (`crossover:L_OffBoard_P10.16mm`) at the board edges |
 
 Not done: routing, Gerber export, measured footprints, enclosure mounting-hole
@@ -79,23 +79,16 @@ The shop CSV lists no voltage rating for its film caps. **They must be ≥ 63 V,
 parts, buy proper crossover caps instead. This is the one substitution that
 can fail loudly.
 
-## What is provisional and must be measured
+## Measured parts (2026-09-24)
 
-All three footprint types were guessed because the shop CSV has no body sizes.
-The board is placed on the guesses, and the outline will change when the real
-ones go in.
+All shop parts were measured and the board re-packed on the real footprints;
+the table is in the crossover README and in `DTU-EKB/KiCad-components`. The 2u2
+caps are only 63 V and were accepted as they are. The shop has no usable coils
+(only small ferrite chokes; a 270 µH might do for L102 if its DCR is
+≤ 0.35 Ω), so L101, L201 and L202 are being wound.
 
-| Part | Footprint now | Measure |
-|---|---|---|
-| Film caps ≤ 3.3 µF | `C_Rect_L29.0mm_W13.0mm_P27.50mm_MKT` | lead pitch, body L × W × H |
-| Film caps 6.8 / 8.2 µF | `C_Rect_L41.5mm_W20.0mm_P37.50mm_MKS4` | same; the 8.2 µF drives the board size |
-| 5 W resistors | `R_Axial_Power_L25.0mm_W9.0mm_P30.48mm` | lead pitch and body; ceramic-block types often have bent leads on a shorter pitch |
-| Screw terminals | `TerminalBlock_MaiXu_MX126-5.0-02P_1x02_P5.00mm` | pin pitch, and which face the wire enters from |
-| Coil lead pads | `L_OffBoard_P10.16mm`, 1.4 mm holes | only if wire is thicker than 1.0 mm |
-
-Also unknown: the positions of the five M4 inserts the enclosure has for its
-crossover plate. The board has four placeholder M4 holes 6 mm in from each
-corner.
+Still unknown: the positions of the enclosure's five M4 inserts. The board has
+four placeholder M4 holes 6 mm in from each corner.
 
 ## How the files are generated (edit scripts, not outputs)
 

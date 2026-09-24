@@ -101,9 +101,13 @@ Sheet._dump_symbol = _dump_with_fields
 # PROVISIONAL.  The shop CSV lists no body sizes for the film caps and the
 # coils are bought parts, so every pitch below is a generous guess.  Measure
 # the real parts and fix these before placement -- see README.md.
-FP_CAP_S = "Capacitor_THT:C_Rect_L29.0mm_W13.0mm_P27.50mm_MKT"      # <= 3u3
-FP_CAP_L = "Capacitor_THT:C_Rect_L41.5mm_W20.0mm_P37.50mm_MKS4"     # 4u7..8u2
-FP_RES = "Resistor_THT:R_Axial_Power_L25.0mm_W9.0mm_P30.48mm"       # 5 W wirewound
+# Measured on DTU shop parts 2026-09-24 (recorded in DTU-EKB/KiCad-components)
+FP_CAP_2U2 = "Capacitor_THT:C_Rect_L26.5mm_W7.0mm_P22.50mm_MKS4"   # 63 V, 25.7x6.2x15
+FP_CAP_3U3 = "Capacitor_THT:C_Rect_L26.5mm_W8.5mm_P22.50mm_MKS4"   # 100 V, 25x8.2x17.8
+FP_CAP_6U8 = "Capacitor_THT:C_Rect_L31.5mm_W11.0mm_P27.50mm_MKS4"  # 100 V, 31x11x21
+FP_CAP_8U2 = "Capacitor_THT:C_Rect_L31.5mm_W13.0mm_P27.50mm_MKS4"  # 600 V, 31.5x13.3x28
+FP_RES_4R7 = "Resistor_THT:R_Axial_Power_L25.0mm_W9.0mm_P27.94mm"  # 5 W, 24xD8.5
+FP_RES_10R = "Resistor_THT:R_Axial_Power_L20.0mm_W6.4mm_P22.40mm"  # 5 W, 18x6x6
 FP_TERM = "TerminalBlock:TerminalBlock_MaiXu_MX126-5.0-02P_1x02_P5.00mm"
 FP_L020 = "crossover:L_OffBoard_P10.16mm"
 FP_L025 = "crossover:L_OffBoard_P10.16mm"
@@ -176,13 +180,13 @@ sh.note((G(88), G(61)), "ERC power flag: GND is driven by the amplifier", size=1
 sh.seg((XA, YT_CAP), (XA, YW_RES))
 
 # =========================================================== tweeter branch
-C101 = part("Device:C", "C101", at=(G(55), YT_CAP), rot=90, value="2u2", fp=FP_CAP_S,
+C101 = part("Device:C", "C101", at=(G(55), YT_CAP), rot=90, value="2u2", fp=FP_CAP_2U2,
             design="2.0 uF", descr="Tank cap, tweeter notch")
 L101 = part("Device:L", "L101", at=(G(55), YT), rot=90, value="0.20mH", fp=FP_L020,
             design="200 uH", descr="Air core 0.8 mm wire, target DCR 0.29 ohm")
-R101 = part("Device:R", "R101", at=(G(47), YT_RES), rot=90, value="4R7 5W", fp=FP_RES,
+R101 = part("Device:R", "R101", at=(G(47), YT_RES), rot=90, value="4R7 5W", fp=FP_RES_4R7,
             design="10 ohm 10 W (half)", descr="R101+R102 in series = 9.4 ohm / 10 W")
-R102 = part("Device:R", "R102", at=(G(63), YT_RES), rot=90, value="4R7 5W", fp=FP_RES,
+R102 = part("Device:R", "R102", at=(G(63), YT_RES), rot=90, value="4R7 5W", fp=FP_RES_4R7,
             design="10 ohm 10 W (half)", descr="R101+R102 in series = 9.4 ohm / 10 W")
 
 for row, a, b in ((YT_CAP, C101.pin(1), C101.pin(2)),
@@ -195,13 +199,13 @@ sh.seg(R102.pin(2), (XBT, YT_RES))
 sh.seg((XBT, YT_CAP), (XBT, YT_RES))              # node TW_A rail
 sh.label((XBT, YT_CAP), "TW_A")
 
-C102 = part("Device:C", "C102", at=(G(94), YT_P1), rot=90, value="3u3", fp=FP_CAP_S,
+C102 = part("Device:C", "C102", at=(G(94), YT_P1), rot=90, value="3u3", fp=FP_CAP_3U3,
             design="5.6 uF (half)", descr="C102 || C103 = 5.5 uF series cap")
-C103 = part("Device:C", "C103", at=(G(94), YT_P2), rot=90, value="2u2", fp=FP_CAP_S,
+C103 = part("Device:C", "C103", at=(G(94), YT_P2), rot=90, value="2u2", fp=FP_CAP_2U2,
             design="5.6 uF (half)", descr="C102 || C103 = 5.5 uF series cap")
-C104 = part("Device:C", "C104", at=(G(138), YT_P1), rot=90, value="6u8", fp=FP_CAP_L,
+C104 = part("Device:C", "C104", at=(G(138), YT_P1), rot=90, value="6u8", fp=FP_CAP_6U8,
             design="10 uF (half)", descr="C104 || C105 = 10.1 uF series cap")
-C105 = part("Device:C", "C105", at=(G(138), YT_P2), rot=90, value="3u3", fp=FP_CAP_S,
+C105 = part("Device:C", "C105", at=(G(138), YT_P2), rot=90, value="3u3", fp=FP_CAP_3U3,
             design="10 uF (half)", descr="C104 || C105 = 10.1 uF series cap")
 
 for cc, left, right in ((C102, XBT, XCT), (C103, XBT, XCT),
@@ -229,7 +233,7 @@ sh.gnd((G(146), YT_RET))
 # =========================================================== woofer branch
 WCAPS = []
 for i, x in enumerate((G(46), G(56), G(66), G(76), G(86))):
-    c = part("Device:C", f"C20{i + 1}", at=(x, YW_BC), value="8u2", fp=FP_CAP_L,
+    c = part("Device:C", f"C20{i + 1}", at=(x, YW_BC), value="8u2", fp=FP_CAP_8U2,
              design="40 uF (fifth)", descr="C201..C205 in parallel = 41 uF tank cap")
     WCAPS.append(c)
 sh.seg((XA, YW_BT), (WCAPS[-1].x, YW_BT))         # bank top rail = IN+
@@ -240,9 +244,9 @@ for c in WCAPS:
 
 L201 = part("Device:L", "L201", at=(G(64), YW), rot=90, value="0.70mH", fp=FP_L070,
             design="700 uH", descr="Air core 0.8 mm wire, target DCR 0.60 ohm")
-R201 = part("Device:R", "R201", at=(G(56), YW_RES), rot=90, value="10R 5W", fp=FP_RES,
+R201 = part("Device:R", "R201", at=(G(56), YW_RES), rot=90, value="10R 5W", fp=FP_RES_10R,
             design="20 ohm 10 W (half)", descr="R201+R202 in series = 20 ohm / 10 W")
-R202 = part("Device:R", "R202", at=(G(72), YW_RES), rot=90, value="10R 5W", fp=FP_RES,
+R202 = part("Device:R", "R202", at=(G(72), YW_RES), rot=90, value="10R 5W", fp=FP_RES_10R,
             design="20 ohm 10 W (half)", descr="R201+R202 in series = 20 ohm / 10 W")
 
 sh.seg((XA, YW), L201.pin(1))
@@ -259,9 +263,9 @@ sh.seg((XBW, YW), L202.pin(1))
 sh.seg(L202.pin(2), (XJ_PIN, YW))
 sh.label((XDW, YW), "WF_D")
 
-C206 = part("Device:C", "C206", at=(G(148), YW_SC), value="8u2", fp=FP_CAP_L,
+C206 = part("Device:C", "C206", at=(G(148), YW_SC), value="8u2", fp=FP_CAP_8U2,
             design="12 uF (half)", descr="C206 || C207 = 11.5 uF shunt cap")
-C207 = part("Device:C", "C207", at=(G(160), YW_SC), value="3u3", fp=FP_CAP_S,
+C207 = part("Device:C", "C207", at=(G(160), YW_SC), value="3u3", fp=FP_CAP_3U3,
             design="12 uF (half)", descr="C206 || C207 = 11.5 uF shunt cap")
 sh.seg((XDW, YW), (XDW, YW_SH))
 sh.seg((C206.x, YW_SH), (C207.x, YW_SH))
