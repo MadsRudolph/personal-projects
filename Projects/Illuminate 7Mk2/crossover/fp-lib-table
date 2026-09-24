@@ -1,0 +1,4 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "crossover")(type "KiCad")(uri "${KIPRJMOD}/lib/crossover.pretty")(options "")(descr "Air-core crossover coils for the Illuminate 7 Mk2 - provisional sizes, measure before layout"))
+)

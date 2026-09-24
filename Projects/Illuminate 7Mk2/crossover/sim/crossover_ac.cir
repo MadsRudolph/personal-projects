@@ -1,0 +1,63 @@
+* Illuminate 7 Mk2 crossover -- reference design vs DTU-shop substituted values
+*
+* Both networks are driven from their own ideal 1 V source, so they cannot
+* load each other and each node voltage IS that branch's transfer function.
+* Drivers are modelled as plain resistors: 4 ohm tweeter, 8 ohm woofer.
+* Every inductor carries its DCR as a series resistor.
+*
+* The coils are identical in both versions (they are bought parts, not shop
+* stock), so the only differences are the capacitor and resistor values.
+
+Vref aref 0 DC 0 AC 1
+Vsub asub 0 DC 0 AC 1
+
+*** ============================ REFERENCE ============================
+* ---- tweeter: tank [2u || 200u/0.29 || 10R] - 5u6 - 10u -> 4 ohm
+CrT1 aref rTA 2.0u
+LrT1 aref rT1 200u
+RrT1 rT1 rTA 0.29
+RrT2 aref rTA 10
+CrT2 rTA rTB 5.6u
+CrT3 rTB rTC 10u
+LrT2 rTB rT2 250u
+RrT3 rT2 0 0.35
+RrTW rTC 0 4
+
+* ---- woofer: tank [40u || 700u/0.60 || 20R] - 2m/1.06 -> 8 ohm, 12u shunt
+CrW1 aref rWC 40u
+LrW1 aref rW1 700u
+RrW1 rW1 rWC 0.60
+RrW2 aref rWC 20
+LrW2 rWC rW2 2m
+RrW3 rW2 rWD 1.06
+CrW2 rWD 0 12u
+RrWF rWD 0 8
+
+*** ======================= SHOP SUBSTITUTION =========================
+* ---- tweeter: 2u2 tank cap, 4R7+4R7 = 9R4, 3u3||2u2 = 5u5, 6u8||3u3 = 10u1
+CsT1 asub sTA 2.2u
+LsT1 asub sT1 200u
+RsT1 sT1 sTA 0.29
+RsT2 asub sTA 9.4
+CsT2 sTA sTB 5.5u
+CsT3 sTB sTC 10.1u
+LsT2 sTB sT2 250u
+RsT3 sT2 0 0.35
+RsTW sTC 0 4
+
+* ---- woofer: 5 x 8u2 = 41u tank cap, 10R+10R = 20R, 8u2||3u3 = 11u5 shunt
+CsW1 asub sWC 41u
+LsW1 asub sW1 700u
+RsW1 sW1 sWC 0.60
+RsW2 asub sWC 20
+LsW2 sWC sW2 2m
+RsW3 sW2 sWD 1.06
+CsW2 sWD 0 11.5u
+RsWF sWD 0 8
+
+.control
+ac dec 400 20 40000
+wrdata crossover_ac.dat vdb(rTC) vdb(sTC) vdb(rWD) vdb(sWD)
+quit
+.endc
+.end
