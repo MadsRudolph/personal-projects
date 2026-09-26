@@ -13,6 +13,48 @@ went through the whole flow first; read its `HANDOFF.md`, `esp32node_sch.py`,
 `kicad-schematic`, `kicad-place` and `kicad-laser-pcb` skills. Those skills were written
 for **through-hole boards milled on a Windows PC**, so several defaults below override them.
 
+## 0. Proven laser settings: xTool F1 Ultra, copper isolation (verified 2026-09-26)
+
+Mads cut the esp32node test coupon (`esp32_coupon_negative.dxf`: the ESP32-WROOM-32 pad
+pattern with its 0.37 mm gaps, plus 0.15-0.50 mm clearance and trace ladders) with the
+preset below. **The negatives came out perfectly.** This is the known-good starting point
+for any ESP32 board on this machine. The exact XCS preset export is in
+`~/Projects/esp32-node/xtool/F1Ultra_PCB_presets.json`
+(repo: `MadsRudolph/personal-projects`, `esp32-node/xtool/`), and you can import it into XCS as is.
+
+**`Traces`**, fill engraving (Engrave tab), used for the copper isolation:
+
+| Setting | Value |
+|---|---|
+| Laser | Fiber IR |
+| Power | 100 % |
+| Speed | 600 mm/s |
+| Passes | 10 |
+| Lines per cm (density) | 240 (about 0.042 mm line pitch) |
+| Scan mode | One-way |
+| Frequency | 30 kHz |
+| Scan angle | 0, incremental, cross hatch on |
+
+This is *not* the DTU guide's "PCB-V1" preset (650 mm/s, 140 lines/cm, bi-directional).
+The finer 240 lines/cm is the one to use for fine SMD gaps: at 140 lines/cm a 0.15-0.2 mm
+gap is only 2-3 lines wide.
+
+The same export has two companion presets:
+- **`Cut/Drill`**: vector cutting, 100 %, 100 mm/s, **160 passes**, 30 kHz, no kerf. Use it for
+  cutting outlines and holes with the laser.
+- **`RemoveSolderMask`**: fill engraving, 40 %, 800 mm/s, 6 passes, 300 lines/cm, 30 kHz, one-way,
+  cross hatch. Use it only on solder-mask boards, to open pads.
+
+**How the file has to be prepared** (this is what came out perfectly):
+- Give XCS a **negative**: closed shapes marking the copper to *remove*. Use windows around
+  pad rows or traces, with the pads and traces inside as holes. Import the DXF, **Make compound**,
+  and check that the removed areas are black and the copper you keep is white before you run.
+- Export DXF in mm as closed R12 POLYLINEs, with reference geometry on its own layer. See the
+  `dxf()` writer in `~/Projects/esp32-node/make_coupon.py`; no ezdxf needed.
+- Sand the copper lightly with 400 grit, then Framing, then Auto height adjustment, then Process.
+- On a real board, mirror the bottom-copper design in XCS (not in the export) when it is
+  etched from the component-less side. For a coupon it doesn't matter.
+
 ## 1. Ask Mads these before any layout (they change everything)
 
 - **Laser or mill?** The kicad-laser-pcb default is the 0.8 mm CNC end mill. It
@@ -31,9 +73,10 @@ for **through-hole boards milled on a Windows PC**, so several defaults below ov
   With a bare module, the answer on esp32node was: fiber laser.
 - **Laser rule.** The skill's `laser` profile (0.8/1.0) can't fan out of an ESP32. esp32node
   uses **0.35 mm clearance / 0.5 mm track**, because the laser has to isolate the module's
-  0.37 mm pad gaps anyway. It is an *assumption*: the test coupon
-  (`~/Projects/esp32-node/make_coupon.py`, 0.15-0.50 mm clearance and trace ladders plus the
-  ESP32 pad pattern) was never cut. Ask whether it has been. If not, suggest cutting it first.
+  0.37 mm pad gaps anyway. The test coupon has now been cut, with the settings in section 0,
+  and came out cleanly, so the ESP32 footprint itself is proven etchable. Mads has not
+  reported which ladder step is the smallest clean one. If your board needs anything finer
+  than 0.35/0.5, ask for that number before using it.
 - **USB-C:** keep a fine-pitch receptacle as a hand-solder exception, or use a through-hole
   breakout? (esp32node kept the GCT USB4105.)
 - **Which way the parts face.** On one copper layer every SMD part sits on the copper side

@@ -11,7 +11,7 @@ EN/BOOT buttons, 2x16 GPIO breakout in module pin order, I2C header, 1-Wire head
 | Question | Answer |
 |---|---|
 | Etch process | Fiber laser, not the 0.8 mm CNC mill. The mill can't cut the ESP32's 0.37 mm pad gaps, the SOT-23's 0.53 mm or the SOIC-16's 0.67 mm |
-| Laser rule | 0.35 mm clearance / 0.5 mm track. **Assumed, not measured**: the test coupon was never cut |
+| Laser rule | 0.35 mm clearance / 0.5 mm track. Test coupon cut 2026-09-26 with the `Traces` preset (`../xtool/F1Ultra_PCB_presets.json`): came out perfectly, ESP32 pad gaps included |
 | USB-C J1 | Keep the GCT USB4105 (0.20 mm inter-net gaps) as a hand-solder/rework exception |
 | CH340C supply | 3.3 V mode (VCC + V3 on +3V3). At 5 V its TXD drove 5 V into the ESP32 |
 | Orientation | SMD parts on the copper side (B.Cu, flipped). Header plastic on the plain side, pins pointing away from the SMD parts |
