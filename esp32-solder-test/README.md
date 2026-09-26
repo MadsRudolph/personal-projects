@@ -34,8 +34,9 @@ LED on IO2. Everything except the module is through-hole and stocked at the DTU 
 
 The shop has no fixed 3.3 V regulator, so the LM317 is set to 1.25 V x (1 + 392/243) = **3.27 V**.
 R1 also draws the ~5 mA minimum load the LM317 needs. It needs about 1.7 V of headroom from 5 V,
-which is plenty for flashing and blinking. WiFi transmit peaks (~400 mA) may sag it, so for real
-WiFi use a stiff 5 V supply or swap in a low-dropout 3.3 V regulator.
+which is plenty for flashing and blinking. WiFi does sag it: the factory AT firmware boot-looped
+(see `BRINGUP.md`). The shop has no low-dropout 3.3 V part, so the fix for the next board is 7–9 V
+into the LM317 plus 470 µF on 3V3. The recipe is in the kicad-laser-pcb skill's `references/esp32.md`.
 
 ## Laser files (`production/`)
 
