@@ -1,0 +1,14 @@
+(version 1)
+
+# Board rule is 0.35 mm clearance / 0.5 mm track (fiber laser; the ESP32's own
+# 0.37 mm pad gaps set the floor). Exceptions below are scoped to one footprint.
+
+# J1 USB-C (GCT USB4105): 0.20 mm between different-net pads by design. Agreed
+# 2026-09-24 as a hand-solder / rework exception -- the laser will not isolate
+# these gaps cleanly; inspect and clean J1's pad row by hand after etching.
+# Covers J1's pads and the hand-drawn 0.2/0.3 mm escape stubs inside its
+# courtyard (place_pcb.py j1_escape); everything outside J1 stays at 0.35.
+(rule "J1 USB-C fine pitch (hand-solder exception)"
+	(condition "A.intersectsCourtyard('J1') && B.intersectsCourtyard('J1')")
+	(constraint clearance (min 0.15mm))
+	(constraint hole_clearance (min 0.1mm)))

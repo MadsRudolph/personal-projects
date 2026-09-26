@@ -1,0 +1,9 @@
+# KiCad
+*.lck
+*-backups/
+fp-info-cache
+*.kicad_pro.bak
+_autosave-*
+# local tooling
+.claude/settings.local.json
+__pycache__/
