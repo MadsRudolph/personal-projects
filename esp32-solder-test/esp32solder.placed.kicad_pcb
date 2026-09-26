@@ -87,7 +87,7 @@
 			(outputdirectory "")
 		)
 	)
-	(footprint "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
+	(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
 		(layer "F.Cu")
 		(uuid "0b880e69-e4b8-483d-adda-b82d33b32da5")
 		(at 174.16 100.5 180)
@@ -149,6 +149,9 @@
 				)
 			)
 		)
+		(path "/2db5f629-5242-44a5-bfad-ac0c9ce5445c")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -266,7 +269,7 @@
 			)
 		)
 	)
-	(footprint "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
+	(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
 		(layer "F.Cu")
 		(uuid "1001f686-6684-4923-8050-814f0b551707")
 		(at 141 122.66 90)
@@ -328,6 +331,9 @@
 				)
 			)
 		)
+		(path "/27ceb63c-3000-4d73-a1e1-0322280aeb40")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -445,7 +451,7 @@
 			)
 		)
 	)
-	(footprint "CP_Radial_D5.0mm_P2.00mm"
+	(footprint "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm"
 		(layer "F.Cu")
 		(uuid "1db4cf14-6fc5-42d3-a288-dac7b2df3462")
 		(at 135.54 125.5)
@@ -507,6 +513,9 @@
 				)
 			)
 		)
+		(path "/bd87ba25-4e23-473c-8190-ff72739f2b6d")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -1795,7 +1804,7 @@
 			)
 		)
 	)
-	(footprint "TO-220-3_Vertical"
+	(footprint "Package_TO_SOT_THT:TO-220-3_Vertical"
 		(layer "F.Cu")
 		(uuid "1e0bc6db-9fcf-4eb7-b568-0c6e142f9913")
 		(at 138.08 131.5 180)
@@ -1857,6 +1866,9 @@
 				)
 			)
 		)
+		(path "/c3f7b82e-9d7f-46e6-ab27-7689b2b51b0d")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -2032,7 +2044,7 @@
 			)
 		)
 	)
-	(footprint "CP_Radial_D5.0mm_P2.00mm"
+	(footprint "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm"
 		(layer "F.Cu")
 		(uuid "3fb79900-3d3b-4365-b64a-ccf655c2da2f")
 		(at 164 105)
@@ -2094,6 +2106,9 @@
 				)
 			)
 		)
+		(path "/e1718e48-0342-481f-bd40-3f48cf2f3f69")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -3382,7 +3397,7 @@
 			)
 		)
 	)
-	(footprint "CP_Radial_D5.0mm_P2.00mm"
+	(footprint "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm"
 		(layer "F.Cu")
 		(uuid "53bc069f-9826-4034-8347-95731b5fff19")
 		(at 128.5 127)
@@ -3444,6 +3459,9 @@
 				)
 			)
 		)
+		(path "/d933d351-d34a-4f50-8208-d3e5cc14abc6")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -4732,7 +4750,7 @@
 			)
 		)
 	)
-	(footprint "LED_D3.0mm"
+	(footprint "LED_THT:LED_D3.0mm"
 		(layer "F.Cu")
 		(uuid "8a2a4317-5ef2-43ed-bd9f-636cdc5f15cb")
 		(at 177 129.04 90)
@@ -4794,6 +4812,9 @@
 				)
 			)
 		)
+		(path "/60f57d1c-ca0a-4b51-95aa-d8de45fb90ea")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -4951,7 +4972,7 @@
 			)
 		)
 	)
-	(footprint "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
+	(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
 		(layer "F.Cu")
 		(uuid "9697c895-4d56-4090-b0b0-3aab662a3f7a")
 		(at 142 131.5)
@@ -5013,6 +5034,9 @@
 				)
 			)
 		)
+		(path "/cb36f567-5da6-4886-a3b1-7c3e9005733e")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5130,7 +5154,7 @@
 			)
 		)
 	)
-	(footprint "SW_PUSH_6mm"
+	(footprint "Button_Switch_THT:SW_PUSH_6mm"
 		(layer "F.Cu")
 		(uuid "bbeed095-722b-45d9-827d-0080057eb0b0")
 		(at 169.5 104.5)
@@ -5184,6 +5208,9 @@
 				)
 			)
 		)
+		(path "/25ef3a8b-084a-4f59-8c6c-8636e612cf38")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5467,7 +5494,7 @@
 			)
 		)
 	)
-	(footprint "SW_PUSH_6mm"
+	(footprint "Button_Switch_THT:SW_PUSH_6mm"
 		(layer "F.Cu")
 		(uuid "c1bceae0-2d42-42b2-b8e7-62fe8c8b2727")
 		(at 129.5 112)
@@ -5521,6 +5548,9 @@
 				)
 			)
 		)
+		(path "/007fed24-dd87-4ce2-8906-6afbc96aa436")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5804,7 +5834,7 @@
 			)
 		)
 	)
-	(footprint "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
+	(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
 		(layer "F.Cu")
 		(uuid "c320c576-0d5a-473a-9198-4a50896564a3")
 		(at 144.28 112.5 -90)
@@ -5866,6 +5896,9 @@
 				)
 			)
 		)
+		(path "/77055cdb-6774-4835-b108-e4c373ad6466")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5983,7 +6016,7 @@
 			)
 		)
 	)
-	(footprint "PinHeader_1x04_P2.54mm_Vertical"
+	(footprint "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
 		(layer "F.Cu")
 		(uuid "c3a853cf-63aa-4142-b280-35da612facd3")
 		(at 131.5 93.56)
@@ -6045,6 +6078,9 @@
 				)
 			)
 		)
+		(path "/c8d94450-9697-4c44-a2d3-31204d0efc54")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6228,7 +6264,7 @@
 			)
 		)
 	)
-	(footprint "C_Disc_D3.0mm_W1.6mm_P2.50mm"
+	(footprint "Capacitor_THT:C_Disc_D3.0mm_W1.6mm_P2.50mm"
 		(layer "F.Cu")
 		(uuid "d792aba5-3f4a-4d5a-a4e2-0e05d01baee4")
 		(at 162.5 93.02 -90)
@@ -6290,6 +6326,9 @@
 				)
 			)
 		)
+		(path "/501985cb-63de-4537-8dec-ee0cf4afc168")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6376,7 +6415,7 @@
 			)
 		)
 	)
-	(footprint "LED_D3.0mm"
+	(footprint "LED_THT:LED_D3.0mm"
 		(layer "F.Cu")
 		(uuid "eb8176da-7041-480b-bdd2-06f2d7c57b13")
 		(at 149.82 122.66 180)
@@ -6438,6 +6477,9 @@
 				)
 			)
 		)
+		(path "/995d0549-56a9-4721-9189-bbaa1fd1f91a")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6595,7 +6637,7 @@
 			)
 		)
 	)
-	(footprint "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
+	(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
 		(layer "F.Cu")
 		(uuid "f3835ea3-a5d2-4b07-943e-4bbd3a3d1bfa")
 		(at 155.5 131.5 90)
@@ -6657,6 +6699,9 @@
 				)
 			)
 		)
+		(path "/b58059ec-6b40-4aca-b684-ece834582834")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6774,7 +6819,7 @@
 			)
 		)
 	)
-	(footprint "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
+	(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
 		(layer "F.Cu")
 		(uuid "f623d6f2-9885-481a-9b0b-ec1a6d57c1ca")
 		(at 177 113 -90)
@@ -6836,6 +6881,9 @@
 				)
 			)
 		)
+		(path "/d08b3182-15f8-4f47-b06c-509f5dd8d771")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6953,7 +7001,7 @@
 			)
 		)
 	)
-	(footprint "ESP32-WROOM-32_NoVias"
+	(footprint "esp32solder:ESP32-WROOM-32_NoVias"
 		(layer "B.Cu")
 		(uuid "902fe269-f4d3-4dbd-bb1e-e54306ebd130")
 		(at 150 100 180)
@@ -7011,6 +7059,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/bf1390d0-3145-4773-9afb-80fd04881b16")
+		(sheetname "esp32solder")
+		(sheetfile "esp32solder.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line

@@ -12,6 +12,7 @@ Run with the system python3 (pcbnew is importable on this machine):
 """
 import argparse
 import os
+import sys
 import sexpdata
 from sexpdata import Symbol
 import pcbnew
@@ -96,6 +97,11 @@ def main():
     ds.SetCopperLayerCount(2)
     nc = board.GetAllNetClasses()["Default"]
     nc.SetTrackWidth(FromMM(a.track)); nc.SetClearance(FromMM(a.clearance))
+    # Link each footprint to its library and schematic symbol (relink_pcb.py);
+    # without it KiCad treats every part as unrelated to the schematic.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import relink_pcb
+    relink_pcb.relink(board, relink_pcb.components(a.net))
     pcbnew.SaveBoard(a.out, board)
     print(f"wrote {a.out}: {len(comps)} footprints, {len(nets)} nets, {W:.0f}x{H:.0f} mm outline")
 

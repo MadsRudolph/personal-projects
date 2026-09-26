@@ -87,7 +87,7 @@
 			(outputdirectory "")
 		)
 	)
-	(footprint "PinHeader_1x16_P2.54mm_Vertical"
+	(footprint "Connector_PinHeader_2.54mm:PinHeader_1x16_P2.54mm_Vertical"
 		(layer "F.Cu")
 		(uuid "05adb21f-70d1-4e99-ace1-ffb92a2631c2")
 		(at 126 93)
@@ -149,6 +149,9 @@
 				)
 			)
 		)
+		(path "/cf750852-0842-4a6c-b607-23c3952359ea")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -440,7 +443,7 @@
 			)
 		)
 	)
-	(footprint "PinHeader_1x16_P2.54mm_Vertical"
+	(footprint "Connector_PinHeader_2.54mm:PinHeader_1x16_P2.54mm_Vertical"
 		(layer "F.Cu")
 		(uuid "0e550f87-dbbb-4640-8867-c7ead034daba")
 		(at 174 93)
@@ -502,6 +505,9 @@
 				)
 			)
 		)
+		(path "/2fe99e63-3bb5-4d87-b6dd-6bd4e00b1fb8")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -793,7 +799,7 @@
 			)
 		)
 	)
-	(footprint "PinHeader_1x03_P2.54mm_Vertical"
+	(footprint "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
 		(layer "F.Cu")
 		(uuid "d15008c0-232c-468d-b1c1-3b868f571859")
 		(at 138 127)
@@ -855,6 +861,9 @@
 				)
 			)
 		)
+		(path "/59557586-fa85-4791-9f77-d81c8895e74a")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -1029,7 +1038,7 @@
 			)
 		)
 	)
-	(footprint "PinHeader_1x04_P2.54mm_Vertical"
+	(footprint "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
 		(layer "F.Cu")
 		(uuid "dfd3d210-eef0-4c7e-818f-c3d939ffe9e4")
 		(at 119.8 144 90)
@@ -1091,6 +1100,9 @@
 				)
 			)
 		)
+		(path "/f9f04211-da31-47aa-93f4-fe3e06316a62")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -1274,7 +1286,7 @@
 			)
 		)
 	)
-	(footprint "R_0805_2012Metric"
+	(footprint "Resistor_SMD:R_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "022b4bc2-a1d4-4cab-abc2-316ad71bf2c7")
 		(at 141.5 128 -90)
@@ -1341,6 +1353,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/efe8eaae-3d48-4b13-9c96-8bcef515dfa7")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -1426,7 +1441,7 @@
 			)
 		)
 	)
-	(footprint "SW_SPST_PTS645Sx43SMTR92"
+	(footprint "Button_Switch_SMD:SW_SPST_PTS645Sx43SMTR92"
 		(layer "B.Cu")
 		(uuid "04645889-c718-41f8-8879-e4f18c4f198f")
 		(at 150 114.5 180)
@@ -1484,6 +1499,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/3aa11332-d96d-4916-be98-0aa7627ece26")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -1714,7 +1732,7 @@
 			)
 		)
 	)
-	(footprint "C_0805_2012Metric"
+	(footprint "Capacitor_SMD:C_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "1930be17-dc3a-4cc4-ae23-af375afda8ad")
 		(at 177.4 96 -90)
@@ -1781,6 +1799,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/fbc30048-7419-4592-bcec-c5ada8dca149")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -1866,7 +1887,7 @@
 			)
 		)
 	)
-	(footprint "SOT-23"
+	(footprint "Package_TO_SOT_SMD:SOT-23"
 		(layer "B.Cu")
 		(uuid "33a68819-4140-4ad5-b7d8-89037920da39")
 		(at 139 121 180)
@@ -1933,6 +1954,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/42d6bc23-f3d5-4a54-8f61-dd8c415bce79")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -2238,7 +2262,7 @@
 			)
 		)
 	)
-	(footprint "SW_SPST_PTS645Sx43SMTR92"
+	(footprint "Button_Switch_SMD:SW_SPST_PTS645Sx43SMTR92"
 		(layer "B.Cu")
 		(uuid "599f2c22-918b-4ae6-a418-66e38e14dd11")
 		(at 167 146.5 180)
@@ -2296,6 +2320,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/a341db19-5ddd-491e-a7a7-c2ca35cb5dd3")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -2526,7 +2553,7 @@
 			)
 		)
 	)
-	(footprint "R_0805_2012Metric"
+	(footprint "Resistor_SMD:R_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "62d7c67c-f8bc-4449-a81d-667c86b1ff51")
 		(at 124.88 147.8 -90)
@@ -2593,6 +2620,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/38bf8822-e4dc-4741-b1e7-30b8feda6e75")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -2678,7 +2708,7 @@
 			)
 		)
 	)
-	(footprint "R_0805_2012Metric"
+	(footprint "Resistor_SMD:R_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "658ae21b-923d-4afb-9b19-a5bbc4a72e68")
 		(at 134 126 -90)
@@ -2745,6 +2775,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/1e908956-d613-4cab-af3f-71d6b8b1c7e9")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -2830,7 +2863,7 @@
 			)
 		)
 	)
-	(footprint "R_0805_2012Metric"
+	(footprint "Resistor_SMD:R_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "6ce4149c-518e-4ad4-9685-760a2b4f8e08")
 		(at 143 121 -90)
@@ -2897,6 +2930,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/6fce3b8c-4844-4add-b5d7-7c956ca8f9ed")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -2982,7 +3018,7 @@
 			)
 		)
 	)
-	(footprint "R_0805_2012Metric"
+	(footprint "Resistor_SMD:R_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "6d6e5c15-5cdc-4305-bcd6-92e1f5ffd141")
 		(at 177.4 123 -90)
@@ -3049,6 +3085,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/ef03d6e7-a10a-45e9-b5ff-5dd821ddb5f3")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -3134,7 +3173,7 @@
 			)
 		)
 	)
-	(footprint "LED_0805_2012Metric"
+	(footprint "LED_SMD:LED_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "6f6856b9-8987-40a5-b082-2bd84680243f")
 		(at 177.4 143 -90)
@@ -3201,6 +3240,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/8f08a891-c712-4f24-bb58-405cfc166523")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -3335,7 +3377,7 @@
 			)
 		)
 	)
-	(footprint "C_0805_2012Metric"
+	(footprint "Capacitor_SMD:C_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "77dcefe6-529e-493f-bd29-eeb8fa0c8f93")
 		(at 177.4 128 -90)
@@ -3402,6 +3444,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/3a2bb6b8-a4bc-4fa1-8e0b-43c48a0be55c")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -3487,7 +3532,7 @@
 			)
 		)
 	)
-	(footprint "C_0805_2012Metric"
+	(footprint "Capacitor_SMD:C_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "7e26e1d7-4d68-4e6a-9a9a-cb5ed20c8910")
 		(at 137 139.5 180)
@@ -3554,6 +3599,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/70d179aa-d9be-4d93-b50d-0514bfbe4f3b")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -3639,7 +3687,7 @@
 			)
 		)
 	)
-	(footprint "ESP32-WROOM-32_NoVias"
+	(footprint "esp32node:ESP32-WROOM-32_NoVias"
 		(layer "B.Cu")
 		(uuid "86afe18b-2aaa-408b-a44a-282c6cddf23a")
 		(at 150 100 180)
@@ -3697,6 +3745,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/3c7b3e54-cc55-46ba-b84a-112742e36d45")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -4346,7 +4397,7 @@
 			)
 		)
 	)
-	(footprint "USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal"
+	(footprint "Connector_USB:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal"
 		(layer "B.Cu")
 		(uuid "89a4d852-16b8-4def-af2f-3033138ab4f9")
 		(at 150 147.1 180)
@@ -4406,6 +4457,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/f3596d9b-32bf-4146-ba36-4062e2b75e93")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -4680,7 +4734,7 @@
 			)
 		)
 	)
-	(footprint "R_0805_2012Metric"
+	(footprint "Resistor_SMD:R_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "9c5e3f2c-ab13-4d52-8448-34bda9547777")
 		(at 157.5 139 -90)
@@ -4747,6 +4801,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/87a22ec3-2a86-4a24-bb34-82d587c169b7")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -4832,7 +4889,7 @@
 			)
 		)
 	)
-	(footprint "SOT-23"
+	(footprint "Package_TO_SOT_SMD:SOT-23"
 		(layer "B.Cu")
 		(uuid "a23f6796-5a49-4387-a9fa-f52f5d5440ff")
 		(at 164.5 124 180)
@@ -4899,6 +4956,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/ddb5ef7a-d2f2-4822-bd27-d79de3cce6fa")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5204,7 +5264,7 @@
 			)
 		)
 	)
-	(footprint "SOIC-16_3.9x9.9mm_P1.27mm"
+	(footprint "Package_SO:SOIC-16_3.9x9.9mm_P1.27mm"
 		(layer "B.Cu")
 		(uuid "a4b4b00a-e7c6-4a2d-9b4a-afd2d74fdbf8")
 		(at 152 124 90)
@@ -5271,6 +5331,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/d565a05f-b114-4a02-9e8f-cb2f1a77d1a5")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5630,7 +5693,7 @@
 			)
 		)
 	)
-	(footprint "LED_0805_2012Metric"
+	(footprint "LED_SMD:LED_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "ab1661ef-32ec-4933-aa9f-6dc97e64d673")
 		(at 134 130 -90)
@@ -5697,6 +5760,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/139f95f7-233c-4a44-b934-6a9e5dc537e3")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5831,7 +5897,7 @@
 			)
 		)
 	)
-	(footprint "R_0805_2012Metric"
+	(footprint "Resistor_SMD:R_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "baffc178-3f2c-4fe2-84d8-4828e9e3a553")
 		(at 122.34 147.8 -90)
@@ -5898,6 +5964,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/4c3334be-1235-4576-88b7-0a96619a6b39")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5983,7 +6052,7 @@
 			)
 		)
 	)
-	(footprint "R_0805_2012Metric"
+	(footprint "Resistor_SMD:R_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "bd660fab-25fa-4d9c-8a22-7d9b2563c7b6")
 		(at 160.5 124 -90)
@@ -6050,6 +6119,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/9b9db55d-db51-4bef-b828-aeea6f054549")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6135,7 +6207,7 @@
 			)
 		)
 	)
-	(footprint "SOT-223-3_TabPin2"
+	(footprint "Package_TO_SOT_SMD:SOT-223-3_TabPin2"
 		(layer "B.Cu")
 		(uuid "be2de89b-b69b-452c-8f67-bd404ae33a96")
 		(at 137 146 180)
@@ -6193,6 +6265,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/b44c25ef-20dd-4d1e-bfe2-0c9cbbd40dfb")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6394,7 +6469,7 @@
 			)
 		)
 	)
-	(footprint "R_0805_2012Metric"
+	(footprint "Resistor_SMD:R_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "c97ec303-b64e-41ba-9ad1-d24cc2cbfef8")
 		(at 158 112.5 -90)
@@ -6461,6 +6536,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/3d7b6750-4970-480a-b4e0-5ea1ae6f7655")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6546,7 +6624,7 @@
 			)
 		)
 	)
-	(footprint "C_0805_2012Metric"
+	(footprint "Capacitor_SMD:C_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "e528d680-4282-4d03-b5d5-2f48316e3afb")
 		(at 159 119 -90)
@@ -6613,6 +6691,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/39bca39a-8f6f-4734-af75-7f318bbf9f51")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6698,7 +6779,7 @@
 			)
 		)
 	)
-	(footprint "R_0805_2012Metric"
+	(footprint "Resistor_SMD:R_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "e5c779dd-0190-45f4-b751-d7e31499ba31")
 		(at 142.5 139 -90)
@@ -6765,6 +6846,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/1e074825-e03a-45a6-8803-47c62791ea99")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6850,7 +6934,7 @@
 			)
 		)
 	)
-	(footprint "C_0805_2012Metric"
+	(footprint "Capacitor_SMD:C_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "e5d26469-02cc-41e3-bac5-f171c0ea385c")
 		(at 130 147 -90)
@@ -6917,6 +7001,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/623f7a4c-a338-41a0-b755-be3d723ad982")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -7002,7 +7089,7 @@
 			)
 		)
 	)
-	(footprint "R_0805_2012Metric"
+	(footprint "Resistor_SMD:R_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "f1f15293-879b-49ca-80a2-87fbcf560763")
 		(at 177.4 138.5 -90)
@@ -7069,6 +7156,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/8a0ddb2a-d179-4580-a765-2ed00d506e7e")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -7154,7 +7244,7 @@
 			)
 		)
 	)
-	(footprint "C_0805_2012Metric"
+	(footprint "Capacitor_SMD:C_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "f4c6bb5a-5b8d-46c9-a2c9-fbe3af6ad2d5")
 		(at 162 93 -90)
@@ -7221,6 +7311,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/2ae4ee3c-7abf-4b6a-bae5-1b58994d7c4b")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -7306,7 +7399,7 @@
 			)
 		)
 	)
-	(footprint "C_0805_2012Metric"
+	(footprint "Capacitor_SMD:C_0805_2012Metric"
 		(layer "B.Cu")
 		(uuid "ff6e213e-841b-4d09-926b-6b8c1a4a17b6")
 		(at 156.5 130.5 -90)
@@ -7373,6 +7466,9 @@
 				(justify mirror)
 			)
 		)
+		(path "/8b1db65b-deea-4e63-b6ab-24dfe1d6d4ea")
+		(sheetname "esp32node")
+		(sheetfile "esp32node.kicad_sch")
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line

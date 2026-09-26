@@ -86,6 +86,9 @@ Sand lightly with 400 grit, then Framing, then Auto height adjustment, then Proc
 - `place_pcb.py` places the board (the footprint positions come from the flipped module's pads).
   The route came from FreeRouting 2.4.1 via `place_route.py`.
 - `finish_pcb.py` adds the copper orientation text and refills the pour.
+- `relink_pcb.py` links each footprint to its library and schematic symbol, so KiCad's
+  schematic parity, cross-probing and "Update PCB from Schematic" work. `bootstrap_pcb.py`
+  runs it automatically.
 - `export_laser.py` writes the two DXFs above. It's the same negative-DXF approach as the coupon
   that came out perfectly.
 - `esp32solder.placed.kicad_pcb` is the unrouted placement, kept for reference.
