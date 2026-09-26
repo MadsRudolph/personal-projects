@@ -11,7 +11,7 @@ EN/BOOT buttons, 2x16 GPIO breakout in module pin order, I2C header, 1-Wire head
 | Question | Answer |
 |---|---|
 | Etch process | Fiber laser, not the 0.8 mm CNC mill. The mill can't cut the ESP32's 0.37 mm pad gaps, the SOT-23's 0.53 mm or the SOIC-16's 0.67 mm |
-| Laser rule | 0.35 mm clearance / 0.5 mm track. Test coupon cut 2026-09-26 with the `Traces` preset (`../xtool/F1Ultra_PCB_presets.json`): came out perfectly, ESP32 pad gaps included |
+| Laser rule | Currently 0.35 mm clearance / 0.5 mm track (chosen before the coupon). Coupon cut 2026-09-26 with the `Traces` preset (`../xtool/F1Ultra_PCB_presets.json`): **every line clean, down to 0.15 mm gaps and 0.15 mm traces** |
 | USB-C J1 | Keep the GCT USB4105 (0.20 mm inter-net gaps) as a hand-solder/rework exception |
 | CH340C supply | 3.3 V mode (VCC + V3 on +3V3). At 5 V its TXD drove 5 V into the ESP32 |
 | Orientation | SMD parts on the copper side (B.Cu, flipped). Header plastic on the plain side, pins pointing away from the SMD parts |
@@ -53,7 +53,14 @@ Project footprint: `esp32node.pretty/ESP32-WROOM-32_NoVias` (the stock footprint
    - the bottom-left (J4, U2)
    - the bottom-right
 
-   +3V3 is needed in all of them. Options, in the order I'd try them:
+   +3V3 is needed in all of them.
+
+   **New since the coupon (2026-09-26):** 0.15 mm gaps and 0.15 mm traces etched clean. At a
+   rule like 0.2 mm clearance / 0.3 mm track (0.2 + 0.3 + 0.2 = 0.7 mm < 0.84 mm header gap), a
+   track fits between header pins. The walls disappear, the J1 escape becomes in-rule, and
+   `place_floor` at 0.2/0.3 already proved floor 0 with GND + +3V3 + +5V pours. **Ask Mads
+   whether to move the board to 0.2/0.3 before doing anything else.** It is probably the whole
+   fix. Otherwise, options in the order I'd try them:
    - (a) Add +3V3 (and maybe +5V) pour **regions** as well as GND. `place_floor` at 0.2/0.3 said
      GND + +3V3 + +5V pours take the floor to 0. At 0.35/0.5 it never finished (it hit a 3000 s
      cap), so that number isn't proven at this rule.

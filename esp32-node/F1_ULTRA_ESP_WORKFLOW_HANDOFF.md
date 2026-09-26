@@ -17,7 +17,23 @@ for **through-hole boards milled on a Windows PC**, so several defaults below ov
 
 Mads cut the esp32node test coupon (`esp32_coupon_negative.dxf`: the ESP32-WROOM-32 pad
 pattern with its 0.37 mm gaps, plus 0.15-0.50 mm clearance and trace ladders) with the
-preset below. **The negatives came out perfectly.** This is the known-good starting point
+preset below. **The negatives came out perfectly: every line clean, down to the smallest
+steps on both ladders.** So on this machine, with this preset:
+
+| Proven on the coupon | Smallest step tested, all clean |
+|---|---|
+| Copper gap (isolation) | **0.15 mm** |
+| Trace width | **0.15 mm** |
+| ESP32-WROOM-32 pad gaps | 0.37 mm, all isolated |
+
+0.15 is where the ladders *stop*, not where the laser fails; the real limit is lower and
+hasn't been measured. For a design rule, keep some margin over the proven number. For example,
+0.2 mm clearance / 0.3 mm track sits comfortably inside what was proven. It also changes the
+layout game on single-sided ESP32 boards: 0.2 + 0.3 + 0.2 = 0.7 mm fits between 2.54 mm
+header pads (0.84 mm gap), so headers stop being walls, and the USB-C's 0.20 mm pad gaps
+become in-rule. Agree the rule with Mads before laying out.
+
+This is the known-good starting point
 for any ESP32 board on this machine. The exact XCS preset export is in
 `~/Projects/esp32-node/xtool/F1Ultra_PCB_presets.json`
 (repo: `MadsRudolph/personal-projects`, `esp32-node/xtool/`), and you can import it into XCS as is.
@@ -73,10 +89,9 @@ The same export has two companion presets:
   With a bare module, the answer on esp32node was: fiber laser.
 - **Laser rule.** The skill's `laser` profile (0.8/1.0) can't fan out of an ESP32. esp32node
   uses **0.35 mm clearance / 0.5 mm track**, because the laser has to isolate the module's
-  0.37 mm pad gaps anyway. The test coupon has now been cut, with the settings in section 0,
-  and came out cleanly, so the ESP32 footprint itself is proven etchable. Mads has not
-  reported which ladder step is the smallest clean one. If your board needs anything finer
-  than 0.35/0.5, ask for that number before using it.
+  0.37 mm pad gaps anyway. That was chosen *before* the coupon was cut. The coupon has since
+  proven 0.15 mm gaps and 0.15 mm traces clean (section 0), so a finer rule such as 0.2/0.3 is
+  justified and makes single-sided ESP32 routing far easier. Ask Mads which rule to use.
 - **USB-C:** keep a fine-pitch receptacle as a hand-solder exception, or use a through-hole
   breakout? (esp32node kept the GCT USB4105.)
 - **Which way the parts face.** On one copper layer every SMD part sits on the copper side
