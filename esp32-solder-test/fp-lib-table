@@ -1,0 +1,4 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "esp32solder") (type "KiCad") (uri "${KIPRJMOD}/esp32solder.pretty") (options "") (descr "project footprints"))
+)
