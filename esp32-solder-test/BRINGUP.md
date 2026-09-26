@@ -4,7 +4,7 @@
 **Adapter:** FTDI TTL-232R-3V3 (`/dev/ttyUSB0`). Black → J1.1 GND, yellow (RXD) → J1.3 TXD0,
 orange (TXD) → J1.4 RXD0. The cable has no 5 V wire, so J1.2 was fed from a bench supply.
 
-**Verdict:** every joint on the board is proven. The F1 Ultra + hand-soldering process works
+**Verdict:** every joint on the board is proven, and the board runs WiFi. The F1 Ultra + hand-soldering process works
 for an ESP32-WROOM-32. One cold joint needed a reflow.
 
 | Step | Result | Readings / notes | Joints proven |
@@ -15,6 +15,7 @@ for an ESP32-WROOM-32. One cold joint needed a reflow.
 | 4. Download mode | Pass | BOOT + RESET gives download mode, ~0.02 A idle, ~0 A with RESET held | IO0, SW2, SW1 |
 | 5. esptool | Pass | See chip data below | RXD0 |
 | 6. Blink | Pass | `firmware/blink` flashed at 115200 with no-reset, hash verified. Green LED blinks at 1 Hz, with serial `blink N on/off` lines. One clean boot, no resets | IO2, D1, R5 |
+| 7. WiFi dashboard | Pass | `firmware/dashboard` joins the WutanLan phone hotspot (2.4 GHz) with TX power at 8.5 dBm. Browser slider sets the LED blink frequency live. No resets in a 60 s watch, where the factory AT firmware had reset 22 times in 30 s | RF path, supply under WiFi load |
 
 ## Chip
 
