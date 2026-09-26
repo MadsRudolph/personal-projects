@@ -1,2 +1,5 @@
 *.lck
 __pycache__/
+# pcbnew writes these beside any board it saves; the reference board must not get its own default rules
+*.placed.kicad_pro
+*.placed.kicad_prl
