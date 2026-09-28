@@ -1,0 +1,8 @@
+sim/*.dat
+kicad/*.lck
+kicad/~*
+kicad/*-backups/
+kicad/fp-info-cache
+kicad/*.kicad_prl
+kicad/build/
+kicad/logs/

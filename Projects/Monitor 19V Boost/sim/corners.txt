@@ -1,0 +1,24 @@
+=== Vin 11.4 V
+   vout_1a 1.90883e+01
+   vout_3a 1.90833e+01
+   vout_peak 1.93099e+01
+   vout_min_step 1.82594e+01
+   vout_max_rel 1.92957e+01
+   il_pk_3a 6.62856e+00
+   eff 9.139490e-01
+=== Vin 12 V
+   vout_1a 1.90354e+01
+   vout_3a 1.90838e+01
+   vout_peak 1.90962e+01
+   vout_min_step 1.82714e+01
+   vout_max_rel 1.92669e+01
+   il_pk_3a 6.31032e+00
+   eff 9.190136e-01
+=== Vin 12.6 V
+   vout_1a 1.90129e+01
+   vout_3a 1.90829e+01
+   vout_peak 1.90865e+01
+   vout_min_step 1.82910e+01
+   vout_max_rel 1.92649e+01
+   il_pk_3a 6.00379e+00
+   eff 9.233080e-01

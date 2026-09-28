@@ -1,0 +1,43 @@
+Qty,Refs,Value,Shop CSV entry,Package / footprint,Role
+1,U1,SG3524,"IC,Linear,SG3524",DIP-16 (socketed),PWM controller
+1,-,DIP-16 socket,"Connector,IC Socket,DIP16 Socket",DIP-16,Socket for U1
+1,Q1,STP36NF06,"Transistor,N-MOSFET,P36NF06",TO-220,Boost switch (IRF540 is the fallback)
+1,Q2,BD139,"Transistor,NPN BJT,BD139",TO-126 (bend leads to 2.54 mm pitch),Totem-pole source
+1,Q3,BD140,"Transistor,PNP BJT,BD140",TO-126 (bend leads to 2.54 mm pitch),Totem-pole sink
+1,D1,BYW29-100,"Diode,Rectifier,BYW29",TO-220AC,Boost rectifier (8 A 100 V ultrafast)
+1,D2,1.5KE24A,"Diode,TVS Zener,1.5KE24A",DO-201AE,Output TVS clamp
+1,D3,LED 3 mm green,"LED,3mm,LED 3MM GRØN",3 mm,Output-on indicator
+1,D4,BZX79C22,"Diode,Zener,BZX79C22",DO-35,OVP threshold
+5,"C1,C2,C4,C5,C6",1000 uF 50 V,"Capacitor,Electrolytic,1000µF 50V",radial (measure D/pitch),Input (2) and output (3) bulk
+1,C9,10 uF 50 V,"Capacitor,Electrolytic,10µF 50V",radial 5 mm / 2.5 mm,VCC filter
+4,"C3,C7,C10,C11",100 nF,"Capacitor,Ceramic,100n",disc 5 mm pitch,HF bypass
+1,C17,1 nF,"Capacitor,Ceramic,1n0",disc 5 mm pitch,Current-sense filter
+1,C18,10 nF,"Capacitor,Ceramic,10n",disc 5 mm pitch,SHUTDOWN filter
+2,"C12,C14",3.3 nF film,"Capacitor,Film,3n3",5 mm pitch,CT timing; type III C3
+1,C13,470 nF film,"Capacitor,Film,470n",5 mm pitch,Soft start on IN+
+1,C15,47 nF film,"Capacitor,Film,47n",5 mm pitch,Type III Cf
+1,C16,1 nF film,"Capacitor,Film,1n0",5 mm pitch,Type III Cp
+2,"R1,R2",0.10 Ohm 5 W,"Resistor,Power,0R10 5W",axial power (measure),Current shunt (50 mOhm total)
+2,"R4,R6",10 Ohm,"Resistor,E96 Standard,10R0",0207,Gate resistor; VCC filter
+1,R3,332 Ohm,"Resistor,E96 Standard,332R",0207,Emitter-output pull-down
+3,"R14,R15,R16",1 kOhm,"Resistor,E96 Standard,1K00",0207,CS divider; OVP series
+1,R18,3.32 kOhm,"Resistor,E96 Standard,3K32",0207,LED current
+1,R7,3.92 kOhm,"Resistor,E96 Standard,3K92",0207,RT
+1,R17,4.75 kOhm,"Resistor,E96 Standard,4K75",0207,OVP pull-down
+1,R12,5.23 kOhm,"Resistor,E96 Standard,5K23",0207,Type III R3
+2,"R8,R9",9.09 kOhm,"Resistor,E96 Standard,9K09",0207,VREF divider
+1,R5,10 kOhm,"Resistor,E96 Standard,10K0",0207,Gate pull-down
+1,R13,13.0 kOhm,"Resistor,E96 Standard,13K0",0207,Type III Rf
+1,R11,30.9 kOhm,"Resistor,E96 Standard,30K9",0207,Feedback divider bottom
+1,R10,205 kOhm,"Resistor,E96 Standard,205K",0207,Feedback divider top
+1,RV1,2 kOhm trimmer,"Resistor,Trimmer,2K",3296W (check the shop part),Output voltage trim
+2,"J1,J2",2-pole screw terminal,"Connector,Terminal,2 pol skrueterminal",5.0 mm pitch,12 V in / 19 V out
+1,L1,toroid core,"Inductor,Toroid Core,Small Toroid (or Smaller Toroid)",off-board / vertical,22 uH -- measure AL first (README)
+2,-,TO-220 heatsink,"Hardware,Heatsink,TO-220 Heatsink",-,One each for Q1 and D1
+2,-,TO-220 mica + bushing,"Hardware,Thermal Pad,TO-220 Mica / Hardware,Mounting,TO-220 Isobøsning",-,Only if Q1 and D1 share a heatsink
+,,,,,
+,,NOT FROM THE SHOP,,,
+1,L1,enamelled copper wire ~1.2 mm2 total,-,-,"e.g. 3 x 0.71 mm or 2 x 0.9 mm in parallel, ~1.5 m"
+1,-,8 A slow fuse + holder,-,-,In the 12 V lead (a boost cannot limit an output short)
+1,-,DC barrel plug + lead,-,-,Match the original Samsung adapter's plug (measure it)
+1,-,12 V supply >= 6 A,-,-,Your parts-bin find; Mean Well LRS-100-12 if buying

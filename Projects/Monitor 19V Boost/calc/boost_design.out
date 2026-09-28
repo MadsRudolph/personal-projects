@@ -1,0 +1,89 @@
+
+=== Operating point =======================================================
+Vin 11.40 V  Iin 5.56 A  D 0.452  dI 2.34 App  Ipk 6.73 A
+Vin 12.00 V  Iin 5.28 A  D 0.420  dI 2.29 App  Ipk 6.42 A
+Vin 12.60 V  Iin 5.03 A  D 0.389  dI 2.23 App  Ipk 6.14 A
+Pout 57.0 W; CCM/DCM boundary at Iout = 0.66 A (standby runs DCM, fine)
+
+=== Inductor ==============================================================
+L = 22 uH, ripple 43 % of Iin at 12 V
+needs Isat >= 8.7 A (Ipk 6.73 A x 1.3), Irms 5.60 A
+stored energy at Isat: 0.84 mJ  -> powdered iron (-26/-52 mix) or gapped core, NOT plain ferrite
+copper for 5 A/mm2: 1.12 mm2; skin depth 0.21 mm -> 3 strands of 0.6-0.7 mm in parallel (or 2 x 0.9 mm)
+   if AL =  33 nH/N^2 -> 25.8 turns
+   if AL =  46 nH/N^2 -> 21.9 turns
+   if AL =  60 nH/N^2 -> 19.1 turns
+   if AL =  75 nH/N^2 -> 17.1 turns
+   if AL =  93 nH/N^2 -> 15.4 turns
+
+=== MOSFET (STP36NF06, 60 V / 36 A / 40 mOhm) =============================
+Vds stress 19.9 V + ringing (60 V part: 3x margin)
+Irms 3.74 A  Pcond 0.84 W  Psw 0.22 W  -> 1.06 W; gate drive 30 mW
+
+=== Diode (BYW29-100, 8 A / 100 V ultrafast) ==============================
+Iavg 3.0 A, Ipk 6.7 A, Vr 19 V -> Pd 2.55 W -> TO-220 heatsink required
+
+=== Current sense / limit =================================================
+R_shunt 50 mOhm  P 0.70 W
+divider 1.00k/1.00k: trip at 8.0 A peak (nominal Ipk 6.4 A, worst 6.7 A)
+
+=== Output capacitor ======================================================
+3 x 1 mF: ripple current 2.72 A total, 0.91 A each
+ripple: 4.5 mV (charge) + 135 mV (ESR 20 mOhm) = 0.73 % of Vout
+
+=== Input capacitor =======================================================
+ripple current 0.66 A rms -> 2 x 1000 uF / 50 V (0.3 A each)
+
+=== Loss budget ===========================================================
+   diode      2.55 W
+   mosfet     1.06 W
+   shunt      0.70 W
+   inductor   1.03 W
+   caps       0.15 W
+   control    0.21 W
+total 5.69 W -> efficiency 90.9 % (assumed 90 %)
+
+=== Oscillator (SG3524: f = 1.30 / (RT CT)) ===============================
+CT 3.3 nF -> RT 3939 Ohm -> 3.92 kOhm gives 100 kHz (+-10 %, trim not needed)
+
+=== Feedback divider ======================================================
+   Vref 4.6 V: trimmer sets Vout 15.82 .. 19.30 V  (reaches 19 V)
+   Vref 5.0 V: trimmer sets Vout 17.19 .. 20.98 V  (reaches 19 V)
+   Vref 5.4 V: trimmer sets Vout 18.57 .. 22.66 V  (reaches 19 V)
+   trimmer centred: Vout 19.09 V
+
+=== Over-voltage shutdown (SG3524 pin 10) =================================
+BZX79C22 + 1k into SD, 4.75k to GND: trips at ~22.8 V (21.7..23.9 V over zener tolerance); 1.5KE24A TVS backs it up
+
+=== Compensation (type III) ===============================================
+EA stays linear for output disturbances up to ~1.05 V (200 uA x R3)
+fz1 = 260 Hz, fz2 = 229 Hz, fp1 = 9.2 kHz, fp2 = 12.2 kHz
+case                                   f0   fRHPZ      fc     PM     GM
+Vin 11.4 Iout 1 A ESR  30 mOhm/cap    352   44.3k   0.68k    68d  36.9dB
+Vin 11.4 Iout 1 A ESR  60 mOhm/cap    352   44.3k   0.69k    78d  32.2dB
+Vin 11.4 Iout 1 A ESR 150 mOhm/cap    352   44.3k   0.74k   104d  24.9dB
+Vin 11.4 Iout 2 A ESR  30 mOhm/cap    348   21.6k   0.67k    68d  30.9dB
+Vin 11.4 Iout 2 A ESR  60 mOhm/cap    348   21.6k   0.68k    77d  26.2dB
+Vin 11.4 Iout 2 A ESR 150 mOhm/cap    348   21.6k   0.73k   103d  18.9dB
+Vin 11.4 Iout 3 A ESR  30 mOhm/cap    344   14.1k   0.67k    67d  27.4dB
+Vin 11.4 Iout 3 A ESR  60 mOhm/cap    344   14.1k   0.67k    76d  22.7dB
+Vin 11.4 Iout 3 A ESR 150 mOhm/cap    344   14.1k   0.72k   101d  15.3dB
+Vin 12.0 Iout 1 A ESR  30 mOhm/cap    371   49.2k   0.72k    70d  37.3dB
+Vin 12.0 Iout 1 A ESR  60 mOhm/cap    371   49.2k   0.72k    80d  32.6dB
+Vin 12.0 Iout 1 A ESR 150 mOhm/cap    371   49.2k   0.78k   107d  25.3dB
+Vin 12.0 Iout 2 A ESR  30 mOhm/cap    367   24.1k   0.71k    69d  31.3dB
+Vin 12.0 Iout 2 A ESR  60 mOhm/cap    367   24.1k   0.71k    79d  26.6dB
+Vin 12.0 Iout 2 A ESR 150 mOhm/cap    367   24.1k   0.77k   106d  19.4dB
+Vin 12.0 Iout 3 A ESR  30 mOhm/cap    363   15.7k   0.70k    68d  27.8dB
+Vin 12.0 Iout 3 A ESR  60 mOhm/cap    363   15.7k   0.70k    78d  23.1dB
+Vin 12.0 Iout 3 A ESR 150 mOhm/cap    363   15.7k   0.76k   104d  15.8dB
+Vin 12.6 Iout 1 A ESR  30 mOhm/cap    390   54.4k   0.75k    71d  37.7dB
+Vin 12.6 Iout 1 A ESR  60 mOhm/cap    390   54.4k   0.75k    81d  33.0dB
+Vin 12.6 Iout 1 A ESR 150 mOhm/cap    390   54.4k   0.83k   110d  25.7dB
+Vin 12.6 Iout 2 A ESR  30 mOhm/cap    386   26.7k   0.74k    70d  31.8dB
+Vin 12.6 Iout 2 A ESR  60 mOhm/cap    386   26.7k   0.75k    80d  27.0dB
+Vin 12.6 Iout 2 A ESR 150 mOhm/cap    386   26.7k   0.82k   108d  19.8dB
+Vin 12.6 Iout 3 A ESR  30 mOhm/cap    382   17.4k   0.73k    69d  28.2dB
+Vin 12.6 Iout 3 A ESR  60 mOhm/cap    382   17.4k   0.74k    80d  23.5dB
+Vin 12.6 Iout 3 A ESR 150 mOhm/cap    382   17.4k   0.81k   107d  16.2dB
+worst phase margin 67 deg

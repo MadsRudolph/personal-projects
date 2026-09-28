@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "boost")(type "KiCad")(uri "${KIPRJMOD}/lib/boost.kicad_sym")(options "")(descr "SG3524 - not in the stock KiCad libraries"))
+)

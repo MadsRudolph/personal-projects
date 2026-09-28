@@ -1,0 +1,114 @@
+* 12 V -> 19 V boost, full switching transient
+* Soft start into 1 A, step to 3 A at 15 ms, back to 1 A at 25 ms.
+* Values are the ones in calc/boost_design.py and the schematic.
+*
+* Behavioural SG3524 (no vendor model exists):
+*   - error amp as a transconductance stage, gm 2 mS, Rout 5 MOhm (80 dB),
+*     output current limited to +-200 uA, COMP clamped 0.5 .. 3.8 V
+*   - ramp 1.0 -> 3.5 V at 100 kHz with 0.5 us blanking (max duty ~95 %)
+*   - current-limit amp sinks COMP when (CL+ - CL-) > 200 mV
+*   - shutdown / OVP not modelled; reference ideal 5.00 V
+* NOT modelled: SG3524 propagation delays, inductor saturation, core loss,
+* PCB parasitics.  Ringing and edge speeds come from the bench, not from here.
+
+.param vin=12 fsw=100k
+
+* ---------------- supply and input ------------------------------------------
+VIN   vsrc 0 {vin}
+RSRC  vsrc vin 10m
+CIN1  vin cin1 2000u
+RCIN1 cin1 0 30m
+
+* ---------------- power stage -----------------------------------------------
+L1    vin nl 22u
+RL1   nl sw 20m
+M1    sw gate cs STP36
+RSH   cs 0 50m
+D1    sw vout BYW29
+COUT  vout cout 3000u
+RCOUT cout 0 20m
+
+* load: 19 Ohm always (1 A), plus 9.5 Ohm (2 A) between 15 and 25 ms
+RL_BASE vout 0 19
+RL_STEP vout lstep 9.5
+SLOAD   lstep 0 ldrv 0 SWLOAD
+VLDRV   ldrv 0 PWL(0 0 15m 0 15.001m 1 25m 1 25.001m 0)
+.model SWLOAD SW(Ron=1m Roff=1Meg Vt=0.5 Vh=0.1)
+
+* ---------------- models ----------------------------------------------------
+* STP36NF06: 60 V, 40 mOhm max, Vth 2-4 V, Qg ~30 nC
+.model STP36 VDMOS(Rd=15m Rs=5m Vto=3 Kp=25 Cgdmax=1.2n Cgdmin=80p Cgs=1.1n
++ Cjo=700p Is=1e-12 Rb=10m Tt=40n)
+* BYW29-100: 8 A ultrafast, Vf ~0.85 V at 3 A, trr 25 ns
+.model BYW29 D(Is=6n N=1.55 Rs=25m Tt=18n Cjo=90p Bv=100 Ibv=10u)
+.model DSIG D(Is=2.5n N=1.8 Rs=0.5 Cjo=2p)
+
+* ---------------- SG3524 behavioural ----------------------------------------
+VREF  ref 0 5.0
+* IN+ = VREF/2 (trimmer centred); CSS on IN+ ramps the reference = soft start
+RP1   ref inp 10.09k
+RP2   inp 0 10.09k
+CSS   inp 0 470n
+* feedback divider and type III network
+RTOP  vout inn 205k
+RBOT  inn 0 30.9k
+R3    vout n3 5.23k
+C3    n3 inn 3.3n
+RF    comp nf 13.0k
+CF    nf inn 47n
+CP    comp inn 1n
+
+* error amp: gm stage into COMP, limited current, 5 MOhm to 1 V
+BEA   0 comp I = 200u*tanh(2m*(V(inp)-V(inn))/200u)
+REA   comp ea0 5Meg
+VEA0  ea0 0 1.0
+CEA   comp 0 10p
+* COMP clamps
+DCLH  comp chi DSIG
+VCLH  chi 0 3.2
+DCLL  clo comp DSIG
+VCLL  clo 0 1.1
+
+
+* current limit: CL+ from the shunt through 1k/1k, 1 nF filter; CL- to GND
+RCLA  cs clp 1k
+RCLB  clp 0 1k
+CCL   clp 0 1n
+BCL   comp 0 I = 5m*(1+tanh((V(clp)-0.2)*200))/2
+
+* oscillator ramp and PWM comparator, emitter-follower outputs paralleled
+VRAMP ramp 0 PULSE(1.0 3.5 0 9.5u 0.5u 0 10u)
+BPWM  pwm 0 V = 0.5+0.5*tanh((V(comp)-V(ramp))*200)
+
+* BD139/BD140 totem pole: ~9.3 V high, 0.7 V low, 10 Ohm gate resistor
+BDRV  drv 0 V = 0.7 + 8.6*V(pwm)
+RG    drv gate 10
+RGS   gate cs 10k
+
+.options method=gear reltol=1e-3 abstol=1n vntol=1u itl4=100
+.tran 1u 35m 0 40n uic
+.ic v(vout)=11.2 v(cout)=11.2 v(vin)=12 v(cin1)=12 v(inp)=0 v(comp)=0.5
+
+.control
+set filetype=binary
+save v(vout) v(comp) v(inp) v(sw) v(gate) i(L1) v(clp)
+run
+meas tran vout_1a   avg v(vout) from=12m to=14.9m
+meas tran vout_3a   avg v(vout) from=22m to=24.9m
+meas tran vout_peak max v(vout) from=0.1m to=14.9m
+meas tran vout_min_step min v(vout) from=15m to=18m
+meas tran vout_max_rel  max v(vout) from=25m to=28m
+meas tran rip_3a    pp  v(vout) from=24.5m to=24.9m
+meas tran il_pk_3a  max i(L1) from=22m to=24.9m
+meas tran il_pk_all max i(L1) from=0.1m to=35m
+meas tran il_avg_3a avg i(L1) from=22m to=24.9m
+meas tran comp_3a   avg v(comp) from=22m to=24.9m
+meas tran vsw_pk    max v(sw) from=22m to=24.9m
+let pin = 12*il_avg_3a
+let pout = vout_3a*vout_3a/(19*9.5/28.5)
+let eff = pout/pin
+print pin pout eff
+linearize v(vout) i(L1) v(comp) v(inp)
+wrdata sim/boost_tran.dat v(vout) i(L1) v(comp) v(inp)
+.endc
+.end

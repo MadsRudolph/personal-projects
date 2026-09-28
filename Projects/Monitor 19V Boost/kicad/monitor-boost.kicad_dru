@@ -1,0 +1,9 @@
+(version 1)
+# CNC isolation milling, 0.8 mm end mill; the netclass clearance is 0.85 mm.
+# Fixed-pitch transistor packages put their own pads 0.84 mm apart (2.54 mm
+# pitch, 1.7 mm pads) -- still wider than the tool, so allowed here instead of
+# lowering the global clearance.  Q2/Q3 use the splayed 2.54 mm TO-126
+# footprint for exactly this reason (stock 2.28 mm pitch leaves 0.58 mm).
+(rule "TO-220 / TO-126 pad-to-pad inside one package"
+    (constraint clearance (min 0.8mm))
+    (condition "A.Type == 'Pad' && B.Type == 'Pad' && A.memberOfFootprint('Q*') && B.memberOfFootprint('Q*') && A.Parent == B.Parent"))
