@@ -5,9 +5,12 @@ replaces the breadboard. The VideoMic GO runs on plug-in power from the Uno's 3V
 amplifies by ×564 (55 dB) in two AC-coupled stages, and the output goes to the Uno's A0 through
 an RC filter.
 
-![top](production/rode-preamp_top.png)
+![layout](production/rode-preamp_layout.png)
 
-- Single-sided, 85 x 45 mm. All copper is on the bottom (B.Cu) and the parts go on top.
+![3d](production/rode-preamp_3d.png)
+
+- Single-sided, 63 x 41 mm. All copper is on the bottom (B.Cu) and the parts go on top.
+- The GND pour connects to its pads solid, with no thermal spokes.
 - CNC rule: 1.0 mm track, 0.85 mm clearance, for the 0.8 mm flat end mill. The 2.54 mm header's
   own pads are 0.84 mm apart, which `rode-preamp.kicad_dru` allows for J2 only.
 - Checks run on this board:
@@ -15,7 +18,9 @@ an RC filter.
     warnings on the LM358, which are harmless), and the netlist was read back and checked node
     by node.
   - Board: 13/13 nets connected, 0 vias, 0 wire bridges, and the GND pour is one piece. DRC
-    shows 0 violations and 0 unconnected items, with 0 schematic parity issues.
+    shows 0 violations and 0 unconnected items, with 0 schematic parity issues. One soft
+    ground-quality metric is marginal: C3's return runs a little far round the pour (1.07
+    board diagonals against a 1.0 guideline).
 - ngspice, LM358 as a 1 MHz single-pole model: bias 1.80 V on every stage, 55 dB at 1 kHz,
   −3 dB at 16 Hz and 4.4 kHz. The top corner sits below the 7 kHz you'd expect from the
   220p/470p caps because the LM358's bandwidth at ×100 adds a third pole. That is still plenty
@@ -76,9 +81,9 @@ R5, R8 and R9 are the values already in the drawer: 1.01 k, 46.4 k and 1.01 k in
 | `rode-preamp.kicad_sch` | Schematic, the source of truth. `draw_schematic.py` regenerates it (close KiCad first) |
 | `rode-preamp.kicad_pcb` | Placed and routed board |
 | `rode-preamp.place.json` | The hand placement, as footprint anchor x, y and rotation |
-| `production/` | Gerbers, drill file, silk DXF, schematic PDF, renders |
+| `production/` | Gerbers, drill file, silk DXF, schematic PDF, layout and 3D renders |
 
 The placement was done by hand because the block placer's layouts left 4–7 nets unrouted. The
-rails run along the top edge with 3V3 on the outer track, the LM358 stands upright with stage A
-on its left and stage B on its right, and OUT_A runs under the package between the pin rows.
+rails run along the top edge with 3V3 on the outer track. Stage A's feedback parts sit above the
+LM358 and stage B's to its right, and OUT_A runs under the package between the pin rows.
 FreeRouting routed that placement single-sided in one pass.
