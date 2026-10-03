@@ -1,0 +1,16 @@
+Reference,Qty,Value,Footprint,Source,Shop CSV entry,Notes
+R1,1,2.2k,R_Axial_DIN0207_P7.62mm,home,,plug-in power from 3V3
+"R2,R3,R6",3,100k,R_Axial_DIN0207_P7.62mm,shop,100K,
+R4,1,56.2k,R_Axial_DIN0207_P7.62mm,shop,56K2,bias divider: 1.80 V
+"R5,R9",2,1.01k,R_Axial_DIN0207_P7.62mm,home,,
+R7,1,10k,R_Axial_DIN0207_P7.62mm,home,,
+R8,1,46.4k,R_Axial_DIN0207_P7.62mm,home,,stage B gain 5.6
+"C1,C2,C3,C5",4,10u 50V electrolytic,CP_Radial_D5.0mm_P2.50mm,home,,bend leads from 2.0 to 2.5 mm; + marked on silk
+C4,1,220p,C_Disc_D5.0mm_P5.00mm,shop,220p,
+C6,1,470p,C_Disc_D5.0mm_P5.00mm,shop,470p,
+C7,1,10n,C_Disc_D5.0mm_P5.00mm,shop,10n,
+C8,1,100n,C_Disc_D5.0mm_P5.00mm,shop,100n,decoupling at U1 pin 8
+U1,1,LM358,DIP-8_W7.62mm_LongPads,home,,
+U1 socket,1,DIP-8 socket,(in U1 footprint),shop,DIP8 Socket,
+J1,1,2-pole screw terminal 5 mm,TerminalBlock_Phoenix_MKDS-1.5-2_P5.00mm,shop,2 pol skrueterminal,mic cable: 1 MIC (tip+ring) / 2 GND (sleeve)
+J2,1,4-pin male header 2.54 mm,PinHeader_1x04_P2.54mm,shop,4-Pin Male,1 3V3 / 2 5V / 3 A0 / 4 GND to the Uno

@@ -1,0 +1,23 @@
+{
+  "_why": "hand placement: rails run left along the top edge from J2 (3V3 outer lane, 5V inner); LM358 upright, stage A left, stage B right, OUT_A under the package between the pin rows; mic + bias on the left. {ref: [x_mm, y_mm, rot_deg]} of the footprint anchor (pin 1).",
+  "J2": [178, 104, 0],
+  "U1": [145, 118, 0],
+  "C8": [152.62, 113, 0],
+  "R6": [135, 114, 0],
+  "C4": [136, 110, 0],
+  "R5": [129.38, 120.54, 0],
+  "C3": [126, 120.54, 180],
+  "R8": [160, 133.16, 90],
+  "C6": [164, 130.54, 90],
+  "R7": [167.62, 139, 180],
+  "C5": [171, 139, 0],
+  "R9": [174, 135, 90],
+  "C7": [178, 120, 270],
+  "J1": [106, 130, 270],
+  "R1": [109.5, 108, 270],
+  "C1": [114.5, 130, 0],
+  "R2": [120.5, 128, 90],
+  "R3": [115, 110, 270],
+  "R4": [119, 117.62, 90],
+  "C2": [115, 122.5, 180]
+}

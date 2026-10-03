@@ -1,0 +1,7 @@
+(version 1)
+# CNC isolation milling, 0.8 mm end mill: global clearance 0.85 mm (cnc profile).
+# The 2.54 mm header's own pads sit 0.84 mm apart -- fixed by the part's pitch and still
+# wider than the 0.8 mm tool, so relax clearance only between J2's own pads.
+(rule "J2_intra_pad_clearance"
+	(condition "A.memberOfFootprint('J2') && B.memberOfFootprint('J2')")
+	(constraint clearance (min 0.8mm)))
